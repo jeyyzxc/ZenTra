@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from './Navbar';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function GlobalHeader() {
   const [scrollY, setScrollY] = useState(0);
@@ -12,11 +13,11 @@ export default function GlobalHeader() {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     // Initial calculation
     handleScroll();
-    
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
@@ -24,14 +25,14 @@ export default function GlobalHeader() {
 
   // Calculate animations based on scroll
   const scrollLimit = 500; // Pixels to scroll to complete the logo animation
-  
+
   // Force progress to 1 (final top state) if we are on any subpage
   const progress = isHomePage ? Math.min(1, scrollY / scrollLimit) : 1;
-  
+
   // Logo scales down from 1.0 to 0.35
   const logoScale = 1 - (progress * 0.65);
-  // Logo translates up to the navbar area (approx 42vh up from center)
-  const logoTranslateY = -(progress * 42); // in vh units
+  // Logo translates from 0 up to (-50vh + 84px) to sit lower than the navbar items
+  const transformY = `calc(${progress} * (-50vh + 84px))`;
 
   return (
     <div className="fixed inset-0 h-screen pointer-events-none z-[100]">
@@ -41,34 +42,42 @@ export default function GlobalHeader() {
       </div>
 
       {/* Center Logo */}
-      <div 
-        className="absolute inset-0 flex items-center justify-center transition-transform duration-75"
-        style={{ 
-          transform: `translateY(${logoTranslateY}vh) scale(${logoScale})`,
+      <div
+        className="absolute inset-0 flex items-center justify-center transition-transform duration-75 pointer-events-none"
+        style={{
+          transform: `translateY(${transformY}) scale(${logoScale})`,
         }}
       >
-        <div className="relative w-80 md:w-96 lg:w-[450px]">
+        <Link 
+          href={progress === 1 ? "/" : "#"}
+          onClick={(e) => {
+            if (progress < 1) e.preventDefault();
+          }}
+          className={`relative w-80 md:w-96 lg:w-[450px] transition-transform duration-300 ${
+            progress === 1 ? 'pointer-events-auto hover:scale-[1.02] cursor-pointer' : 'pointer-events-none'
+          }`}
+        >
           {/* Hidden image to force natural aspect ratio */}
-          <img 
-            src="/c98908fb-9a78-41df-9a97-95623bdf6114.png" 
-            alt="Zion Events Place Logo" 
+          <img
+            src="/zion-logo.png"
+            alt="Zion Events Place Logo"
             className="w-full h-auto opacity-0"
           />
           {/* Colored Mask */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-tr from-[#C5B87D] via-[#FFFDF8] to-[#E6D5A7] drop-shadow-2xl opacity-95"
+          <div
+            className="absolute inset-0 bg-gradient-to-tr from-[#C5B87D] via-[#FFFDF8] to-[#E6D5A7] drop-shadow-[0_0_20px_rgba(223,212,138,0.6)] opacity-100"
             style={{
-              WebkitMaskImage: 'url(/c98908fb-9a78-41df-9a97-95623bdf6114.png)',
+              WebkitMaskImage: 'url(/zion-logo.png)',
               WebkitMaskSize: 'contain',
               WebkitMaskPosition: 'center',
               WebkitMaskRepeat: 'no-repeat',
-              maskImage: 'url(/c98908fb-9a78-41df-9a97-95623bdf6114.png)',
+              maskImage: 'url(/zion-logo.png)',
               maskSize: 'contain',
               maskPosition: 'center',
               maskRepeat: 'no-repeat'
             }}
           />
-        </div>
+        </Link>
       </div>
     </div>
   );

@@ -4,116 +4,97 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function Navbar() {
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dropdown data
   const menuItems = [
+    { label: "Home", href: "/" },
+    { 
+      label: "Packages", 
+      href: "/events/weddings",
+      subItems: [
+        { label: "Weddings", href: "/events/weddings" },
+        { label: "Debuts", href: "/events/debuts" },
+        { label: "Christening", href: "/events/christening" },
+        { label: "Birthdays", href: "/events/birthdays" },
+        { label: "Gender Reveal", href: "/events/gender-reveal" },
+        { label: "Christmas Party", href: "/events/christmas-party" },
+      ]
+    },
+    { label: "Gallery", href: "/events/weddings#gallery" },
     { label: "About Us", href: "/about" },
+    { label: "Facilities", href: "/facilities" },
+    { label: "Testimonies", href: "/testimonies" },
     { label: "Contact Us", href: "/contact" },
     { label: "FAQ", href: "/faq" },
     { label: "Rules & Regulation", href: "/rules" },
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
   ];
-
-  const homeItems = [
-    { label: "Back to Home", href: "/" },
-  ];
-
-  const packagesItems = [
-    { label: "Weddings", href: "/events/weddings" },
-    { label: "Debuts", href: "/events/debuts" },
-    { label: "Birthdays", href: "/events/birthdays" },
-    { label: "Gender Reveals", href: "/events/gender-reveal" },
-    { label: "Christenings", href: "/events/christening" },
-    { label: "Christmas Parties", href: "/events/christmas-party" },
-  ];
-
-  const galleryItems = [
-    { label: "Weddings", href: "/events/weddings#gallery" },
-    { label: "Debuts", href: "/events/debuts#gallery" },
-    { label: "Birthdays", href: "/events/birthdays#gallery" },
-    { label: "Gender Reveals", href: "/events/gender-reveal#gallery" },
-    { label: "Christenings", href: "/events/christening#gallery" },
-    { label: "Christmas Parties", href: "/events/christmas-party#gallery" },
-  ];
-
-  // Reusable Nav Item Component
-  const NavDropdown = ({ 
-    title, 
-    items, 
-    id, 
-    isMenu = false 
-  }: { 
-    title: string, 
-    items: {label: string, href: string}[], 
-    id: string,
-    isMenu?: boolean
-  }) => {
-    const isOpen = activeDropdown === id;
-    
-    return (
-      <div 
-        className="relative flex flex-col items-center"
-        onMouseEnter={() => setActiveDropdown(id)}
-        onMouseLeave={() => setActiveDropdown(null)}
-      >
-        <Link 
-          href={`#${id}`} 
-          className={`px-6 py-1.5 text-center rounded-full transition-all duration-300 text-sm font-serif shadow-sm border border-transparent z-10
-            ${isOpen ? 'bg-[#FBF4C4] text-black scale-105' : 'bg-[#FBF4C4] text-black hover:brightness-95 hover:scale-105'}
-          `}
-        >
-          {title}
-        </Link>
-        
-        {/* Dropdown Container */}
-        <div 
-          className={`absolute top-full pt-2 flex flex-col gap-2 w-32 transition-all duration-300 origin-top
-            ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none scale-95'}
-          `}
-        >
-          {items.map((item, index) => (
-            <Link 
-              key={index}
-              href={item.href} 
-              className="px-4 py-1.5 bg-[#DDD181] hover:bg-[#FBF4C4] text-black text-center rounded-full transition-all duration-200 text-xs font-serif shadow-sm hover:scale-105 hover:shadow-md border border-transparent hover:border-black/5"
-              style={{ transitionDelay: `${isOpen ? index * 30 : 0}ms` }}
-            >
-              {item.label === "Rules & Regulation" ? (
-                <span className="text-[10px] leading-tight block">Rules &<br/>Regulation</span>
-              ) : (
-                item.label
-              )}
-            </Link>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   return (
-    <nav className="absolute top-0 left-0 right-0 z-50 flex items-start justify-between px-12 py-8 pointer-events-auto">
+    <nav className="absolute top-0 left-0 right-0 z-50 flex items-start justify-end px-8 md:px-12 py-8 pointer-events-auto">
       
-      {/* Left: Menu */}
-      <NavDropdown title="Menu" items={menuItems} id="menu" isMenu={true} />
-
-      {/* Right: Navigation Links */}
-      <div className="flex gap-4">
-        <NavDropdown title="Home" items={homeItems} id="home" />
-        <NavDropdown title="Packages" items={packagesItems} id="packages" />
-        <NavDropdown title="Gallery" items={galleryItems} id="gallery" />
-        
-        {/* Book Now (No Dropdown) */}
-        <Link 
-          href="#book" 
-          className="px-6 py-1.5 bg-[#FBF4C4] hover:brightness-95 text-black text-center rounded-full transition-all duration-300 hover:scale-105 text-sm font-serif shadow-sm h-fit"
-          onMouseEnter={() => setActiveDropdown(null)}
+      {/* Menu Container */}
+      <div
+        className="relative flex flex-col items-center"
+        onMouseEnter={() => setIsMenuOpen(true)}
+        onMouseLeave={() => setIsMenuOpen(false)}
+      >
+        {/* Hamburger Icon */}
+        <Link
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          className={`flex items-center justify-center text-center transition-all duration-300 z-10 p-2 ${isMenuOpen ? 'scale-110 text-[#DFD48A] drop-shadow-[0_0_10px_rgba(223,212,138,0.6)]' : 'text-white drop-shadow-md hover:text-[#DFD48A] hover:drop-shadow-[0_0_10px_rgba(223,212,138,0.4)] hover:scale-110'}`}
         >
-          Book Now
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </Link>
+
+        {/* Sidebar Panel - Modern Glassmorphism */}
+        <div
+          className={`fixed top-0 right-0 h-screen pt-28 pb-8 px-6 md:px-10 bg-gradient-to-br from-[#FBF4C4]/95 via-white/95 to-white/95 backdrop-blur-xl shadow-[-20px_0_50px_-15px_rgba(0,0,0,0.1)] flex flex-col w-[70vw] md:w-72 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-none -z-10
+            ${isMenuOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none'}
+          `}
+        >
+          {/* Menu Items */}
+          <div className="flex flex-col gap-5 md:gap-6 flex-grow overflow-y-auto overflow-x-hidden pr-2 no-scrollbar">
+            {menuItems.map((item, index) => (
+              <div key={index} className="flex flex-col items-end group">
+                <Link
+                  href={item.href}
+                  className="text-neutral-900 group-hover:text-[#D4AF37] group-hover:-translate-x-1 text-right transition-all duration-300 text-base md:text-lg font-serif tracking-[0.2em] uppercase font-medium"
+                  style={{ transitionDelay: `${isMenuOpen ? index * 40 : 0}ms` }}
+                >
+                  {item.label}
+                </Link>
+                {item.subItems && (
+                  <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden max-h-0 opacity-0 group-hover:max-h-[200px] group-hover:opacity-100 group-hover:mt-4 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] items-end pr-4 border-r-2 border-[#D4AF37]/50 events-scrollbar">
+                    {item.subItems.map((sub, idx) => (
+                      <Link
+                        key={idx}
+                        href={sub.href}
+                        className="text-neutral-600 hover:text-[#D4AF37] hover:-translate-x-1 text-right transition-all duration-300 text-sm md:text-base font-serif tracking-[0.15em] uppercase flex-shrink-0"
+                      >
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Book Now Button at bottom */}
+          <Link
+            href="/book"
+            className="mt-8 px-6 py-4 bg-transparent border-[1.5px] border-neutral-900 text-neutral-900 hover:bg-[#DFD48A] hover:border-[#DFD48A] hover:text-neutral-900 hover:shadow-[0_0_20px_rgba(223,212,138,0.4)] text-center transition-all duration-500 text-sm font-serif tracking-[0.3em] uppercase flex items-center justify-center gap-3 group"
+            style={{ transitionDelay: `${isMenuOpen ? menuItems.length * 40 + 100 : 0}ms` }}
+          >
+            <span className="group-hover:text-neutral-900 transition-colors">Book Now</span>
+            <svg className="w-4 h-4 text-neutral-900 group-hover:text-neutral-900 transform group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+          </Link>
+        </div>
       </div>
-      
     </nav>
   );
 }

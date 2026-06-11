@@ -20,49 +20,48 @@ export default function FeaturesSection() {
           </p>
         </div>
 
-        {/* 2 Column Feature Grid */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* 2 Column Bento Grid */}
+        <div className="flex flex-col md:flex-row gap-4 md:h-[650px] lg:h-[800px] mb-4">
           
-          {/* Left Column */}
+          {/* Left Column (3 equal rows) */}
           <div className="flex-1 flex flex-col gap-4">
-            <div className="relative h-40 md:h-56 rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-48 md:h-auto" style={{ flex: '1' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1542360663-8f4023704c71?q=80&w=2070&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-4xl drop-shadow-lg tracking-wide">Debuts</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Debuts</h3>
             </div>
             
-            <div className="relative h-40 md:h-56 rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-48 md:h-auto" style={{ flex: '1' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-4xl drop-shadow-lg tracking-wide">Christenings</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Christenings</h3>
             </div>
             
-            <div className="relative h-40 md:h-56 rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-48 md:h-auto" style={{ flex: '1' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1544078754-0a3ce1ad1364?q=80&w=2074&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-4xl drop-shadow-lg tracking-wide">Gender Reveal</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Gender Reveal</h3>
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right Column (25% / 50% / 25%) */}
           <div className="flex-1 flex flex-col gap-4">
-            <div className="relative h-40 md:h-56 rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-48 md:h-auto" style={{ flex: '3' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1530103862676-de8892ebeea6?q=80&w=2070&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-4xl drop-shadow-lg tracking-wide">Birthdays</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Birthdays</h3>
             </div>
             
-            {/* Taller card */}
-            <div className="relative h-56 md:h-[18rem] rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-64 md:h-auto" style={{ flex: '6' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-5xl drop-shadow-lg tracking-wide">Weddings</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Weddings</h3>
             </div>
             
-            <div className="relative h-40 md:h-56 rounded-2xl overflow-hidden group shadow-md">
+            <div className="relative rounded-3xl overflow-hidden group shadow-lg h-48 md:h-auto" style={{ flex: '3' }}>
               <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1543362906-acfc16c67564?q=80&w=1965&auto=format&fit=crop')" }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <h3 className="absolute bottom-4 left-6 font-script text-white text-4xl drop-shadow-lg tracking-wide">Christmas Parties</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-4 left-6 md:bottom-6 md:left-8 font-script text-[#FFFDF8] text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl tracking-wide">Christmas Parties</h3>
             </div>
           </div>
 

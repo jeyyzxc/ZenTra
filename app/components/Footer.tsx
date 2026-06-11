@@ -3,75 +3,96 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 bg-zentra-bg w-full px-4 py-12 md:px-12 border-t-2 border-black mt-auto">
-      <div className="w-full mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 pt-4">
-          
+    <footer className="relative z-10 bg-gradient-to-br from-[#DCD48E]/60 via-[#FBF4C4] to-white w-full pt-8 pb-4 border-t-2 border-black mt-auto">
+      <div className="w-full mx-auto px-4 md:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-2">
+
           {/* Left: Brand */}
-          <div className="flex flex-col gap-2 md:col-span-5">
-            <h3 className="font-serif text-black text-lg md:text-xl font-medium tracking-wide">ZION EVENTS PLACE</h3>
-            <p className="text-black text-xs md:text-sm font-serif max-w-xs opacity-80 mt-1">
-              Sophisticated Celebrations, Excellent Service - Overlooking Laguna
+          <div className="flex flex-col gap-1 md:col-span-3">
+            <h3 className="font-serif text-black text-2xl md:text-3xl font-medium tracking-wide transition-all duration-300 hover:text-[#D4AF37] hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] cursor-pointer">ZION EVENTS PLACE</h3>
+            <p className="text-black text-sm md:text-base font-serif max-w-xs opacity-80">
+              Sophisticated Celebrations, <span className="whitespace-nowrap">Excellent Service -</span> Overlooking Laguna
             </p>
           </div>
 
-          {/* Middle: Explore Links */}
-          <div className="flex flex-col gap-3 items-start text-left md:col-span-4">
-            <h4 className="font-serif text-black text-xs md:text-sm font-bold uppercase mb-1">EXPLORE</h4>
+          {/* Middle 1: Explore Links */}
+          <div className="flex flex-col gap-3 items-start text-left md:col-span-2 md:pl-4 lg:pl-16 xl:pl-20">
+            <h4 className="font-serif text-black text-sm md:text-base font-bold uppercase mb-1">EXPLORE</h4>
             <div className="flex flex-col gap-2 items-start">
-              <Link href="/about" className="text-black text-xs md:text-sm font-serif hover:underline">Menu</Link>
-              <Link href="/" className="text-black text-xs md:text-sm font-serif hover:underline">Home</Link>
-              <Link href="/events/weddings" className="text-black text-xs md:text-sm font-serif hover:underline">Packages</Link>
-              <Link href="/events/weddings#gallery" className="text-black text-xs md:text-sm font-serif hover:underline">Gallery</Link>
+              <Link href="/" className="relative text-black text-sm md:text-base font-serif transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Home</Link>
+              <Link href="/about" className="relative text-black text-sm md:text-base font-serif transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">About Us</Link>
+              <Link href="/events/weddings" className="relative text-black text-sm md:text-base font-serif transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Packages</Link>
+              <Link href="/events/weddings#gallery" className="relative text-black text-sm md:text-base font-serif transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Gallery</Link>
+            </div>
+          </div>
+
+          {/* Middle 2: Contact Details */}
+          <div className="flex flex-col items-start text-left md:col-span-5 md:pl-4 lg:pl-8 xl:pl-16">
+            <div className="flex items-stretch gap-3 md:gap-4">
+              {/* Address (Left) */}
+              <div className="flex flex-col gap-2">
+                <h4 className="font-serif text-black text-sm md:text-base font-bold uppercase">VISIT US</h4>
+                <div className="flex flex-col text-black text-sm md:text-base font-serif leading-relaxed">
+                  <span>Father Masi Street,</span>
+                  <span>Holiday Hills, Barangay San Antonio,</span>
+                  <span>San Pedro, Philippines, 4023</span>
+                </div>
+              </div>
+
+              {/* Vertical Divider */}
+              <div className="w-px bg-black opacity-30 mt-1 mx-1 md:mx-2"></div>
+
+              {/* Contact (Right) */}
+              <div className="flex flex-col gap-2">
+                <h4 className="font-serif text-black text-sm md:text-base font-bold uppercase">CONTACT US</h4>
+                <div className="flex flex-col gap-1 text-black text-sm md:text-base font-serif leading-relaxed">
+                  <a href="tel:+639123456789" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
+                    Tel: +63 912 345 6789
+                  </a>
+                  <a href="mailto:inquire@zionevents.com" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
+                    inquire@zionevents.com
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right: Socials */}
-          <div className="flex flex-col gap-3 items-start text-left md:col-span-3">
-            <h4 className="font-serif text-black text-xs md:text-sm font-bold uppercase mb-1">FOLLOW US</h4>
-            <p className="text-black text-xs md:text-sm font-serif mb-2">Join our community.</p>
-            <div className="flex gap-4">
+          <div className="flex flex-col gap-3 items-start text-left md:col-span-2 justify-self-end">
+            <div className="flex flex-col gap-1">
+              <h4 className="font-serif text-black text-sm md:text-base font-bold uppercase">FOLLOW US</h4>
+              <p className="text-black text-sm md:text-base font-serif opacity-90">Join our community.</p>
+            </div>
+            <div className="flex gap-4 mt-1">
               {/* Facebook */}
-              <Link href="#" className="hover:opacity-90 transition-opacity">
-                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="12" fill="#1877F2"/>
-                  <path d="M14.6562 12H12.5V19.5H9.375V12H8.125V9.375H9.375V7.8125C9.375 6.075 10.125 4.5 12.8125 4.5H15V7.03125H13.4375C12.4375 7.03125 12.5 7.46875 12.5 8.125V9.375H15L14.6562 12Z" fill="white"/>
-                </svg>
+              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+                <img src="/communication.png" alt="Facebook" className="w-9 h-9 object-contain transition-transform" />
               </Link>
-              
+
               {/* Instagram */}
-              <Link href="#" className="hover:opacity-90 transition-opacity">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7ZM9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12Z" />
-                    <path fillRule="evenodd" clipRule="evenodd" d="M16.5 9C17.3284 9 18 8.32843 18 7.5C18 6.67157 17.3284 6 16.5 6C15.6716 6 15 6.67157 15 7.5C15 8.32843 15.6716 9 16.5 9Z" />
-                    <path fillRule="evenodd" clipRule="evenodd" d="M12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z" />
-                  </svg>
-                </div>
+              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+                <img src="/instagram.png" alt="Instagram" className="w-9 h-9 object-contain transition-transform" />
               </Link>
 
               {/* TikTok */}
-              <Link href="#" className="hover:opacity-90 transition-opacity">
-                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.976-4.686H12v13.319a2.656 2.656 0 1 1-2.656-2.656c.11 0 .218.007.324.019V9.227a6.114 6.114 0 1 0 6.114 6.114V9.824a8.23 8.23 0 0 0 4.02 1.045V7.41a4.78 4.78 0 0 1-2.213-.724Z" />
-                  </svg>
-                </div>
+              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+                <img src="/tik-tok.png" alt="TikTok" className="w-9 h-9 object-contain transition-transform" />
               </Link>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Bottom Legal Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-center pt-6 border-t border-black text-black text-xs md:text-sm font-serif gap-4">
-          <p>© 2026 Zion Events Place. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="#privacy" className="hover:underline">Privacy Policy</Link>
-            <Link href="#terms" className="hover:underline">Terms of Service</Link>
-          </div>
+      {/* Bottom Legal Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-center pt-2 px-4 md:px-12 border-t-2 border-black text-black text-sm md:text-base font-serif gap-4 mt-2">
+        <p>© 2026 Zion Events Place. All rights reserved.</p>
+        <div className="flex gap-6">
+          <Link href="/privacy" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Privacy Policy</Link>
+          <Link href="/terms" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Terms of Service</Link>
         </div>
       </div>
     </footer>
   );
 }
 
+  

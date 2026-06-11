@@ -16,11 +16,11 @@ export default function SubpageHero({ title, subtitle, imageSrc }: SubpageHeroPr
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
       
-      <div className="relative z-10 pt-20">
-        <h1 className="text-white text-5xl md:text-6xl lg:text-7xl mb-4 drop-shadow-md font-segoe leading-tight">
+      <div className="relative z-10 pt-20 w-full flex flex-col items-center">
+        <h1 className="text-white text-5xl md:text-6xl lg:text-7xl mb-4 drop-shadow-md font-segoe leading-tight text-center">
           {title}
         </h1>
-        <p className="text-white text-xl md:text-2xl font-sahitya max-w-3xl drop-shadow-md tracking-wide">
+        <p className="text-white text-xl md:text-2xl font-sahitya max-w-3xl mx-auto drop-shadow-md tracking-wide text-center">
           {subtitle}
         </p>
       </div>

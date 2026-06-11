@@ -10,7 +10,7 @@ export default function PartnersSection() {
   ];
 
   return (
-    <section className="bg-[#EAE6D1] w-full px-4 py-16 md:px-12 border-b-2 border-black">
+    <section className="bg-[#EAE6D1] w-full px-4 py-16 md:px-12">
       <div className="max-w-7xl mx-auto">
         <h2 className="font-serif text-black text-2xl md:text-3xl text-center uppercase tracking-widest mb-12">
           ACCREDITED PARTNERS

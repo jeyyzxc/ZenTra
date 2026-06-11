@@ -1,58 +1,26 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function ReservationSection() {
-  // Generate random days for visual representation
-  const days = Array.from({ length: 30 }, (_, i) => {
-    // some predefined booked days for realistic look
-    const bookedDays = [3, 4, 8, 12, 17, 21, 25, 26, 28];
-    return {
-      day: i + 1,
-      isBooked: bookedDays.includes(i + 1),
-    };
-  });
+import EventCalendar from './EventCalendar';
 
+export default function ReservationSection() {
   return (
     <section className="bg-[#DFDAC1] w-full px-4 py-16 md:px-12 border-t border-[#3A4B3C]/10 border-b border-[#3A4B3C]/10">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24 items-start">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
         
         {/* Left Side: Calendar */}
-        <div className="flex gap-8 items-start">
-          <div className="bg-[#C5BE9A] rounded-2xl p-6 w-full max-w-[340px] shadow-md border border-white/20">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
-              <button className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
-                <ChevronLeft size={14} />
-              </button>
-              <div className="bg-white/90 px-4 py-1.5 rounded-sm flex-1 mx-3 flex justify-between items-center text-sm font-sans text-gray-800 shadow-sm">
-                <span>March 2026</span>
-                <span className="text-gray-400 text-[10px]">▼</span>
-              </div>
-              <button className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
-                <ChevronRight size={14} />
-              </button>
-            </div>
-            
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-5 gap-2">
-              {days.map((d, i) => (
-                <div 
-                  key={i} 
-                  className={`aspect-square rounded-sm ${d.isBooked ? 'bg-[#FF6B6B]' : 'bg-[#51DF7E]'} shadow-sm`}
-                />
-              ))}
-            </div>
-          </div>
-
+        <div className="flex flex-col items-center w-full max-w-xl mx-auto">
+          <EventCalendar />
+          
           {/* Legend */}
-          <div className="flex flex-col gap-6 pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-[#FF6B6B] rounded-md shadow-sm"></div>
-              <span className="text-sm font-serif text-[#3A4B3C] tracking-wide">Booked</span>
+          <div className="flex items-center gap-6 mt-8 font-serif bg-white/40 px-8 py-3 rounded-full backdrop-blur-sm border border-[#3A4B3C]/10 shadow-sm w-fit">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-white border border-[#3A4B3C]/10 shadow-sm rounded-sm"></div>
+              <span className="text-sm text-[#2F3E32] font-medium tracking-wide">Available</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-[#51DF7E] rounded-md shadow-sm"></div>
-              <span className="text-sm font-serif text-[#3A4B3C] tracking-wide">Available</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-[#E0E0E0] border border-black/5 shadow-inner rounded-sm"></div>
+              <span className="text-sm text-[#9E9E9E] font-medium tracking-wide">Booked</span>
             </div>
           </div>
         </div>

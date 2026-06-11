@@ -26,6 +26,9 @@ const sahitya = Sahitya({
 
 import GlobalHeader from "./components/GlobalHeader";
 import Footer from "./components/Footer";
+import SmartGuide from "./components/SmartGuide";
+import PublicOnly from "./components/PublicOnly";
+import { ThemeProvider } from "./context/ThemeContext";
 
 export const metadata: Metadata = {
   title: "Zion Events Place",
@@ -42,10 +45,21 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${playfair.variable} ${alexBrush.variable} ${sahitya.variable} antialiased`}
     >
-      <body className="min-h-screen flex flex-col bg-zentra-bg overflow-x-hidden">
-        <GlobalHeader />
-        {children}
-        <Footer />
+      <head>
+        <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+      </head>
+      <body className="min-h-screen flex flex-col bg-zentra-bg overflow-x-hidden text-zentra-primary transition-colors duration-500 ease-in-out dark:bg-[#0C100B] dark:text-[#F4F4F0]">
+        <ThemeProvider>
+          <PublicOnly>
+            <GlobalHeader />
+          </PublicOnly>
+          {children}
+          <PublicOnly>
+            <SmartGuide />
+            <Footer />
+          </PublicOnly>
+        </ThemeProvider>
       </body>
     </html>
   );
