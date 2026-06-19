@@ -156,6 +156,16 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    handleNavigation(`/admin/calendar?q=${encodeURIComponent(searchQuery.trim())}`);
+                    setIsSearchFocused(false);
+                    // Add to recent searches if not already there
+                    if (!recentSearches.includes(searchQuery.trim())) {
+                      setRecentSearches(prev => [searchQuery.trim(), ...prev].slice(0, 5));
+                    }
+                  }
+                }}
                 placeholder={hoveredSearch ? "" : PLACEHOLDERS[placeholderIndex]} 
                 className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] placeholder-gray-400 dark:placeholder-[#A3B19B] focus:outline-none transition-all duration-300 ease-in-out relative z-10"
               />
@@ -183,7 +193,16 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                   <div className="px-3 py-2 text-[10px] font-bold text-gray-400 dark:text-[#A3B19B] uppercase tracking-[0.1em]">
                     Quick Results
                   </div>
-                  <button className="w-full text-left px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3.5 group">
+                  <button 
+                    onClick={() => {
+                      handleNavigation(`/admin/calendar?q=${encodeURIComponent(searchQuery.trim())}`);
+                      setIsSearchFocused(false);
+                      if (!recentSearches.includes(searchQuery.trim())) {
+                        setRecentSearches(prev => [searchQuery.trim(), ...prev].slice(0, 5));
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3.5 group"
+                  >
                     <div className="w-9 h-9 rounded-full bg-[#FDF5CC]/50 dark:bg-[#D6B53B]/10 flex items-center justify-center text-[#D6B53B] group-hover:bg-[#D6B53B] group-hover:text-white transition-all shadow-sm dark:shadow-none border border-transparent dark:border-[#D6B53B]/20">
                       <i className="fi fi-rr-search text-xs leading-[0]"></i>
                     </div>

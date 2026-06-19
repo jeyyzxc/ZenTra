@@ -61,6 +61,32 @@ body {
   background-color: #E8D579;
 }
 
+/* Custom Calendar Scrollbar */
+.custom-scrollbar, .calendar-scroll {
+  scrollbar-width: thin;
+}
+.custom-scrollbar::-webkit-scrollbar, .calendar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track, .calendar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb, .calendar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+/* Dark Mode Calendar Scrollbar (Gold) */
+.dark .calendar-scroll {
+  scrollbar-color: #D4AF37 transparent;
+}
+.dark .calendar-scroll::-webkit-scrollbar-thumb {
+  background-color: #D4AF37;
+}
+.dark .calendar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #E8D579;
+}
+
 /* Hide scrollbar for elements that need scrolling without the visual bar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -68,4 +94,9 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -2,83 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-// Comprehensive Knowledge Base
-const knowledgeBase = [
-  {
-    keywords: ['book', 'reserve', 'schedule', 'date'],
-    question: "How do I book a date?",
-    answer: "You can easily book a date by clicking the 'Book Now' button at the top of the page. It will guide you through our step-by-step reservation process where you can select your preferred date, theme, and package."
-  },
-  {
-    keywords: ['capacity', 'maximum', 'how many people', 'guests', 'pax', 'attendees'],
-    question: "What is the maximum guest capacity?",
-    answer: "Zion Events Place can comfortably accommodate up to 300 guests for a grand celebration, but we also cater to intimate gatherings of 50-100 guests."
-  },
-  {
-    keywords: ['catering', 'food', 'menu', 'eat'],
-    question: "Do you offer catering services?",
-    answer: "Yes! Our Premium and Ultimate packages include full catering options with a curated menu, but we also allow external caterers subject to an accredited supplier fee."
-  },
-  {
-    keywords: ['supplier', 'vendor', 'corkage', 'bring own', 'photographer', 'coordinator', 'decorator'],
-    question: "Can we bring our own suppliers?",
-    answer: "Absolutely! You are welcome to bring your preferred photographers, decorators, and coordinators. We only apply a minimal corkage fee for non-accredited food and beverage suppliers. This is part of our Open Vendor policy."
-  },
-  {
-    keywords: ['parking', 'park', 'cars', 'vehicles'],
-    question: "Is there a parking area available?",
-    answer: "Yes, we have a spacious, secured parking area that can accommodate up to 100 vehicles for you and your guests."
-  },
-  {
-    keywords: ['air', 'condition', 'aircon', 'hot', 'cold'],
-    question: "Is the venue fully air-conditioned?",
-    answer: "Yes! All our indoor spaces are fully air-conditioned to ensure maximum comfort for you and your guests."
-  },
-  {
-    keywords: ['generator', 'power', 'outage', 'electricity', 'blackout'],
-    question: "Do you provide a generator in case of power outages?",
-    answer: "Yes, we have a 100% standby backup generator to ensure your event proceeds flawlessly even during power interruptions."
-  },
-  {
-    keywords: ['room', 'celebrant', 'bride', 'dressing', 'makeup'],
-    question: "Is there a dedicated room for the celebrant or bride?",
-    answer: "Yes, we provide an elegant, fully-furnished suite for the celebrant or bride to prepare, rest, and take pre-event photos."
-  },
-  {
-    keywords: ['christian', 'christening', 'ceremony', 'mass', 'wedding ceremony'],
-    question: "Can we hold a Christian ceremony or a Christening on-site?",
-    answer: "Yes, our versatile spaces can be arranged to accommodate on-site ceremonies, including Christian weddings and Christenings."
-  },
-  {
-    keywords: ['location', 'where', 'located', 'address', 'place'],
-    question: "Where are you located?",
-    answer: "Zion Events Place is strategically located to offer a serene and exclusive environment for your events. Please refer to the map on our Contact Us page for exact directions!"
-  },
-  {
-    keywords: ['one event', 'exclusive', 'per day', 'multiple events'],
-    question: "Do you hold only one event per day?",
-    answer: "Yes, we prioritize exclusivity. We typically hold only one major event per day to ensure our full attention, resources, and staff are dedicated entirely to your special celebration."
-  },
-  {
-    keywords: ['customize', 'customizable', 'wedding package', 'change package', 'flexible'],
-    question: "Are your wedding packages customizable?",
-    answer: "Absolutely! We understand that every couple is unique. All of our wedding packages can be fully customized to perfectly match your vision, preferences, and guest count."
-  },
-  {
-    keywords: ['ocular', 'visit', 'appointment', 'tour', 'walk-in', 'walk in'],
-    question: "Can we do an ocular visit without a prior appointment?",
-    answer: "To ensure we can give you a dedicated tour of our venues and provide our undivided attention to all your questions, we highly recommend scheduling an appointment prior to your ocular visit."
-  }
-];
-
-// Suggested Quick Questions
-const suggestedQuestions = [
-  "Where are you located?",
-  "Do you hold only one event per day?",
-  "Are your wedding packages customizable?",
-  "Can we do an ocular visit without a prior appointment?"
-];
-
 // Organized Emojis
 const EMOJI_CATEGORIES = [
   { name: 'Smileys', emojis: ["😊", "😂", "🥰", "😍", "😎", "😇", "😉", "🤩"] },
@@ -95,13 +18,181 @@ type Message = {
 
 export default function SmartGuide() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', sender: 'zeni', text: "Hello! I am Zeni, your AI-Powered Smart Assistant. How can I help make your dream event come true? ✨" }
-  ]);
+  const [lang, setLang] = useState<'en' | 'tl'>('en');
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Localization Data
+  const localizedData = {
+    en: {
+      greeting: "Hello! I am Zeni, your AI-Powered Smart Assistant. How can I help make your dream event come true? ✨",
+      placeholder: "Ask Zeni something...",
+      suggestedLabel: "Here are some frequently asked questions to help get you started.",
+      suggestedForYou: "Suggested for you",
+      fallback: "I couldn't find an exact answer to that. However, you can always reach out to our team at inquire@zionevents.com or use the 'Contact Us' page for more specific inquiries! 💌",
+      suggestedQuestions: [
+        "Where are you located?",
+        "Do you hold only one event per day?",
+        "Are your wedding packages customizable?",
+        "Can we do an ocular visit without a prior appointment?"
+      ],
+      knowledgeBase: [
+        {
+          keywords: ['book', 'reserve', 'schedule', 'date'],
+          question: "How do I book a date?",
+          answer: "You can easily book a date by clicking the 'Book Now' button at the top of the page. It will guide you through our step-by-step reservation process where you can select your preferred date, theme, and package."
+        },
+        {
+          keywords: ['capacity', 'maximum', 'how many people', 'guests', 'pax', 'attendees'],
+          question: "What is the maximum guest capacity?",
+          answer: "Zion Events Place can comfortably accommodate up to 300 guests for a grand celebration, but we also cater to intimate gatherings of 50-100 guests."
+        },
+        {
+          keywords: ['catering', 'food', 'menu', 'eat'],
+          question: "Do you offer catering services?",
+          answer: "Yes! Our Premium and Ultimate packages include full catering options with a curated menu, but we also allow external caterers subject to an accredited supplier fee."
+        },
+        {
+          keywords: ['supplier', 'vendor', 'corkage', 'bring own', 'photographer', 'coordinator', 'decorator'],
+          question: "Can we bring our own suppliers?",
+          answer: "Absolutely! You are welcome to bring your preferred photographers, decorators, and coordinators. We only apply a minimal corkage fee for non-accredited food and beverage suppliers. This is part of our Open Vendor policy."
+        },
+        {
+          keywords: ['parking', 'park', 'cars', 'vehicles'],
+          question: "Is there a parking area available?",
+          answer: "Yes, we have a spacious, secured parking area that can accommodate up to 100 vehicles for you and your guests."
+        },
+        {
+          keywords: ['air', 'condition', 'aircon', 'hot', 'cold'],
+          question: "Is the venue fully air-conditioned?",
+          answer: "Yes! All our indoor spaces are fully air-conditioned to ensure maximum comfort for you and your guests."
+        },
+        {
+          keywords: ['generator', 'power', 'outage', 'electricity', 'blackout'],
+          question: "Do you provide a generator in case of power outages?",
+          answer: "Yes, we have a 100% standby backup generator to ensure your event proceeds flawlessly even during power interruptions."
+        },
+        {
+          keywords: ['room', 'celebrant', 'bride', 'dressing', 'makeup'],
+          question: "Is there a dedicated room for the celebrant or bride?",
+          answer: "Yes, we provide an elegant, fully-furnished suite for the celebrant or bride to prepare, rest, and take pre-event photos."
+        },
+        {
+          keywords: ['christian', 'christening', 'ceremony', 'mass', 'wedding ceremony'],
+          question: "Can we hold a Christian ceremony or a Christening on-site?",
+          answer: "Yes, our versatile spaces can be arranged to accommodate on-site ceremonies, including Christian weddings and Christenings."
+        },
+        {
+          keywords: ['location', 'where', 'located', 'address', 'place'],
+          question: "Where are you located?",
+          answer: "Zion Events Place is strategically located to offer a serene and exclusive environment for your events. Please refer to the map on our Contact Us page for exact directions!"
+        },
+        {
+          keywords: ['one event', 'exclusive', 'per day', 'multiple events'],
+          question: "Do you hold only one event per day?",
+          answer: "Yes, we prioritize exclusivity. We typically hold only one major event per day to ensure our full attention, resources, and staff are dedicated entirely to your special celebration."
+        },
+        {
+          keywords: ['customize', 'customizable', 'wedding package', 'change package', 'flexible'],
+          question: "Are your wedding packages customizable?",
+          answer: "Absolutely! We understand that every couple is unique. All of our wedding packages can be fully customized to perfectly match your vision, preferences, and guest count."
+        },
+        {
+          keywords: ['ocular', 'visit', 'appointment', 'tour', 'walk-in', 'walk in'],
+          question: "Can we do an ocular visit without a prior appointment?",
+          answer: "To ensure we can give you a dedicated tour of our venues and provide our undivided attention to all your questions, we highly recommend scheduling an appointment prior to your ocular visit."
+        }
+      ]
+    },
+    tl: {
+      greeting: "Kumusta! Ako si Zeni, ang inyong AI-Powered Smart Assistant. Paano ko matutulungan na matupad ang inyong dream event? ✨",
+      placeholder: "Magtanong kay Zeni...",
+      suggestedLabel: "Narito ang ilang mga madalas itanong upang makapagsimula kayo.",
+      suggestedForYou: "Mungkahi para sa iyo",
+      fallback: "Pasensya na, hindi ko mahanap ang eksaktong sagot para diyan. Maaari kayong makipag-ugnayan sa aming team sa inquire@zionevents.com o gamitin ang aming 'Contact Us' page para sa iba pang katanungan! 💌",
+      suggestedQuestions: [
+        "Saan kayo matatagpuan?",
+        "Isang event lang ba ang ginaganap ninyo kada araw?",
+        "Maaari bang i-customize ang inyong wedding packages?",
+        "Pwede ba kaming mag-ocular visit kahit walang appointment?"
+      ],
+      knowledgeBase: [
+        {
+          keywords: ['book', 'reserve', 'schedule', 'petsa', 'magpa-book'],
+          question: "Paano ako makakapag-book ng petsa?",
+          answer: "Madali kang makakapag-book ng petsa sa pamamagitan ng pag-click sa 'Book Now' button sa itaas ng page. Igagabay ka nito sa aming step-by-step reservation process kung saan maaari mong piliin ang iyong gustong petsa, tema, at package."
+        },
+        {
+          keywords: ['capacity', 'maximum', 'ilang tao', 'guests', 'pax', 'attendees'],
+          question: "Ano ang maximum guest capacity?",
+          answer: "Ang Zion Events Place ay komportableng makakapag-accommodate ng hanggang 300 guests para sa isang grand celebration, ngunit tumatanggap din kami ng mas maliliit na pagtitipon para sa 50-100 guests."
+        },
+        {
+          keywords: ['catering', 'food', 'menu', 'pagkain'],
+          question: "Nag-ooffer ba kayo ng catering services?",
+          answer: "Oo! Ang aming Premium at Ultimate packages ay kasama na ang full catering options na may espesyal na menu, ngunit pinapayagan din namin ang external caterers na may kaakibat na accredited supplier fee."
+        },
+        {
+          keywords: ['supplier', 'vendor', 'corkage', 'magdala', 'photographer', 'coordinator', 'decorator'],
+          question: "Pwede ba kaming magdala ng sarili naming suppliers?",
+          answer: "Oo naman! Maaari ninyong dalhin ang inyong paboritong photographers, decorators, at coordinators. May maliit na corkage fee lamang kaming kinukuha para sa mga non-accredited food and beverage suppliers. Bahagi ito ng aming Open Vendor policy."
+        },
+        {
+          keywords: ['parking', 'park', 'sasakyan', 'vehicles'],
+          question: "Mayroon bang parking area?",
+          answer: "Oo, mayroon kaming maluwag at ligtas na parking area na kayang mag-accommodate ng hanggang 100 sasakyan para sa inyo at sa inyong mga bisita."
+        },
+        {
+          keywords: ['air', 'condition', 'aircon', 'mainit', 'malamig'],
+          question: "Fully air-conditioned ba ang venue?",
+          answer: "Oo! Lahat ng aming indoor spaces ay fully air-conditioned upang matiyak ang komportableng karanasan para sa inyo at sa inyong mga bisita."
+        },
+        {
+          keywords: ['generator', 'power', 'outage', 'kuryente', 'blackout', 'brownout'],
+          question: "Mayroon ba kayong generator sakaling mawalan ng kuryente?",
+          answer: "Oo, mayroon kaming 100% standby backup generator upang masiguradong tuloy-tuloy at walang aberya ang inyong event kahit mawalan ng kuryente."
+        },
+        {
+          keywords: ['room', 'celebrant', 'bride', 'dressing', 'makeup', 'kwarto'],
+          question: "Mayroon bang kwarto para sa celebrant o bride?",
+          answer: "Oo, nagbibigay kami ng elegante at fully-furnished suite para sa celebrant o bride upang makapaghanda, makapagpahinga, at makakuha ng pre-event photos."
+        },
+        {
+          keywords: ['christian', 'christening', 'ceremony', 'mass', 'wedding ceremony', 'binyag'],
+          question: "Pwede ba kaming magkaroon ng Christian ceremony o binyag on-site?",
+          answer: "Oo, ang aming versatile spaces ay maaaring ayusin para sa mga on-site ceremonies, kabilang ang Christian weddings at mga binyag."
+        },
+        {
+          keywords: ['location', 'saan', 'located', 'address', 'lugar', 'matatagpuan'],
+          question: "Saan kayo matatagpuan?",
+          answer: "Ang Zion Events Place ay matatagpuan sa isang tahimik at eksklusibong lugar para sa inyong mga events. Maaari ninyong tingnan ang mapa sa aming Contact Us page para sa eksaktong direksyon!"
+        },
+        {
+          keywords: ['one event', 'exclusive', 'per day', 'isang event', 'kada araw'],
+          question: "Isang event lang ba ang ginaganap ninyo kada araw?",
+          answer: "Oo, binibigyang-halaga namin ang exclusivity. Karaniwang isang major event lang ang ginaganap namin kada araw upang matiyak na buong atensyon, resources, at staff namin ay nakatuon lamang sa inyong espesyal na selebrasyon."
+        },
+        {
+          keywords: ['customize', 'customizable', 'wedding package', 'change package', 'flexible', 'baguhin'],
+          question: "Maaari bang i-customize ang inyong wedding packages?",
+          answer: "Oo naman! Naiintindihan namin na bawat magkapareha ay natatangi. Lahat ng aming wedding packages ay maaaring i-customize para perpektong tumugma sa inyong vision, preferences, at bilang ng guests."
+        },
+        {
+          keywords: ['ocular', 'visit', 'appointment', 'tour', 'walk-in', 'walk in', 'pumunta'],
+          question: "Pwede ba kaming mag-ocular visit kahit walang appointment?",
+          answer: "Upang masiguradong mabibigyan namin kayo ng dedicated tour sa aming venue at masagot nang mabuti ang inyong mga katanungan, mahigpit naming inirerekomenda na mag-schedule ng appointment bago ang inyong ocular visit."
+        }
+      ]
+    }
+  };
+
+  const t = localizedData[lang];
+
+  const [messages, setMessages] = useState<Message[]>([
+    { id: '1', sender: 'zeni', text: localizedData['en'].greeting }
+  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
@@ -113,6 +204,17 @@ export default function SmartGuide() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, isOpen, showSuggestions]);
+
+  // Update greeting if language changes
+  useEffect(() => {
+    setMessages(prev => {
+      const newMsgs = [...prev];
+      if (newMsgs.length > 0 && newMsgs[0].id === '1') {
+        newMsgs[0].text = localizedData[lang].greeting;
+      }
+      return newMsgs;
+    });
+  }, [lang]);
 
   // Logic to show suggestions only if the user has no follow-up questions
   useEffect(() => {
@@ -159,26 +261,29 @@ export default function SmartGuide() {
 
     // Simulate AI thinking and searching
     setTimeout(() => {
-      const response = generateAIResponse(text);
+      const response = generateAIResponse(text, lang);
       const zeniMsg: Message = { id: (Date.now() + 1).toString(), sender: 'zeni', text: response };
       setMessages(prev => [...prev, zeniMsg]);
       setIsTyping(false);
     }, 1000 + Math.random() * 800); // Faster, snappier response
   };
 
-  const generateAIResponse = (query: string): string => {
+  const generateAIResponse = (query: string, currentLang: 'en' | 'tl'): string => {
     const lowerQuery = query.toLowerCase();
+    const activeData = localizedData[currentLang];
 
     // Check for greetings
-    if (lowerQuery.match(/^(hi|hello|hey|greetings)/)) {
-      return "Hi there! Feel free to ask me anything about Zion Events Place—from our packages and guest capacity to booking procedures! 😊";
+    if (lowerQuery.match(/^(hi|hello|hey|greetings|kumusta)/)) {
+      return currentLang === 'en' 
+        ? "Hi there! Feel free to ask me anything about Zion Events Place—from our packages and guest capacity to booking procedures! 😊"
+        : "Hello! Maaari kayong magtanong sa akin tungkol sa Zion Events Place—mula sa aming packages hanggang sa pag-book! 😊";
     }
 
     // Keyword matching logic
     let bestMatch = null;
     let maxMatches = 0;
 
-    for (const item of knowledgeBase) {
+    for (const item of activeData.knowledgeBase) {
       let matches = 0;
       for (const keyword of item.keywords) {
         if (lowerQuery.includes(keyword)) {
@@ -192,7 +297,7 @@ export default function SmartGuide() {
     }
 
     // Direct question matching
-    const directMatch = knowledgeBase.find(item => item.question.toLowerCase() === lowerQuery);
+    const directMatch = activeData.knowledgeBase.find(item => item.question.toLowerCase() === lowerQuery);
     if (directMatch) {
       return directMatch.answer;
     }
@@ -201,7 +306,7 @@ export default function SmartGuide() {
       return bestMatch.answer;
     }
 
-    return "I couldn't find an exact answer to that. However, you can always reach out to our team at inquire@zionevents.com or use the 'Contact Us' page for more specific inquiries! 💌";
+    return activeData.fallback;
   };
 
   const onEmojiClick = (emoji: string) => {
@@ -224,23 +329,46 @@ export default function SmartGuide() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4A017] rounded-full blur-[50px] opacity-20 pointer-events-none"></div>
 
           <div className="flex items-center gap-3 relative z-10">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden border-[1.5px] border-white/20 bg-gradient-to-br from-[#ECDD77] to-[#D4A017] flex items-center justify-center shadow-[0_0_15px_rgba(212,160,23,0.5)]">
-              <img src="/zion-logo.png" alt="Zion Logo" className="w-6 h-6 object-contain brightness-0 opacity-90" />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#4ADE80] border-2 border-[#2c3328] rounded-full animate-pulse"></span>
+            <div className="relative w-11 h-11 rounded-full border-2 border-[#EADFA7] bg-[#FFF6D4] flex items-center justify-center shadow-md">
+              <img src="/zion-logo.png" alt="Zion Logo" className="w-6 h-6 object-contain brightness-0 opacity-85" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#00E676] border-2 border-white rounded-full animate-pulse"></span>
             </div>
             <div className="flex flex-col">
               <h3 className="font-serif font-bold text-lg tracking-wider leading-none mb-0.5 text-white">Zeni</h3>
               <p className="font-sans text-[11px] uppercase tracking-[0.15em] text-[#ECDD77] font-bold">Smart Assistant</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all hover:rotate-90 relative z-10"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          
+          <div className="flex items-center gap-2 relative z-10">
+            {/* Language Toggle */}
+            <div className="flex bg-white/10 rounded-full p-0.5 shadow-inner">
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full transition-colors ${
+                  lang === 'en' ? 'bg-[#D4A017] text-[#1a1f18]' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLang('tl')}
+                className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full transition-colors ${
+                  lang === 'tl' ? 'bg-[#D4A017] text-[#1a1f18]' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                TL
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all hover:rotate-90"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Chat History */}
@@ -253,8 +381,8 @@ export default function SmartGuide() {
             >
               <div className="flex items-start">
                 {msg.sender === 'zeni' && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#ECDD77] to-[#D4A017] flex-shrink-0 flex items-center justify-center mr-2 shadow-sm mt-1">
-                    <img src="/zion-logo.png" alt="Zeni" className="w-3.5 h-3.5 object-contain filter invert brightness-0" />
+                  <div className="w-7 h-7 rounded-full border border-[#EADFA7] bg-[#FFF6D4] flex-shrink-0 flex items-center justify-center mr-2 shadow-sm mt-1">
+                    <img src="/zion-logo.png" alt="Zeni" className="w-4 h-4 object-contain brightness-0 opacity-85" />
                   </div>
                 )}
                 <div className={`max-w-[85%] p-4 text-[15px] leading-relaxed shadow-sm relative text-left ${
@@ -264,18 +392,26 @@ export default function SmartGuide() {
                 }`}>
                   {msg.text}
                 </div>
+                {/* User Avatar */}
+                {msg.sender === 'user' && (
+                  <div className="w-7 h-7 rounded-full border border-[#D4A017]/30 bg-white flex-shrink-0 flex items-center justify-center ml-2 shadow-sm mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#D4A017]">
+                      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
 
               {/* Suggested Chips (Only show if last message is from Zeni and not typing) */}
               {messages.length === 1 && !isTyping && (
                 <div className="flex flex-col gap-3 mt-1 animate-[fadeInUp_0.5s_ease-out_0.2s]" style={{ animationFillMode: 'both' }}>
-                <p className="text-[14px] text-neutral-500 font-sans text-center mb-1 leading-relaxed">Here are some frequently asked<br/>questions to help get you started.</p>
-                <div className="flex flex-wrap gap-2 justify-center px-1">
-                  {suggestedQuestions.map((q, idx) => (
+                <p className="text-[14px] text-neutral-500 font-sans text-left mb-1 leading-relaxed pl-1">{t.suggestedLabel}</p>
+                <div className="flex flex-col gap-2 items-start px-1">
+                  {t.suggestedQuestions.map((q, idx) => (
                     <button 
                       key={idx}
                       onClick={() => handleSend(q)}
-                      className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#ECDD77]/20 hover:to-transparent text-[#2c3328] border border-[#D4A017]/30 hover:border-[#D4A017] px-4 py-2 rounded-full text-left transition-all duration-300 font-sans font-medium shadow-sm hover:shadow-[0_4px_12px_rgba(212,160,23,0.15)] hover:-translate-y-0.5 group"
+                      className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#ECDD77]/20 hover:to-transparent text-[#2c3328] border border-[#D4A017]/30 hover:border-[#D4A017] px-4 py-2 rounded-[20px] text-left transition-all duration-300 font-sans font-medium shadow-sm hover:shadow-[0_4px_12px_rgba(212,160,23,0.15)] hover:-translate-y-0.5 group"
                     >
                       {q}
                     </button>
@@ -288,14 +424,14 @@ export default function SmartGuide() {
               {showSuggestions && index === messages.length - 1 && (
                 <div className="flex flex-col gap-2.5 ml-8 mt-2 animate-[fadeInUp_0.4s_ease-out]" style={{ animationFillMode: 'both' }}>
                   <p className="text-[10px] text-[#2c3328]/70 font-sans uppercase tracking-[0.2em] font-bold ml-1 flex items-center gap-1.5">
-                    <span className="w-2 h-px bg-[#D4A017]"></span> Suggested for you
+                    <span className="w-2 h-px bg-[#D4A017]"></span> {t.suggestedForYou}
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedQuestions.map((q, idx) => (
+                  <div className="flex flex-col gap-2 items-start">
+                    {t.suggestedQuestions.map((q, idx) => (
                       <button 
                         key={idx}
                         onClick={() => handleSend(q)}
-                        className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#ECDD77]/20 hover:to-transparent text-[#2c3328] border border-[#D4A017]/30 hover:border-[#D4A017] px-4 py-2 rounded-full text-left transition-all duration-300 font-sans font-medium shadow-sm hover:shadow-[0_4px_12px_rgba(212,160,23,0.15)] hover:-translate-y-0.5 group"
+                        className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#ECDD77]/20 hover:to-transparent text-[#2c3328] border border-[#D4A017]/30 hover:border-[#D4A017] px-4 py-2 rounded-[20px] text-left transition-all duration-300 font-sans font-medium shadow-sm hover:shadow-[0_4px_12px_rgba(212,160,23,0.15)] hover:-translate-y-0.5 group"
                       >
                         {q}
                       </button>
@@ -309,8 +445,8 @@ export default function SmartGuide() {
           {/* Typing Indicator */}
           {isTyping && (
             <div className="flex justify-start items-center animate-[fadeIn_0.3s_ease-out]">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#ECDD77] to-[#D4A017] flex-shrink-0 flex items-center justify-center mr-2 shadow-sm">
-                <img src="/zion-logo.png" alt="Zeni" className="w-3.5 h-3.5 object-contain filter invert brightness-0" />
+              <div className="w-7 h-7 rounded-full border border-[#EADFA7] bg-[#FFF6D4] flex-shrink-0 flex items-center justify-center mr-2 shadow-sm">
+                <img src="/zion-logo.png" alt="Zeni" className="w-4 h-4 object-contain brightness-0 opacity-85" />
               </div>
               <div className="bg-white border border-[#ECDD77]/40 rounded-[20px] rounded-tl-sm px-4 py-3 shadow-sm flex gap-1.5 items-center h-[38px]">
                 <div className="w-1.5 h-1.5 bg-[#D4A017] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -352,8 +488,11 @@ export default function SmartGuide() {
               onClick={() => setShowEmojis(!showEmojis)}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${showEmojis ? 'text-[#2c3328] bg-[#ECDD77]/40 rotate-12' : 'text-neutral-400 hover:text-[#2c3328] hover:bg-black/5'}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm3.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75z" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                <line x1="9" x2="9.01" y1="9" y2="9"/>
+                <line x1="15" x2="15.01" y1="9" y2="9"/>
               </svg>
             </button>
 
@@ -364,17 +503,24 @@ export default function SmartGuide() {
               onFocus={() => setShowEmojis(false)}
               onClick={() => setShowEmojis(false)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
-              placeholder="Ask Zeni something..."
+              placeholder={t.placeholder}
               className="flex-1 bg-transparent border-none px-2 py-2 text-[15px] focus:outline-none text-[#2c3328] placeholder-[#2c3328]/50 font-sans font-medium"
             />
 
             <button
               onClick={() => handleSend(input)}
               disabled={!input.trim() || isTyping}
-              className="w-10 h-10 rounded-full bg-gradient-to-r from-[#ECDD77] to-[#D4A017] flex items-center justify-center text-[#2c3328] hover:shadow-[0_0_15px_rgba(212,160,23,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 group"
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-[#ECDD77] to-[#D4A017] flex items-center justify-center text-[#2c3328] hover:shadow-[0_0_20px_rgba(212,160,23,0.6)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 group relative overflow-hidden"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">
-                <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+              {/* Animated glow effect on hover */}
+              <div className="absolute inset-0 bg-white/40 rounded-full scale-0 opacity-0 group-hover:animate-[ping_1.5s_ease-out_infinite]"></div>
+              
+              {/* Solid highlight on hover */}
+              <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] relative z-10 group-hover:scale-110 group-active:scale-95 transition-all duration-300 pr-[1px] pb-[1px]">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
               </svg>
             </button>
           </div>
@@ -388,18 +534,18 @@ export default function SmartGuide() {
           e.stopPropagation(); // Prevent immediate close trigger
           setIsOpen(true);
         }}
-        className={`fixed bottom-6 right-6 z-[190] w-14 h-14 rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-110 bg-gradient-to-br from-[#2c3328] to-[#1a1f18] hover:shadow-[0_15px_35px_rgba(44,51,40,0.5)] border border-[#D4A017]/30 ${
+        className={`fixed bottom-6 right-6 z-[190] w-16 h-16 rounded-full flex items-center justify-center shadow-[0_8px_25px_rgba(0,0,0,0.15)] transition-all duration-500 hover:scale-105 bg-[#FFF6D4] hover:shadow-[0_12px_30px_rgba(0,0,0,0.2)] border-2 border-[#EADFA7] ${
           isOpen ? 'opacity-0 scale-50 pointer-events-none translate-y-10' : 'opacity-100 scale-100 pointer-events-auto hover:-translate-y-1'
         }`}
       >
-        <div className="relative">
-          <img src="/zion-logo.png" alt="Zion" className="w-7 h-7 object-contain brightness-0 invert opacity-90" />
+        <div className="relative w-full h-full flex items-center justify-center">
+          <img src="/zion-logo.png" alt="Zion" className="w-9 h-9 object-contain brightness-0 opacity-85" />
         </div>
         
         {/* Unread indicator dot */}
-        <span className="absolute -top-1 -right-1 flex h-4 w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4A017] opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-[#D4A017] border-2 border-[#2c3328]"></span>
+        <span className="absolute bottom-0.5 right-0.5 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00E676] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-[#00E676] border-2 border-white"></span>
         </span>
       </button>
     </>

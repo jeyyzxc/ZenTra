@@ -3,7 +3,8 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 bg-gradient-to-br from-[#DCD48E]/60 via-[#FBF4C4] to-white w-full pt-8 pb-4 border-t-2 border-black mt-auto">
+    <footer className="relative z-10 bg-[#F5F1C6] w-full mt-auto">
+      <div className="bg-gradient-to-br from-[#DCD48E]/60 via-[#FBF4C4] to-white w-full pt-8 pb-4 border-t-2 border-black">
       <div className="w-full mx-auto px-4 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-2">
 
@@ -65,17 +66,17 @@ export default function Footer() {
             </div>
             <div className="flex gap-4 mt-1">
               {/* Facebook */}
-              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+              <Link href="https://www.facebook.com/ZionEventsPlace" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
                 <img src="/communication.png" alt="Facebook" className="w-9 h-9 object-contain transition-transform" />
               </Link>
 
               {/* Instagram */}
-              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+              <Link href="https://www.instagram.com/zioneventsplace?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
                 <img src="/instagram.png" alt="Instagram" className="w-9 h-9 object-contain transition-transform" />
               </Link>
 
               {/* TikTok */}
-              <Link href="#" className="hover:-translate-y-1 transform duration-300">
+              <Link href="https://www.tiktok.com/@zioneventsvenue?_r=1&_t=ZS-97KTDZ4I1Ka" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
                 <img src="/tik-tok.png" alt="TikTok" className="w-9 h-9 object-contain transition-transform" />
               </Link>
             </div>
@@ -90,6 +91,7 @@ export default function Footer() {
           <Link href="/privacy" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Privacy Policy</Link>
           <Link href="/terms" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Terms of Service</Link>
         </div>
+      </div>
       </div>
     </footer>
   );

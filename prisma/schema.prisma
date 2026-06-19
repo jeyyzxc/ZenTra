@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  CLIENT
+}
+
+enum EventStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  COMPLETED
+}
+
+enum InquiryStatus {
+  UNREAD
+  READ
+  REPLIED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id         String      @id @default(cuid())
+  title      String
+  clientName String
+  date       DateTime
+  startTime  String?
+  endTime    String?
+  status     EventStatus @default(PENDING)
+  eventType  String
+  venue      String
+  pax        Int
+  notes      String?     @db.Text
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model TaskList {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String?
+  order     Int      @default(0)
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  title         String
+  details       String?   @db.Text
+  startDate     DateTime?
+  dueDate       DateTime?
+  dueTime       String?
+  completed     Boolean   @default(false)
+  hasAttachment Boolean   @default(false)
+  listId        String?
+  list          TaskList? @relation(fields: [listId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Inquiry {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String        @db.Text
+  status    InquiryStatus @default(UNREAD)
+  createdAt DateTime      @default(now())
+}

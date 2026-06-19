@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -10,37 +10,66 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const THEME_STORAGE_KEY = 'zion-theme';
+const themeSubscribers = new Set<() => void>();
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
 
-  useEffect(() => {
-    setMounted(true);
-    // Check local storage for saved theme
-    const savedTheme = localStorage.getItem('zion-theme') as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    }
-  }, []);
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+}
 
-  const toggleTheme = (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('zion-theme', newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+function getServerTheme(): Theme {
+  return 'light';
+}
+
+function subscribeToTheme(callback: () => void) {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  themeSubscribers.add(callback);
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === THEME_STORAGE_KEY) {
+      callback();
     }
   };
 
-  // Prevent hydration mismatch by not rendering anything theme-specific until mounted
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    themeSubscribers.delete(callback);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
+
+function notifyThemeSubscribers() {
+  themeSubscribers.forEach((callback) => callback());
+}
+
+function applyDocumentTheme(theme: Theme) {
+  if (typeof document === 'undefined') {
+    return;
   }
+
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(subscribeToTheme, getStoredTheme, getServerTheme);
+
+  useEffect(() => {
+    applyDocumentTheme(theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback((newTheme: Theme) => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    applyDocumentTheme(newTheme);
+    notifyThemeSubscribers();
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

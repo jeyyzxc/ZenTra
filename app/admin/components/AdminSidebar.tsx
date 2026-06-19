@@ -16,6 +16,7 @@ const menuItems = [
   { name: 'Reports & Analytics', path: '/admin/reports', imageIcon: '/reports.png' },
   { name: 'Audit Logs', path: '/admin/audit', imageIcon: '/audit.png' },
   { name: 'Inquiries', path: '/admin/inquiries', imageIcon: '/inquiries.png' },
+  { name: 'Team', path: '/admin/team', flaticonClass: 'fi fi-rr-users' },
 ];
 
 export default function AdminSidebar({ 
