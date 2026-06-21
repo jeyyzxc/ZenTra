@@ -1,11 +1,13 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { requireSuperAdmin } from '@/lib/authorization';
 import { revalidatePath } from 'next/cache';
 
 // --- TASK LISTS ---
 
 export async function getTaskLists() {
+  await requireSuperAdmin();
   return await prisma.taskList.findMany({
     orderBy: { order: 'asc' },
     include: {
@@ -17,10 +19,17 @@ export async function getTaskLists() {
 }
 
 export async function createTaskList(name: string) {
+  await requireSuperAdmin();
+  const normalizedName = name.trim();
+
+  if (!normalizedName) {
+    throw new Error('Task list name is required.');
+  }
+
   const count = await prisma.taskList.count();
   const list = await prisma.taskList.create({
     data: {
-      name,
+      name: normalizedName,
       order: count,
     }
   });
@@ -31,6 +40,7 @@ export async function createTaskList(name: string) {
 // --- TASKS ---
 
 export async function getTasks(listId?: string) {
+  await requireSuperAdmin();
   return await prisma.task.findMany({
     where: listId ? { listId } : undefined,
     orderBy: { createdAt: 'desc' },
@@ -46,14 +56,24 @@ export async function createTask(data: {
   hasAttachment?: boolean;
   listId?: string;
 }) {
+  await requireSuperAdmin();
+
+  if (!data.title.trim()) {
+    throw new Error('Task title is required.');
+  }
+
   const task = await prisma.task.create({
-    data
+    data: {
+      ...data,
+      title: data.title.trim(),
+    }
   });
   revalidatePath('/admin/calendar');
   return task;
 }
 
 export async function toggleTask(id: string, completed: boolean) {
+  await requireSuperAdmin();
   const task = await prisma.task.update({
     where: { id },
     data: { completed }
@@ -63,6 +83,7 @@ export async function toggleTask(id: string, completed: boolean) {
 }
 
 export async function deleteTask(id: string) {
+  await requireSuperAdmin();
   await prisma.task.delete({
     where: { id }
   });
@@ -70,6 +91,7 @@ export async function deleteTask(id: string) {
 }
 
 export async function deleteCompletedTasks() {
+  await requireSuperAdmin();
   await prisma.task.deleteMany({
     where: { completed: true }
   });

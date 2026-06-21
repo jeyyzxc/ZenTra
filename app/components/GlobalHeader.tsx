@@ -31,8 +31,8 @@ export default function GlobalHeader() {
 
   // Logo scales down from 1.0 to 0.35
   const logoScale = 1 - (progress * 0.65);
-  // Logo translates from 0 up to (-50vh + 84px) to sit lower than the navbar items
-  const transformY = `calc(${progress} * (-50vh + 84px))`;
+  // Logo translates up to the navbar area (approx 42vh up from center)
+  const logoTranslateY = -(progress * 42); // in vh units
 
   return (
     <div className="fixed inset-0 h-screen pointer-events-none z-[100]">
@@ -45,7 +45,7 @@ export default function GlobalHeader() {
       <div
         className="absolute inset-0 flex items-center justify-center transition-transform duration-75 pointer-events-none"
         style={{
-          transform: `translateY(${transformY}) scale(${logoScale})`,
+          transform: `translateY(${logoTranslateY}vh) scale(${logoScale})`,
         }}
       >
         <Link 

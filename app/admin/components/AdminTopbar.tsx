@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import type { Role } from '@prisma/client';
 
 // Mock data for initial notifications
 const INITIAL_NOTIFICATIONS = [
@@ -11,9 +13,29 @@ const INITIAL_NOTIFICATIONS = [
   { id: 4, type: 'system', title: 'System Update', message: 'Zion server maintenance scheduled for tonight.', time: '1d ago', isRead: true },
 ];
 
-export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
+const SEARCH_PLACEHOLDERS = [
+  'Looking for something?',
+  'Search for bookings...',
+  'Find a specific client...',
+  'Search through contracts...',
+  'Search payments...',
+];
+
+export default function AdminTopbar({
+  isCollapsed,
+  currentUser,
+}: {
+  isCollapsed: boolean;
+  currentUser: {
+    username: string;
+    email: string;
+    role: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
+  };
+}) {
   const pathname = usePathname();
   const router = useRouter();
+  const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Superadmin' : 'Administrator';
+  const userInitial = currentUser.username.charAt(0).toUpperCase();
   
   // Notification State
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -36,18 +58,11 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Dynamic Search Placeholders
-  const PLACEHOLDERS = [
-    "Looking for something?",
-    "Search for bookings...",
-    "Find a specific client...",
-    "Search through contracts...",
-    "Search payments..."
-  ];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -107,6 +122,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
     if (pathname.includes('/reports')) return 'Reports & Analytics';
     if (pathname.includes('/audit')) return 'Audit & Email Logs';
     if (pathname.includes('/inquiries')) return 'Inquiries';
+    if (pathname.includes('/team')) return 'Team Management';
     if (pathname.includes('/profile')) return 'Profile';
     if (pathname.includes('/settings')) return 'Settings';
     return 'Admin';
@@ -166,7 +182,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                     }
                   }
                 }}
-                placeholder={hoveredSearch ? "" : PLACEHOLDERS[placeholderIndex]} 
+                placeholder={hoveredSearch ? "" : SEARCH_PLACEHOLDERS[placeholderIndex]}
                 className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] placeholder-gray-400 dark:placeholder-[#A3B19B] focus:outline-none transition-all duration-300 ease-in-out relative z-10"
               />
             </div>
@@ -207,7 +223,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                       <i className="fi fi-rr-search text-xs leading-[0]"></i>
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0] group-hover:text-[#D6B53B] transition-colors">Search for "{searchQuery}"</p>
+                      <p className="text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0] group-hover:text-[#D6B53B] transition-colors">Search for &ldquo;{searchQuery}&rdquo;</p>
                       <p className="text-[11px] text-gray-500 dark:text-[#A3B19B] font-medium">Press Enter to see all results</p>
                     </div>
                   </button>
@@ -216,7 +232,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                       <i className="fi fi-rr-users text-xs leading-[0]"></i>
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0]">"{searchQuery}" in Clients</p>
+                      <p className="text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0]">&ldquo;{searchQuery}&rdquo; in Clients</p>
                       <p className="text-[11px] text-gray-500 dark:text-[#A3B19B] font-medium">Search client directory</p>
                     </div>
                   </button>
@@ -336,7 +352,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
                   <div className="py-10 flex flex-col items-center justify-center text-center">
                     <i className="fi fi-rr-bell-slash text-3xl text-gray-200 dark:text-white/10 mb-3 leading-[0]"></i>
                     <p className="text-[13px] font-medium tracking-wide text-gray-500 dark:text-[#A3B19B]">No notifications yet.</p>
-                    <p className="text-[11px] text-gray-400 dark:text-[#A3B19B]/70 mt-1 tracking-wide">You're all caught up!</p>
+                    <p className="text-[11px] text-gray-400 dark:text-[#A3B19B]/70 mt-1 tracking-wide">You&apos;re all caught up!</p>
                   </div>
                 )}
               </div>
@@ -356,9 +372,8 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 cursor-pointer group focus:outline-none"
           >
-            <div className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all duration-300 shadow-sm ${isProfileOpen ? 'border-[#D6B53B]' : 'border-transparent group-hover:border-[#D6B53B]'}`}>
-              {/* Using a placeholder avatar image based on the mockup */}
-              <img src="https://ui-avatars.com/api/?name=Jeyy+Admin&background=random" alt="Admin" className="w-full h-full object-cover" />
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[#D6B53B] font-bold text-[#1a1f18] shadow-sm transition-all duration-300 ${isProfileOpen ? 'border-[#8E7722]' : 'border-transparent group-hover:border-[#8E7722]'}`}>
+              {userInitial}
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-all duration-300 ${isProfileOpen ? 'text-[#D6B53B]' : 'text-gray-500 dark:text-[#A3B19B] group-hover:text-[#D6B53B]'}`}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -371,12 +386,13 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
               
               {/* User Header */}
               <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-50 dark:border-white/5 bg-gradient-to-br from-white dark:from-[#141A13] to-gray-50/50 dark:to-white/5">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#D6B53B]/20 flex-shrink-0 bg-white dark:bg-[#0C100B]">
-                  <img src="https://ui-avatars.com/api/?name=Jeyy+Admin&background=random" alt="Admin" className="w-full h-full object-cover" />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#D6B53B]/20 bg-[#D6B53B] font-bold text-[#1a1f18]">
+                  {userInitial}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate">Jeyy Admin</h3>
-                  <span className="text-[10px] font-semibold text-[#D6B53B] uppercase tracking-[0.1em]">Administrator</span>
+                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate">{currentUser.username}</h3>
+                  <span className="text-[10px] font-semibold text-[#D6B53B] uppercase tracking-[0.1em]">{roleLabel}</span>
+                  <span className="max-w-[150px] truncate text-[10px] text-gray-400">{currentUser.email}</span>
                 </div>
               </div>
               
@@ -425,7 +441,7 @@ export default function AdminTopbar({ isCollapsed }: { isCollapsed: boolean }) {
               {/* Logout Footer */}
               <div className="p-2 border-t border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-[#1A2218]/50">
                 <button 
-                  onClick={() => handleNavigation('/admin')}
+                  onClick={() => signOut({ callbackUrl: '/admin' })}
                   className="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors flex items-center gap-3.5 group"
                 >
                   <i className="fi fi-rr-sign-out-alt text-[15px] text-red-400 group-hover:text-red-500 transition-colors"></i>

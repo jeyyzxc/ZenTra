@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { signOut } from 'next-auth/react';
+import type { Role } from '@prisma/client';
 
 const menuItems = [
   { name: 'Dashboard', path: '/admin/dashboard', imageIcon: '/dashboard.png' },
@@ -16,17 +18,22 @@ const menuItems = [
   { name: 'Reports & Analytics', path: '/admin/reports', imageIcon: '/reports.png' },
   { name: 'Audit Logs', path: '/admin/audit', imageIcon: '/audit.png' },
   { name: 'Inquiries', path: '/admin/inquiries', imageIcon: '/inquiries.png' },
-  { name: 'Team', path: '/admin/team', flaticonClass: 'fi fi-rr-users' },
+  { name: 'Team', path: '/admin/team', flaticonClass: 'fi fi-rr-users', superadminOnly: true },
 ];
 
 export default function AdminSidebar({ 
   isCollapsed, 
-  onToggle 
+  onToggle,
+  currentUserRole,
 }: { 
   isCollapsed: boolean; 
   onToggle: () => void;
+  currentUserRole: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
 }) {
   const pathname = usePathname();
+  const visibleMenuItems = menuItems.filter(
+    (item) => !item.superadminOnly || currentUserRole === 'SUPERADMIN',
+  );
 
   return (
     <div 
@@ -102,7 +109,7 @@ export default function AdminSidebar({
 
       {/* Navigation Links - Scrollbar Hidden */}
       <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-2 px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = pathname === item.path;
           return (
             <Link key={item.path} href={item.path}>
@@ -150,19 +157,18 @@ export default function AdminSidebar({
 
       {/* Logout */}
       <div className="p-4 border-t border-[#D6B53B]/10 dark:border-white/5 transition-colors duration-500">
-        <Link href="/admin">
-          <button 
-            className={`flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 text-gray-600 dark:text-[#A3B19B] rounded-xl transition-all duration-200 shadow-sm active:scale-95 border border-gray-200 dark:border-white/10 hover:border-red-200 dark:hover:border-red-500/30 ${
-              isCollapsed ? 'w-full py-3 px-0' : 'w-full py-3 px-4'
-            }`}
-            title={isCollapsed ? 'Logout' : undefined}
-          >
-            <i className={`fi fi-rr-power text-xl flex items-center justify-center flex-shrink-0 ${isCollapsed ? 'mr-0' : 'mr-2'}`}></i>
-            <span className={`font-sans font-semibold text-sm tracking-wide whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
-              Logout
-            </span>
-          </button>
-        </Link>
+        <button
+          onClick={() => signOut({ callbackUrl: '/admin' })}
+          className={`flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 text-gray-600 dark:text-[#A3B19B] rounded-xl transition-all duration-200 shadow-sm active:scale-95 border border-gray-200 dark:border-white/10 hover:border-red-200 dark:hover:border-red-500/30 ${
+            isCollapsed ? 'w-full py-3 px-0' : 'w-full py-3 px-4'
+          }`}
+          title={isCollapsed ? 'Logout' : undefined}
+        >
+          <i className={`fi fi-rr-power text-xl flex items-center justify-center flex-shrink-0 ${isCollapsed ? 'mr-0' : 'mr-2'}`}></i>
+          <span className={`font-sans font-semibold text-sm tracking-wide whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
+            Logout
+          </span>
+        </button>
       </div>
 
     </div>
