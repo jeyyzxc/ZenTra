@@ -1,15 +1,17 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { Role } from '@prisma/client';
+import { AuditAction, AuditStatus, Role } from '@prisma/client';
+import { createAuditLog, getRequestContextFromHeaders } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
+import { requireServerEnv } from '@/lib/env';
 
 const ADMIN_ROLES = [Role.SUPERADMIN, Role.ADMIN] as const;
 const DEFAULT_SESSION_AGE = 8 * 60 * 60;
 const REMEMBERED_SESSION_AGE = 30 * 24 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: requireServerEnv('NEXTAUTH_SECRET'),
   session: {
     strategy: 'jwt',
     maxAge: REMEMBERED_SESSION_AGE,
@@ -25,11 +27,33 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
         rememberMe: { label: 'Remember me', type: 'checkbox' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = credentials?.email?.trim().toLowerCase();
         const password = credentials?.password;
+        const requestContext = getRequestContextFromHeaders(request?.headers);
+
+        const logFailedLogin = async (
+          description: string,
+          metadata: Record<string, unknown>,
+        ) => {
+          await createAuditLog({
+            userId: null,
+            userName: email || 'Unknown login attempt',
+            userRole: 'SYSTEM',
+            action: AuditAction.LOGIN_FAILED,
+            module: 'Authentication',
+            description,
+            status: AuditStatus.FAILED,
+            ...requestContext,
+            metadata,
+          });
+        };
 
         if (!email || !password) {
+          await logFailedLogin('Admin login failed because credentials were incomplete.', {
+            reason: 'missing_credentials',
+            email,
+          });
           return null;
         }
 
@@ -39,13 +63,46 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (
-          !user ||
-          !ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number]) ||
-          !(await bcrypt.compare(password, user.password))
-        ) {
+        if (!user) {
+          await logFailedLogin('Admin login failed because the account was not found.', {
+            reason: 'account_not_found',
+            email,
+          });
           return null;
         }
+
+        if (!ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number])) {
+          await logFailedLogin('Admin login failed because the account has no admin access.', {
+            reason: 'role_not_allowed',
+            email,
+            role: user.role,
+            userId: user.id,
+          });
+          return null;
+        }
+
+        if (!(await bcrypt.compare(password, user.password))) {
+          await logFailedLogin('Admin login failed because the password was incorrect.', {
+            reason: 'invalid_password',
+            email,
+            userId: user.id,
+          });
+          return null;
+        }
+
+        await createAuditLog({
+          userId: user.id,
+          userName: user.username,
+          userRole: user.role,
+          action: AuditAction.LOGIN,
+          module: 'Authentication',
+          description: `${user.username} signed in to the admin panel.`,
+          status: AuditStatus.SUCCESS,
+          ...requestContext,
+          metadata: {
+            rememberMe: credentials.rememberMe === 'true',
+          },
+        });
 
         return {
           id: user.id,
@@ -125,7 +182,27 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  events: {
+    async signOut(message) {
+      const token = 'token' in message ? message.token : null;
+
+      if (!token?.sub) {
+        return;
+      }
+
+      await createAuditLog({
+        userId: token.sub,
+        userName: typeof token.username === 'string' ? token.username : 'Unknown admin',
+        userRole: typeof token.role === 'string' ? token.role : 'ADMIN',
+        action: AuditAction.LOGOUT,
+        module: 'Authentication',
+        description: `${typeof token.username === 'string' ? token.username : 'An administrator'} signed out of the admin panel.`,
+        status: AuditStatus.SUCCESS,
+      });
+    },
+  },
   pages: {
     signIn: '/admin',
+    error: '/admin',
   },
 };

@@ -17,6 +17,7 @@ const username = (process.env.SUPERADMIN_USERNAME || 'superadmin').trim().toLowe
 const email = (process.env.SUPERADMIN_EMAIL || 'superadmin@zentra.local').trim().toLowerCase();
 const generatedPassword = `${randomBytes(15).toString('base64url')}!9Aa`;
 const password = process.env.SUPERADMIN_PASSWORD || generatedPassword;
+const fullName = process.env.SUPERADMIN_FULL_NAME || 'Zentra Superadmin';
 
 try {
   const existingSuperadmin = await prisma.user.findFirst({
@@ -34,7 +35,7 @@ try {
         username,
         email,
         password: passwordHash,
-        fullName: process.env.SUPERADMIN_FULL_NAME || 'Zentra Superadmin',
+        fullName,
         role: Role.SUPERADMIN,
       },
     });
@@ -45,6 +46,8 @@ try {
     console.log(`Temporary password: ${password}`);
     console.log('Change this password from Team Management after the first login.');
   }
+
+  console.log('Seed complete. No bookings, payments, contracts, logs, services, packages, FAQs, or other business records were created.');
 } finally {
   await prisma.$disconnect();
 }

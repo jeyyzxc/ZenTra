@@ -1,6 +1,6 @@
 import React from 'react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameMonth, isSameDay, isToday } from 'date-fns';
-import { CalendarEvent, getStatusColor } from './MockData';
+import { CalendarEvent } from './types';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -17,7 +17,6 @@ export function MonthView({ currentDate, events, onEventClick, onDateClick, onPr
   const startDate = startOfWeek(monthStart);
   const endDate = endOfWeek(monthEnd);
 
-  const dateFormat = 'd';
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
   const lastWheelTime = React.useRef(0);
@@ -84,6 +83,10 @@ export function MonthView({ currentDate, events, onEventClick, onDateClick, onPr
                     ? 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-800/50' 
                     : event.status === 'Pending'
                       ? 'bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-200/50 dark:border-amber-800/50'
+                      : event.status === 'Payment Due'
+                        ? 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50'
+                        : event.status === 'Overdue'
+                          ? 'bg-red-100/80 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-200/50 dark:border-red-800/50'
                       : 'bg-gray-100/80 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border-gray-200/50 dark:border-gray-700/50';
 
                   return (

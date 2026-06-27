@@ -1,0 +1,188 @@
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <AppDevOverlayErrorBoundary globalError={[...]}>
+      <ReplaySsrOnlyErrors>
+      <DevRootHTTPAccessFallbackBoundary>
+        <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+          <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+            <RedirectBoundary>
+              <RedirectErrorBoundary router={{...}}>
+                <Head>
+                <__next_root_layout_boundary__>
+                  <SegmentViewNode type="layout" pagePath="layout.tsx">
+                    <SegmentTrieNode>
+                    <link>
+                    <script>
+                    <script>
+                    <script>
+                    <RootLayout>
+                      <html lang="en" className="antialiased">
+                        <head>
+                        <body className="min-h-scre...">
+                          <ThemeProvider>
+                            <PublicOnly>
+                            ...
+                              <div className="relative z...">
+                                <section>
+                                <section>
+                                <ReservationSection>
+                                  <section className="bg-transpa...">
+                                    <div className="max-w-7xl ...">
+                                      <div className="flex flex-...">
+                                        <EventCalendar>
+                                          <div className="bg-white/8...">
+                                            <div>
+                                            <div className="flex items...">
+                                              <button>
+                                              <div>
+                                              <button
+                                                onClick={function nextMonth}
+                                                className="w-10 h-10 flex items-center justify-center bg-white text-ne..."
+-                                               fdprocessedid="navbs8"
+                                              >
+                                            ...
+                                        ...
+                                      <div>
+                                        <h3>
+                                        <form className="flex flex-...">
+                                          <input
+                                            type="text"
+                                            placeholder="Full Name"
+                                            className="w-full bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full plac..."
+-                                           fdprocessedid="taha3v"
+                                          >
+                                          <input
+                                            type="tel"
+                                            placeholder="Phone Number"
+                                            className="w-full bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full plac..."
+-                                           fdprocessedid="u5mscg"
+                                          >
+                                          <input
+                                            type="text"
+                                            placeholder="Time"
+                                            className="w-full bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full plac..."
+-                                           fdprocessedid="kdxd8b"
+                                          >
+                                          <input
+                                            type="email"
+                                            placeholder="Email"
+                                            className="w-full bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full plac..."
+-                                           fdprocessedid="g17bj"
+                                          >
+                                          <textarea>
+                                          <button
+                                            type="submit"
+                                            className="self-start px-10 py-2.5 mt-2 bg-transparent border-[1.5px] bord..."
+-                                           fdprocessedid="c07646"
+                                          >
++                                           Submit
+                                <TestimonialSection>
+                                  <section className="bg-transpa...">
+                                    <div className="max-w-5xl ...">
+                                      <h2>
+                                      <button
+                                        className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 text-neutral-90..."
+-                                       fdprocessedid="tj3ve6"
+                                      >
+                                      <button
+                                        className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 text-neutral-..."
+-                                       fdprocessedid="4dfgop"
+                                      >
+                                      ...
+                                ...
+                            <PublicOnly>
+                              <SmartGuide>
+                                <div ref={{current:null}} className="fixed bott...">
+                                  <div className="bg-gradien...">
+                                    <div>
+                                    <div>
+                                    <div className="flex items...">
+                                      <div className="flex bg-wh...">
+                                        <button
+                                          onClick={function onClick}
+                                          className="px-2 py-1 text-[10px] font-bold uppercase rounded-full transition..."
+-                                         fdprocessedid="qbg5xf"
+                                        >
++                                         EN
+                                        <button
+                                          onClick={function onClick}
+                                          className="px-2 py-1 text-[10px] font-bold uppercase rounded-full transition..."
+-                                         fdprocessedid="imkjxh"
+                                        >
++                                         TL
+                                      <button
+                                        onClick={function onClick}
+                                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-cente..."
+-                                       fdprocessedid="cxavz"
+                                      >
+                                  ...
+                                    <div className="flex flex-..." style={{...}}>
+                                      <div>
+                                      <div className="flex flex-..." style={{...}}>
+                                        <p>
+                                        <div className="flex flex-...">
+                                          <button
+                                            onClick={function onClick}
+                                            className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#FAFAFA..."
+-                                           fdprocessedid="c3tjis"
+                                          >
++                                           Where are you located?
+                                          <button
+                                            onClick={function onClick}
+                                            className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#FAFAFA..."
+-                                           fdprocessedid="zrcng"
+                                          >
++                                           Do you hold only one event per day?
+                                          <button
+                                            onClick={function onClick}
+                                            className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#FAFAFA..."
+-                                           fdprocessedid="xbc2nx"
+                                          >
++                                           Are your wedding packages customizable?
+                                          <button
+                                            onClick={function onClick}
+                                            className="text-[12px] bg-white hover:bg-gradient-to-r hover:from-[#FAFAFA..."
+-                                           fdprocessedid="72158w"
+                                          >
++                                           Can we do an ocular visit without a prior appointment?
+                                  <div className="p-3 bg-whi...">
+                                    <div className="flex items...">
+                                      <button
+                                        onClick={function onClick}
+                                        className="w-9 h-9 rounded-full flex items-center justify-center transition-al..."
+-                                       fdprocessedid="h05kf"
+                                      >
+                                      <input
+                                        type="text"
+                                        value=""
+                                        onChange={function onChange}
+                                        onFocus={function onFocus}
+                                        onClick={function onClick}
+                                        onKeyDown={function onKeyDown}
+                                        placeholder="Ask Zeni something..."
+                                        className="flex-1 bg-transparent border-none px-2 py-2 text-[15px] focus:outli..."
+-                                       fdprocessedid="9yv2m"
+                                      >
+                                      ...
+                                <button
+                                  id="zeni-fab"
+                                  onClick={function onClick}
+                                  className="fixed bottom-6 right-6 z-[190] w-16 h-16 rounded-full flex items-center j..."
+-                                 fdprocessedid="wui96r"
+                                >
+                              ...
+                ...
+ 
+
+[exited code=1 signal=null]

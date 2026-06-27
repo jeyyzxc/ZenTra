@@ -1,4 +1,4 @@
-import PackageLayout from '../../components/PackageLayout';
+import PackageLayout from '@/components/booking/PackageLayout';
 
 export default function ChristeningsPage() {
   return (

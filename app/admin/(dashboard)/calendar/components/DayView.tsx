@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, isSameDay } from 'date-fns';
-import { CalendarEvent, getStatusColor } from './MockData';
+import { CalendarEvent, getStatusColor } from './types';
 
 interface DayViewProps {
   currentDate: Date;

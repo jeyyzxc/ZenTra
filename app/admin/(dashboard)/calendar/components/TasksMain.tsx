@@ -168,7 +168,7 @@ export function TasksMain() {
   return (
     <div className="flex-1 min-h-0 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/5 overflow-hidden flex flex-col relative z-10 p-0 sm:p-0">
       <div className="flex-1 flex justify-center py-8 sm:py-12 overflow-y-auto calendar-scroll">
-        <div className="w-full px-4 sm:px-8 max-w-4xl">
+        <div className="w-full px-4 sm:px-8">
           
           {/* Header */}
           <div className="flex items-center justify-end mb-6 border-b border-gray-100 dark:border-white/10 pb-4 relative" ref={menuRef}>

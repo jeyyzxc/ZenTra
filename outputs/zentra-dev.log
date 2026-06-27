@@ -1,0 +1,290 @@
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.50:3000
+- Environments: .env
+✓ Ready in 2.5s
+
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+ GET /admin/audit 200 in 4.2s (next.js: 1068ms, application-code: 3.1s)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 421ms (next.js: 243ms, application-code: 177ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 406ms (next.js: 10ms, application-code: 396ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 251ms (next.js: 10ms, application-code: 241ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 149ms (next.js: 9ms, application-code: 140ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 168ms (next.js: 7ms, application-code: 161ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 251ms (next.js: 7ms, application-code: 244ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+      <LoadingBoundary name="admin/" loading={null}>
+        <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/admin/audit" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} ...>
+                <SegmentViewNode type="layout" pagePath="admin/(das...">
+                  <SegmentTrieNode>
+                  <script>
+                  <script>
+                  <script>
+                  <AdminDashboardLayout>
+                    <AdminShell currentUser={{id:"cmqnkj...", ...}}>
+                      <div className="min-h-scre...">
+                        <AdminSidebar isCollapsed={false} onToggle={function onToggle} currentUserRole="ADMIN">
+                          <div className="h-screen b...">
+                            <div className="h-20 flex ...">
+                              <div>
+                              <button
+                                onClick={function onToggle}
+                                className="group cursor-pointer flex-shrink-0 transition-all duration-300 flex items-c..."
+                                aria-label="Collapse Sidebar"
+-                               fdprocessedid="xwutgh"
+                              >
+                            <div>
+                            <div className="p-4 border...">
+                              <button
+                                onClick={function onClick}
+                                className="flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-red-5..."
+                                title={undefined}
+-                               fdprocessedid="r11n1k"
+                              >
+                        <AdminTopbar isCollapsed={false} currentUser={{id:"cmqnkj...", ...}}>
+                          <div className="h-20 bg-wh...">
+                            <h1>
+                            <div className="flex items...">
+                              <div className="relative z-50" ref={{current:null}}>
+                                <div className="flex items...">
+                                  <div>
+                                  <div className="relative w...">
+                                    <input
+                                      ref={{current:null}}
+                                      type="text"
+                                      value=""
+                                      onChange={function onChange}
+                                      onFocus={function onFocus}
+                                      onKeyDown={function onKeyDown}
+                                      placeholder="Looking for something?"
+                                      className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium t..."
+-                                     fdprocessedid="2sje4j"
+                                    >
+                              <div className="relative" ref={{current:null}}>
+                                <button
+                                  onClick={function onClick}
+                                  className="relative text-black dark:text-[#A3B19B] transition-colors p-1.5 rounded-f..."
+-                                 fdprocessedid="hpiie"
+                                >
+                              <div className="relative" ref={{current:null}}>
+                                <button
+                                  onClick={function onClick}
+                                  className="flex items-center gap-2 cursor-pointer group focus:outline-none"
+-                                 fdprocessedid="kp5wro"
+                                >
+                        ...
+                          <AuditLogsPage>
+                            <AuditLogsClient actionOptions={[...]} currentUserRole="ADMIN" moduleOptions={[...]} ...>
+                              <div className="mx-auto fl...">
+                                <style>
+                                <div className="flex shrin...">
+                                  <div>
+                                  <div className="flex flex-...">
+                                    <div>
+                                    <button
+                                      type="button"
+                                      onClick={function onClick}
+                                      className="inline-flex items-center justify-center gap-2 rounded-xl border borde..."
+-                                     fdprocessedid="8v6n"
+                                    >
+                                    <AuditLogExport onExport={function handleExport}>
+                                      <div className="relative">
+                                        <button
+                                          type="button"
+                                          onClick={function onClick}
+                                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a1..."
+-                                         fdprocessedid="bo3qc"
+                                        >
+                                <section className="flex flex-...">
+                                  ...
+                                    <div className="grid gap-3...">
+                                      <div>
+                                      <div>
+                                      <div>
+                                      <SelectField label="Action Type" value="" onChange={function onChange}>
+                                        <div>
+                                          <FieldLabel>
+                                          <select
+                                            value=""
+                                            onChange={function onChange}
+                                            className="h-10 w-full rounded-xl border border-[#D6B53B]/20 bg-white px-3..."
+-                                           fdprocessedid="gdhr97"
+                                          >
+                                      <SelectField label="Module" value="" onChange={function onChange}>
+                                        <div>
+                                          <FieldLabel>
+                                          <select
+                                            value=""
+                                            onChange={function onChange}
+                                            className="h-10 w-full rounded-xl border border-[#D6B53B]/20 bg-white px-3..."
+-                                           fdprocessedid="hl5bb5"
+                                          >
+                                      <SelectField label="Status" value="" onChange={function onChange}>
+                                        <div>
+                                          <FieldLabel>
+                                          <select
+                                            value=""
+                                            onChange={function onChange}
+                                            className="h-10 w-full rounded-xl border border-[#D6B53B]/20 bg-white px-3..."
+-                                           fdprocessedid="vzmzz"
+                                          >
+                                  <div className="mt-5 flex ...">
+                                    ...
+                                      <th className="px-4 py-4">
+                                        <SortButton column={{key:"times...", ...}} onSort={function handleSort} ...>
+                                          <button
+                                            type="button"
+                                            onClick={function onClick}
+                                            className="inline-flex items-center gap-1 text-left text-[11px] font-bold ..."
+-                                           fdprocessedid="mhze6e"
+                                          >
+                                      <th className="px-4 py-4">
+                                        <SortButton column={{key:"action", ...}} onSort={function handleSort} ...>
+                                          <button
+                                            type="button"
+                                            onClick={function onClick}
+                                            className="inline-flex items-center gap-1 text-left text-[11px] font-bold ..."
+-                                           fdprocessedid="p0knys"
+                                          >
+                                      <th className="px-4 py-4">
+                                        <SortButton column={{key:"module", ...}} onSort={function handleSort} ...>
+                                          <button
+                                            type="button"
+                                            onClick={function onClick}
+                                            className="inline-flex items-center gap-1 text-left text-[11px] font-bold ..."
+-                                           fdprocessedid="oha2i"
+                                          >
+                                      <th className="px-4 py-4">
+                                        <SortButton column={{key:"descr...", ...}} onSort={function handleSort} ...>
+                                          <button
+                                            type="button"
+                                            onClick={function onClick}
+                                            className="inline-flex items-center gap-1 text-left text-[11px] font-bold ..."
+-                                           fdprocessedid="xu1ba"
+                                          >
+                                      <th className="px-4 py-4">
+                                        <SortButton column={{key:"status", ...}} onSort={function handleSort} ...>
+                                          <button
+                                            type="button"
+                                            onClick={function onClick}
+                                            className="inline-flex items-center gap-1 text-left text-[11px] font-bold ..."
+-                                           fdprocessedid="ofl7ns"
+                                          >
+                                    <AuditLogPagination pagination={{page:1,limit:10, ...}} ...>
+                                      <div className="flex flex-...">
+                                        <div>
+                                        <div className="flex flex-...">
+                                          <label className="flex items...">
+                                            <select
+                                              value={10}
+                                              onChange={function onChange}
+                                              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm ..."
+-                                             fdprocessedid="5km0se"
+                                            >
+                                          ...
+                                ...
+              ...
+ 
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 480ms (next.js: 7ms, application-code: 473ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit/cmqoogxx6000xfon52zb3n8op 200 in 10.7s (next.js: 9.7s, application-code: 1070ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 559ms (next.js: 24ms, application-code: 536ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 732ms (next.js: 21ms, application-code: 711ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 781ms (next.js: 13ms, application-code: 768ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 242ms (next.js: 7ms, application-code: 235ms)
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."username", "public"."users"."email", "public"."users"."role"::text FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) ORDER BY "public"."audit_logs"."timestamp" DESC LIMIT $17 OFFSET $18
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."audit_logs"."id" FROM "public"."audit_logs" WHERE ("public"."audit_logs"."user_id" = $1 AND "public"."audit_logs"."action" IN (CAST($2::text AS "public"."AuditAction"),CAST($3::text AS "public"."AuditAction"),CAST($4::text AS "public"."AuditAction"),CAST($5::text AS "public"."AuditAction"),CAST($6::text AS "public"."AuditAction"),CAST($7::text AS "public"."AuditAction"),CAST($8::text AS "public"."AuditAction"),CAST($9::text AS "public"."AuditAction"),CAST($10::text AS "public"."AuditAction"),CAST($11::text AS "public"."AuditAction"),CAST($12::text AS "public"."AuditAction"),CAST($13::text AS "public"."AuditAction"),CAST($14::text AS "public"."AuditAction"),CAST($15::text AS "public"."AuditAction"),CAST($16::text AS "public"."AuditAction"))) OFFSET $17) AS "sub"
+prisma:query COMMIT
+prisma:query INSERT INTO "public"."audit_logs" ("id","timestamp","user_id","user_name","user_role","action","module","description","status","ip_address","user_agent","metadata") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."AuditAction"),$7,$8,CAST($9::text AS "public"."AuditStatus"),$10,$11,$12) RETURNING "public"."audit_logs"."id", "public"."audit_logs"."timestamp", "public"."audit_logs"."user_id", "public"."audit_logs"."user_name", "public"."audit_logs"."user_role", "public"."audit_logs"."action"::text, "public"."audit_logs"."module", "public"."audit_logs"."description", "public"."audit_logs"."status"::text, "public"."audit_logs"."ip_address", "public"."audit_logs"."user_agent", "public"."audit_logs"."previous_values", "public"."audit_logs"."new_values", "public"."audit_logs"."metadata"
+ GET /api/audit?page=1&limit=10&sortBy=timestamp&sortOrder=desc 200 in 138ms (next.js: 7ms, application-code: 132ms)
+[?25h

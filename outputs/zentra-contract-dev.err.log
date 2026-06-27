@@ -1,0 +1,36 @@
+⨯ Error: Unauthorized. Please sign in again.
+    at requireAdmin (lib\authorization.ts:47:11)
+    at async ContractManagement (app\admin\(dashboard)\contracts\page.tsx:7:17)
+  45 |
+  46 |   if (!user) {
+> 47 |     throw new Error('Unauthorized. Please sign in again.');
+     |           ^
+  48 |   }
+  49 |
+  50 |   return user; {
+  digest: '3910297046'
+}
+⨯ Error: Unauthorized. Please sign in again.
+    at requireAdmin (lib\authorization.ts:47:11)
+    at async ContractManagement (app\admin\(dashboard)\contracts\page.tsx:7:17)
+  45 |
+  46 |   if (!user) {
+> 47 |     throw new Error('Unauthorized. Please sign in again.');
+     |           ^
+  48 |   }
+  49 |
+  50 |   return user; {
+  digest: '3910297046'
+}
+⨯ Error: Unauthorized. Please sign in again.
+    at requireAdmin (lib\authorization.ts:47:11)
+    at async ContractManagement (app\admin\(dashboard)\contracts\page.tsx:7:17)
+  45 |
+  46 |   if (!user) {
+> 47 |     throw new Error('Unauthorized. Please sign in again.');
+     |           ^
+  48 |   }
+  49 |
+  50 |   return user; {
+  digest: '3910297046'
+}

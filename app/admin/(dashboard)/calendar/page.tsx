@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Plus, Filter, Calendar as CalendarIcon, AlignJustify, ChevronDown, CheckCircle2, Users, Menu } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Filter, Calendar as CalendarIcon, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, addYears, subYears, startOfWeek, endOfWeek } from 'date-fns';
 
 // Components
@@ -14,11 +14,80 @@ import { FourDaysView } from './components/FourDaysView'; // Force TS Server re-
 import { ListView } from './components/ListView';
 import { EventModal } from './components/EventModal';
 import { AddEventModal } from './components/AddEventModal';
-import { mockEvents, CalendarEvent } from './components/MockData';
+import { CalendarEvent } from './components/types';
 import { TasksSidebar } from './components/TasksSidebar';
 import { TasksMain } from './components/TasksMain';
 
 type ViewMode = 'Month' | 'Week' | 'Day' | 'List' | 'Year' | 'Schedule' | '4 Days';
+
+type DatabaseCalendarEvent = {
+  id: string;
+  bookingId: string | null;
+  title: string;
+  clientName: string;
+  date: string | Date;
+  startTime: string | null;
+  endTime: string | null;
+  status: string;
+  eventType: string;
+  venue: string;
+  pax: number;
+  notes: string | null;
+};
+
+type PaymentCalendarItem = {
+  id: string;
+  date: string;
+  type: string;
+  title: string;
+  related_record_id: string | null;
+  status: string | null;
+};
+
+type PaymentCalendarResponse = {
+  success: boolean;
+  data?: {
+    items: PaymentCalendarItem[];
+  };
+};
+
+function mapEventStatus(status: string): CalendarEvent['status'] {
+  if (status === 'CONFIRMED' || status === 'COMPLETED') {
+    return 'Confirmed';
+  }
+
+  if (status === 'DECLINED') {
+    return 'Cancelled';
+  }
+
+  return 'Pending';
+}
+
+function mapEventType(eventType: string): CalendarEvent['type'] {
+  const normalized = eventType.toLowerCase();
+
+  if (normalized.includes('wedding')) return 'Wedding';
+  if (normalized.includes('debut')) return 'Debut';
+  if (normalized.includes('corporate')) return 'Corporate';
+  if (normalized.includes('meeting') || normalized.includes('tour') || normalized.includes('ocular')) return 'Meeting';
+
+  return 'Other';
+}
+
+function combineDateAndTime(date: string | Date, time: string | null, fallbackHour: number) {
+  const result = new Date(date);
+  const [hourValue, minuteValue] = time?.split(':') ?? [];
+  const hour = Number(hourValue);
+  const minute = Number(minuteValue);
+
+  if (Number.isFinite(hour) && Number.isFinite(minute)) {
+    result.setHours(hour, minute, 0, 0);
+  } else {
+    result.setHours(fallbackHour, 0, 0, 0);
+  }
+
+  return result;
+}
 
 function CalendarContent() {
   const searchParams = useSearchParams();
@@ -31,7 +100,6 @@ function CalendarContent() {
   const [showWeekends, setShowWeekends] = useState(true);
   const [showDeclined, setShowDeclined] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [selectedCalendars, setSelectedCalendars] = useState<string[]>(['Jerome Regoya']);
   const viewDropdownRef = useRef<HTMLDivElement>(null);
 
   // Modals state
@@ -84,21 +152,74 @@ function CalendarContent() {
 
   // Fetch events on mount
   const [dbEvents, setDbEvents] = useState<CalendarEvent[]>([]);
+  const [paymentEvents, setPaymentEvents] = useState<CalendarEvent[]>([]);
   useEffect(() => {
     import('./event-actions').then(({ getEvents }) => {
       getEvents().then(data => {
         // Map Prisma Event to our CalendarEvent interface
-        const formattedEvents = data.map((evt: any) => ({
-          ...evt,
-          date: new Date(evt.date),
-        })) as unknown as CalendarEvent[];
+        const formattedEvents = (data as DatabaseCalendarEvent[]).map((evt) => ({
+          id: evt.id,
+          bookingId: evt.bookingId,
+          title: evt.title,
+          type: mapEventType(evt.eventType),
+          clientName: evt.clientName,
+          contact: '',
+          guestCount: evt.pax,
+          status: mapEventStatus(evt.status),
+          start: combineDateAndTime(evt.date, evt.startTime, 9),
+          end: combineDateAndTime(evt.date, evt.endTime, 17),
+          venue: evt.venue,
+          notes: evt.notes ?? undefined,
+        }));
         setDbEvents(formattedEvents);
       });
     });
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const month = format(currentDate, 'yyyy-MM');
+    fetch(`/api/dashboard/calendar?month=${month}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then((response) => response.json() as Promise<PaymentCalendarResponse>)
+      .then((payload) => {
+        const items = payload.success ? payload.data?.items ?? [] : [];
+        setPaymentEvents(items
+          .filter((item) => item.type === 'payment_due')
+          .map((item) => {
+            const start = new Date(`${item.date}T09:00:00`);
+            const end = new Date(`${item.date}T10:00:00`);
+            const isOverdue = item.status === 'overdue';
+            return {
+              id: item.id,
+              bookingId: item.related_record_id,
+              title: item.title,
+              type: 'Payment' as const,
+              clientName: 'Payment deadline',
+              contact: '',
+              guestCount: 0,
+              status: isOverdue ? 'Overdue' as const : 'Payment Due' as const,
+              start,
+              end,
+              venue: 'Payment & History',
+              notes: isOverdue
+                ? 'This booking has an outstanding balance past its payment deadline.'
+                : 'This booking has an upcoming payment deadline.',
+            };
+          }));
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          setPaymentEvents([]);
+        }
+      });
+    return () => controller.abort();
+  }, [currentDate]);
+
   // Filter events based on global search query
-  const filteredEvents = dbEvents.filter(event =>
+  const filteredEvents = [...dbEvents, ...paymentEvents].filter(event =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     event.clientName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -170,7 +291,7 @@ function CalendarContent() {
           {appMode === 'calendar' && searchQuery && (
             <div className="flex items-center gap-2 bg-[#D6B53B]/10 text-[#D6B53B] px-3 py-1.5 rounded-full text-sm font-semibold tracking-wide font-sans border border-[#D6B53B]/20">
               <Filter className="w-3.5 h-3.5" />
-              "{searchQuery}"
+              &ldquo;{searchQuery}&rdquo;
             </div>
           )}
 

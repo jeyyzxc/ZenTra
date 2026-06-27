@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, eachMonthOfInterval, startOfYear, endOfYear, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
-import { CalendarEvent } from './MockData';
+import { CalendarEvent } from './types';
 
 interface YearViewProps {
   currentDate: Date;
@@ -63,7 +63,7 @@ export function YearView({ currentDate, events, onDateClick }: YearViewProps) {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-[#141A13] rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 relative z-10 p-4">
       <div className="flex-1 overflow-y-auto calendar-scroll pr-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-8 w-full mx-auto">
           {months.map(renderMonth)}
         </div>
       </div>

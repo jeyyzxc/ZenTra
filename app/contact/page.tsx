@@ -1,9 +1,13 @@
 import React from 'react';
-import SubpageHero from '../components/SubpageHero';
+import { MapPin } from 'lucide-react';
+
+import SubpageHero from '@/components/client/SubpageHero';
+import SupportFaqPreview from '@/components/client/SupportFaqPreview';
+import InquiryForm from './InquiryForm';
 
 export default function ContactPage() {
   return (
-    <main className="flex flex-col min-h-screen bg-gradient-to-br from-[#DCD48E]/60 via-[#FBF4C4] to-white relative">
+    <main className="flex flex-col min-h-screen bg-transparent relative">
       <SubpageHero 
         title="Get in Touch" 
         subtitle="Seamless events start here. Reach out to secure your date or inquire about our exclusive packages." 
@@ -12,6 +16,7 @@ export default function ContactPage() {
       
       <div className="w-full relative z-10 bg-transparent pt-12 pb-20">
         <div className="max-w-6xl mx-auto px-6">
+          <SupportFaqPreview />
           
           {/* Top Section: Info Cards and Form */}
           <div className="grid grid-cols-1 lg:grid-cols-[55%_1fr] gap-8 lg:gap-12 mb-16 items-start">
@@ -20,26 +25,26 @@ export default function ContactPage() {
             <div className="flex flex-col gap-6">
               
               {/* Location Card */}
-              <div className="group bg-gradient-to-br from-[#FDFBF0] to-[#F5F1C6]/60 rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4A017]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.1s both' }}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4A017]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
+              <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.1s both' }}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
                 
-                <h3 className="flex items-center gap-4 text-xl font-serif text-[#2c3328] mb-4 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4A017]/30 group-hover:bg-[#D4A017]/10 transition-colors duration-500">
-                    <img src="/placeholder (1).png" alt="Location" className="w-5 h-5 object-contain" />
+                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-4 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
+                    <MapPin className="w-5 h-5" aria-hidden="true" />
                   </div>
                   Our Location
                 </h3>
-                <p className="font-serif text-[#2c3328]/80 text-base leading-relaxed pl-16 w-full relative z-10">
+                <p className="font-serif text-[neutral-900]/80 text-base leading-relaxed pl-16 w-full relative z-10">
                   Father Masi Street, Holiday Hills, Barangay San Antonio, San Pedro, Philippines, 4023
                 </p>
               </div>
 
               {/* Business Hours Card */}
-              <div className="group bg-gradient-to-br from-[#FDFBF0] to-[#F5F1C6]/60 rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4A017]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4A017]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
+              <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
 
-                <h3 className="flex items-center gap-4 text-xl font-serif text-[#2c3328] mb-4 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4A017]/30 group-hover:bg-[#D4A017]/10 transition-colors duration-500 text-[#D4A017]">
+                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-4 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
@@ -48,26 +53,26 @@ export default function ContactPage() {
                   Business Hours
                 </h3>
                 <div className="flex flex-col w-full pl-16 relative z-10">
-                  <div className="flex justify-between items-center py-3 border-b border-[#D4A017]/20 font-serif text-base text-[#2c3328] group-hover:border-[#D4A017]/40 transition-colors">
+                  <div className="flex justify-between items-center py-3 border-b border-[#D4AF37]/20 font-serif text-base text-[neutral-900] group-hover:border-[#D4AF37]/40 transition-colors">
                     <span className="font-medium opacity-90">Tuesdays to Saturdays</span>
-                    <span className="text-[#2c3328]/80">10:00 AM to 6:00 PM</span>
+                    <span className="text-[neutral-900]/80">10:00 AM to 6:00 PM</span>
                   </div>
-                  <div className="flex justify-between items-center py-3 border-b border-[#D4A017]/20 font-serif text-base text-[#2c3328] group-hover:border-[#D4A017]/40 transition-colors">
+                  <div className="flex justify-between items-center py-3 border-b border-[#D4AF37]/20 font-serif text-base text-[neutral-900] group-hover:border-[#D4AF37]/40 transition-colors">
                     <span className="font-medium opacity-90">Sundays</span>
-                    <span className="text-[#2c3328]/80">2:00 PM to 6:00 PM</span>
+                    <span className="text-[neutral-900]/80">2:00 PM to 6:00 PM</span>
                   </div>
                 </div>
-                <div className="text-left w-full mt-5 pl-16 font-sans tracking-widest uppercase text-[#D4A017] text-[11px] font-bold">
+                <div className="text-left w-full mt-5 pl-16 font-sans tracking-widest uppercase text-[#D4AF37] text-[11px] font-bold">
                   All visits are strictly by appointment only
                 </div>
               </div>
 
               {/* Contact Information Card */}
-              <div className="group bg-gradient-to-br from-[#FDFBF0] to-[#F5F1C6]/60 rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4A017]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.3s both' }}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4A017]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
+              <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.3s both' }}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
 
-                <h3 className="flex items-center gap-4 text-xl font-serif text-[#2c3328] mb-5 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4A017]/30 group-hover:bg-[#D4A017]/10 transition-colors duration-500 text-[#D4A017]">
+                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-5 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                     </svg>
@@ -76,22 +81,22 @@ export default function ContactPage() {
                 </h3>
                 <div className="flex flex-col gap-5 pl-16 relative z-10">
                   <div className="flex items-center gap-4 group/item cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-white border border-[#D4A017]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4A017] group-hover/item:text-white transition-all text-[#D4A017] shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4AF37] group-hover/item:text-white transition-all text-[#D4AF37] shadow-sm">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V8L12 13L20 8V18ZM12 11L4 6H20L12 11Z"/>
                       </svg>
                     </div>
-                    <a href="mailto:teamzioneventsplace@gmail.com" className="font-serif text-[#2c3328]/90 hover:text-[#D4A017] transition-colors break-all text-base font-medium">
+                    <a href="mailto:teamzioneventsplace@gmail.com" className="font-serif text-[neutral-900]/90 hover:text-[#D4AF37] transition-colors break-all text-base font-medium">
                       teamzioneventsplace@gmail.com
                     </a>
                   </div>
                   <div className="flex items-center gap-4 group/item cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-white border border-[#D4A017]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4A017] group-hover/item:text-white transition-all text-[#D4A017] shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4AF37] group-hover/item:text-white transition-all text-[#D4AF37] shadow-sm">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                       </svg>
                     </div>
-                    <a href="tel:09194442327" className="font-serif text-[#2c3328]/90 hover:text-[#D4A017] transition-colors text-base font-medium">
+                    <a href="tel:09194442327" className="font-serif text-[neutral-900]/90 hover:text-[#D4AF37] transition-colors text-base font-medium">
                       0919 444 2327
                     </a>
                   </div>
@@ -99,11 +104,11 @@ export default function ContactPage() {
               </div>
 
               {/* Social Media Card */}
-              <div className="group bg-gradient-to-br from-[#FDFBF0] to-[#F5F1C6]/60 rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4A017]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.4s both' }}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4A017]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
+              <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.4s both' }}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
 
-                <h3 className="flex items-center gap-4 text-xl font-serif text-[#2c3328] mb-5 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4A017]/30 group-hover:bg-[#D4A017]/10 transition-colors duration-500 text-[#D4A017]">
+                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-5 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="18" cy="5" r="3"></circle>
                       <circle cx="6" cy="12" r="3"></circle>
@@ -115,13 +120,13 @@ export default function ContactPage() {
                   Social Media
                 </h3>
                 <div className="flex gap-5 items-center pl-16 relative z-10">
-                  <a href="https://www.facebook.com/ZionEventsPlace" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4A017]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4A017]/50 transition-all duration-300">
+                  <a href="https://www.facebook.com/ZionEventsPlace" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
                     <img src="/communication.png" alt="Facebook" className="w-6 h-6 object-contain" />
                   </a>
-                  <a href="https://www.instagram.com/zioneventsplace?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4A017]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4A017]/50 transition-all duration-300">
+                  <a href="https://www.instagram.com/zioneventsplace?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
                     <img src="/instagram.png" alt="Instagram" className="w-6 h-6 object-contain" />
                   </a>
-                  <a href="https://www.tiktok.com/@zioneventsvenue?_r=1&_t=ZS-97KTDZ4I1Ka" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4A017]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4A017]/50 transition-all duration-300">
+                  <a href="https://www.tiktok.com/@zioneventsvenue?_r=1&_t=ZS-97KTDZ4I1Ka" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
                     <img src="/tik-tok.png" alt="TikTok" className="w-6 h-6 object-contain" />
                   </a>
                 </div>
@@ -131,49 +136,16 @@ export default function ContactPage() {
 
             {/* Right Column: Form */}
             <div className="flex flex-col items-start w-full" style={{ animation: 'fadeInUp 0.6s ease-out 0.5s both' }}>
-              <span className="bg-gradient-to-r from-[#D4A017] to-[#ECDD77] text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-widest uppercase mb-4 shadow-md">
+              <span className="bg-gradient-to-r from-[#D4AF37] to-[#ECDD77] text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-widest uppercase mb-4 shadow-md">
                 Message Us
               </span>
-              <h2 className="text-4xl md:text-5xl font-serif text-[#2c3328] mb-8">How can we help?</h2>
+              <h2 className="text-4xl md:text-5xl font-serif text-[neutral-900] mb-8">How can we help?</h2>
               
-              <div className="w-full bg-gradient-to-br from-[#FDFBF0] to-[#F5F1C6]/80 rounded-[2rem] p-6 md:p-8 shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4A017]/20 relative overflow-hidden group/form">
+              <div className="w-full bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 md:p-8 shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 relative overflow-hidden group/form">
                 {/* Decorative background element */}
-                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-gradient-to-br from-[#D4A017]/10 to-transparent rounded-full blur-3xl transition-transform duration-1000 group-hover/form:scale-150"></div>
+                <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-3xl transition-transform duration-1000 group-hover/form:scale-150"></div>
 
-                <form className="flex flex-col gap-4 w-full relative z-10">
-                  <input 
-                    type="text" 
-                    placeholder="Full Name" 
-                    className="w-full bg-white/60 backdrop-blur-sm rounded-full px-5 py-3 text-sm font-sans text-[#2c3328] placeholder:text-[#2c3328]/50 border border-[#D4A017]/20 outline-none focus:ring-2 focus:ring-[#D4A017]/40 focus:border-[#D4A017] focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Email Address" 
-                    className="w-full bg-white/60 backdrop-blur-sm rounded-full px-5 py-3 text-sm font-sans text-[#2c3328] placeholder:text-[#2c3328]/50 border border-[#D4A017]/20 outline-none focus:ring-2 focus:ring-[#D4A017]/40 focus:border-[#D4A017] focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  />
-                  <input 
-                    type="tel" 
-                    placeholder="Phone Number" 
-                    className="w-full bg-white/60 backdrop-blur-sm rounded-full px-5 py-3 text-sm font-sans text-[#2c3328] placeholder:text-[#2c3328]/50 border border-[#D4A017]/20 outline-none focus:ring-2 focus:ring-[#D4A017]/40 focus:border-[#D4A017] focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Subject" 
-                    className="w-full bg-white/60 backdrop-blur-sm rounded-full px-5 py-3 text-sm font-sans text-[#2c3328] placeholder:text-[#2c3328]/50 border border-[#D4A017]/20 outline-none focus:ring-2 focus:ring-[#D4A017]/40 focus:border-[#D4A017] focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-                  />
-                  <textarea 
-                    placeholder="Message" 
-                    className="w-full bg-white/60 backdrop-blur-sm rounded-2xl px-5 py-4 text-sm font-sans text-[#2c3328] placeholder:text-[#2c3328]/50 border border-[#D4A017]/20 outline-none focus:ring-2 focus:ring-[#D4A017]/40 focus:border-[#D4A017] focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md min-h-[140px] resize-none"
-                  ></textarea>
-                  
-                  <button 
-                    type="button" 
-                    className="mt-3 w-fit bg-[#2c3328] hover:bg-[#D4A017] text-white rounded-full px-7 py-3 flex items-center justify-center gap-3 transition-all duration-500 group shadow-[0_10px_20px_rgba(44,51,40,0.2)] hover:shadow-[0_15px_30px_rgba(212,160,23,0.3)] hover:-translate-y-1"
-                  >
-                    <span className="text-sm font-serif font-medium tracking-wide">Send Message</span>
-                    <img src="/send.png" alt="Send" className="w-4 h-4 object-contain group-hover:translate-x-2 transition-transform duration-500 brightness-0 invert" />
-                  </button>
-                </form>
+                <InquiryForm />
               </div>
             </div>
 
@@ -197,21 +169,21 @@ export default function ContactPage() {
             </div>
 
             {/* Direction Card */}
-            <div className="bg-[#EBE5C4] rounded-2xl p-6 shadow-sm h-full flex flex-col justify-center">
-              <h3 className="flex items-center text-xl font-serif text-black mb-5">
+            <div className="bg-white/60 backdrop-blur-sm border border-neutral-900/10 rounded-2xl p-6 shadow-sm h-full flex flex-col justify-center">
+              <h3 className="flex items-center text-xl font-serif text-neutral-900 mb-5">
                 <a href="https://maps.app.goo.gl/3aBAKMMpWj19gFUK6" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-[#D4AF37] transition-colors group cursor-pointer w-fit">
                   <img src="/direction.png" alt="Direction Icon" className="w-6 h-6 object-contain group-hover:scale-110 transition-transform" />
                   <span className="border-b border-transparent group-hover:border-[#D4AF37] transition-colors pb-0.5">Direction</span>
                 </a>
               </h3>
-              <ul className="flex flex-col gap-5 font-serif text-black text-base leading-relaxed opacity-90 w-full">
+              <ul className="flex flex-col gap-5 font-serif text-neutral-900 text-base leading-relaxed opacity-90 w-full">
                 <li className="flex items-start gap-3">
                   <img src="/right-arrow.png" alt="Arrow" className="w-5 h-5 mt-1 flex-shrink-0 object-contain" />
                   <p>When coming from United San Pedro, do not turn right in Iglesia Ni Cristo, go straight ahead.</p>
                 </li>
                 <li className="flex items-start gap-3">
                   <img src="/right-arrow.png" alt="Arrow" className="w-5 h-5 mt-1 flex-shrink-0 object-contain" />
-                  <p>If you're coming from the San Pedro Exit via Magsaysay Road, once you see the "ZION EVENTS PLACE" signage, turn left. After going down the short slope, turn left again. You'll find our wooden door entrance just ahead — proceed there to enter the venue.</p>
+                  <p>If you&apos;re coming from the San Pedro Exit via Magsaysay Road, once you see the &quot;ZION EVENTS PLACE&quot; signage, turn left. After going down the short slope, turn left again. You&apos;ll find our wooden door entrance just ahead - proceed there to enter the venue.</p>
                 </li>
               </ul>
             </div>

@@ -6,6 +6,7 @@ export type AdminProfile = {
   email: string;
   fullName: string | null;
   contactNumber: string | null;
+  profileImage: string | null;
   role: ProfileRole;
   createdAt: string;
   updatedAt: string;

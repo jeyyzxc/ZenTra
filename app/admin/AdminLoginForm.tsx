@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import BackgroundSlideshow from '@/components/shared/BackgroundSlideshow';
 
 export default function AdminLoginForm() {
   const [email, setEmail] = useState('');
@@ -43,11 +44,8 @@ export default function AdminLoginForm() {
 
   return (
     <div className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-gray-900">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop')" }}
-      >
-        <div className="absolute inset-0 bg-neutral-900/70" />
+      <div className="absolute inset-0">
+        <BackgroundSlideshow />
       </div>
 
       <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-[#FDF5CC]/90 p-8 shadow-[0_30px_60px_-15px_rgba(214,181,59,0.25)] backdrop-blur-2xl animate-[fadeInUp_0.8s_ease-out] sm:p-10">
@@ -140,7 +138,7 @@ export default function AdminLoginForm() {
               <span>Remember Me</span>
             </label>
             <span className="text-[#BEA542]">
-              {rememberMe ? 'Stay signed in for 30 days' : '8-hour session'}
+              {rememberMe ? 'Stay signed in for 30 days' : 'Authorized personnel only'}
             </span>
           </div>
 

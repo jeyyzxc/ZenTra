@@ -24,11 +24,16 @@ export default function Step10Generating({ nextStep }: Props) {
       return () => clearTimeout(timer);
     } else {
       // All tasks complete, show final state briefly then proceed
-      setIsComplete(true);
-      const timer = setTimeout(() => {
+      const completeTimer = setTimeout(() => {
+        setIsComplete(true);
+      }, 0);
+      const nextTimer = setTimeout(() => {
         nextStep();
       }, 1500);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(completeTimer);
+        clearTimeout(nextTimer);
+      };
     }
   }, [currentTaskIndex, nextStep]);
 

@@ -9,6 +9,7 @@ type AdminShellUser = {
   id: string;
   username: string;
   email: string;
+  profileImage: string | null;
   role: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
 };
 
@@ -34,9 +35,8 @@ export default function AdminShell({
       />
 
       <main
-        className={`min-h-[calc(100vh-80px)] overflow-x-hidden p-8 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'ml-[80px]' : 'ml-[280px]'
-        }`}
+        className={`min-h-[calc(100vh-80px)] p-4 transition-all duration-300 ease-in-out md:p-8 ${isSidebarCollapsed ? 'ml-[80px]' : 'ml-[80px] md:ml-[280px]'
+          }`}
       >
         {children}
       </main>

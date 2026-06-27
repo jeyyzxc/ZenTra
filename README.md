@@ -18,6 +18,20 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Payment proof storage
+
+The Payment & History module stores receipt files in a private Supabase Storage bucket. Before accepting payment changes:
+
+1. Run `supabase/payment-proofs.sql` in the Supabase SQL editor.
+2. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the server environment.
+3. Optionally set `SUPABASE_PAYMENT_PROOFS_BUCKET`; it defaults to `payment-proofs`.
+
+The service-role key must remain server-only and must never use the `NEXT_PUBLIC_` prefix.
+
+## Documentation
+
+Implementation plans, architecture notes, and n8n workflow documentation live in `docs/`.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

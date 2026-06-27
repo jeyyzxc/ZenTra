@@ -1,33 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Alex_Brush, Sahitya } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
-});
-
-const alexBrush = Alex_Brush({
-  weight: "400",
-  variable: "--font-script",
-  subsets: ["latin"],
-});
-
-const sahitya = Sahitya({
-  weight: "400",
-  variable: "--font-sahitya",
-  subsets: ["latin"],
-});
-
-import GlobalHeader from "./components/GlobalHeader";
-import Footer from "./components/Footer";
-import SmartGuide from "./components/SmartGuide";
-import PublicOnly from "./components/PublicOnly";
+import GlobalBackground from "@/components/layout/GlobalBackground";
+import GlobalHeader from "@/components/layout/GlobalHeader";
+import Footer from "@/components/layout/Footer";
+import PublicOnly from "@/components/layout/PublicOnly";
+import SmartGuide from "@/components/client/SmartGuide";
 import { ThemeProvider } from "./context/ThemeContext";
 
 export const metadata: Metadata = {
@@ -41,16 +19,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${playfair.variable} ${alexBrush.variable} ${sahitya.variable} antialiased`}
-    >
+    <html lang="en" className="antialiased">
       <head>
         <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
       </head>
-      <body className="min-h-screen flex flex-col bg-zentra-bg text-zentra-primary transition-colors duration-500 ease-in-out dark:bg-[#0C100B] dark:text-[#F4F4F0] overflow-x-hidden">
+      <body className="min-h-screen flex flex-col bg-transparent text-neutral-900 transition-colors duration-500 ease-in-out dark:text-[#F4F4F0] overflow-x-hidden">
         <ThemeProvider>
+          <GlobalBackground />
           <PublicOnly>
             <GlobalHeader />
           </PublicOnly>
@@ -64,4 +40,3 @@ export default function RootLayout({
     </html>
   );
 }
-

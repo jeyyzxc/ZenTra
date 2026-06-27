@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { format } from 'date-fns';
-import { CalendarEvent, getStatusColor } from './MockData';
+import { CalendarEvent, getStatusColor } from './types';
 import { X, MapPin, Users, Phone, Clock, FileText, Calendar as CalendarIcon, Tag } from 'lucide-react';
 
 interface EventModalProps {
@@ -125,9 +126,11 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
           >
             Close
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-[#1a1f18] rounded-lg hover:bg-black transition-colors shadow-sm">
-            Edit Booking
-          </button>
+          {event.bookingId && (
+            <Link href={`/admin/bookings?selected=${encodeURIComponent(event.bookingId)}`} className="px-4 py-2 text-sm font-medium text-white bg-[#1a1f18] rounded-lg hover:bg-black transition-colors shadow-sm">
+              View / Edit Booking
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,22 @@
+import { requireSuperAdmin } from '@/lib/authorization';
+import {
+  archiveEventCategory,
+  handleServicesError,
+} from '@/lib/services-packages';
+
+export const dynamic = 'force-dynamic';
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const actor = await requireSuperAdmin();
+    const { id } = await params;
+    const category = await archiveEventCategory(decodeURIComponent(id), actor, request);
+
+    return Response.json({ data: category });
+  } catch (error) {
+    return handleServicesError(error);
+  }
+}

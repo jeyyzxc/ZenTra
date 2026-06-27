@@ -7,6 +7,7 @@ export type CurrentAdmin = {
   id: string;
   username: string;
   email: string;
+  profileImage: string | null;
   role: typeof Role.SUPERADMIN | typeof Role.ADMIN;
 };
 
@@ -24,6 +25,7 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
       id: true,
       username: true,
       email: true,
+      profileImage: true,
       role: true,
     },
   });

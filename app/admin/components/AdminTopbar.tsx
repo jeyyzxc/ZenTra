@@ -5,21 +5,74 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import type { Role } from '@prisma/client';
 
-// Mock data for initial notifications
-const INITIAL_NOTIFICATIONS = [
-  { id: 1, type: 'booking', title: 'New Booking Request', message: 'Sarah Connor requested a wedding package.', time: '5m ago', isRead: false },
-  { id: 2, type: 'payment', title: 'Payment Received', message: 'John Doe paid $500 for the debut package.', time: '1h ago', isRead: false },
-  { id: 3, type: 'inquiry', title: 'New Inquiry', message: 'Jane Smith is asking about availability.', time: '2h ago', isRead: true },
-  { id: 4, type: 'system', title: 'System Update', message: 'Zion server maintenance scheduled for tonight.', time: '1d ago', isRead: true },
-];
+type NotificationItem = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  priority: string;
+  is_read: boolean;
+  created_at: string;
+  href: string;
+};
+
+type NotificationsResponse = {
+  success: boolean;
+  data?: NotificationItem[];
+  error?: string;
+};
 
 const SEARCH_PLACEHOLDERS = [
-  'Looking for something?',
-  'Search for bookings...',
-  'Find a specific client...',
-  'Search through contracts...',
-  'Search payments...',
+  "Looking for something?",
+  "Search for bookings...",
+  "Find a specific client...",
+  "Search through contracts...",
+  "Search payments..."
 ];
+
+function formatNotificationTime(value: string) {
+  const timestamp = new Date(value).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return '';
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60_000));
+
+  if (diffMinutes < 1) return 'Now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function UserAvatar({
+  className,
+  initial,
+  name,
+  profileImage,
+}: {
+  className: string;
+  initial: string;
+  name: string;
+  profileImage: string | null;
+}) {
+  return (
+    <div
+      aria-label={name}
+      className={`${className} ${profileImage ? 'bg-cover bg-center bg-no-repeat text-transparent' : ''}`}
+      role="img"
+      style={profileImage ? { backgroundImage: `url("${profileImage}")` } : undefined}
+      title={name}
+    >
+      {!profileImage && initial}
+    </div>
+  );
+}
 
 export default function AdminTopbar({
   isCollapsed,
@@ -29,33 +82,19 @@ export default function AdminTopbar({
   currentUser: {
     username: string;
     email: string;
+    profileImage: string | null;
     role: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
   };
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Superadmin' : 'Administrator';
+  const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Super Admin' : 'Administrator';
   const userInitial = currentUser.username.charAt(0).toUpperCase();
   
   // Notification State
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Search State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [hoveredSearch, setHoveredSearch] = useState<string | null>(null);
-  const [recentSearches, setRecentSearches] = useState([
-    'Wedding packages 2026',
-    'Pending payments'
-  ]);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Profile State
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
 
   // Dynamic Search Placeholders
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -67,12 +106,51 @@ export default function AdminTopbar({
     return () => clearInterval(interval);
   }, []);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [hoveredSearch, setHoveredSearch] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Profile State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const loadNotifications = async () => {
+    try {
+      const response = await fetch('/api/dashboard/notifications?limit=8', { cache: 'no-store' });
+      const payload = await response.json() as NotificationsResponse;
+
+      if (response.ok && payload.success && payload.data) {
+        setNotifications(payload.data);
+      }
+    } catch {
+      setNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadNotifications();
+    }, 0);
+    const interval = window.setInterval(() => {
+      void loadNotifications();
+    }, 30_000);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(interval);
+    };
+  }, []);
+
   const handleNavigation = (path: string) => {
     setIsProfileOpen(false);
     router.push(path);
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   // Handle clicking outside to close dropdowns
   useEffect(() => {
@@ -104,11 +182,22 @@ export default function AdminTopbar({
   }, []);
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    const unreadNotifications = notifications.filter((notification) => !notification.is_read);
+    setNotifications(notifications.map((notification) => ({ ...notification, is_read: true })));
+    unreadNotifications.forEach((notification) => {
+      void fetch(`/api/dashboard/alerts/${encodeURIComponent(notification.id)}/acknowledge`, {
+        method: 'PATCH',
+      });
+    });
   };
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+  const markAsRead = (id: string) => {
+    setNotifications(notifications.map((notification) => (
+      notification.id === id ? { ...notification, is_read: true } : notification
+    )));
+    void fetch(`/api/dashboard/alerts/${encodeURIComponent(id)}/acknowledge`, {
+      method: 'PATCH',
+    });
   };
   
   const getTitle = () => {
@@ -118,10 +207,11 @@ export default function AdminTopbar({
     if (pathname.includes('/payments')) return 'Payment & History';
     if (pathname.includes('/calendar')) return 'Calendar & Availability';
     if (pathname.includes('/services')) return 'Services, Packages & Content';
+    if (pathname.includes('/testimonies')) return 'Testimony Management';
     if (pathname.includes('/support')) return 'Support Center';
     if (pathname.includes('/reports')) return 'Reports & Analytics';
-    if (pathname.includes('/audit')) return 'Audit & Email Logs';
-    if (pathname.includes('/inquiries')) return 'Inquiries';
+    if (pathname.includes('/audit')) return 'System Logs';
+    if (pathname.includes('/inquiries')) return 'Inquiry Management';
     if (pathname.includes('/team')) return 'Team Management';
     if (pathname.includes('/profile')) return 'Profile';
     if (pathname.includes('/settings')) return 'Settings';
@@ -133,28 +223,32 @@ export default function AdminTopbar({
       case 'booking': return <i className="fi fi-rr-calendar-check text-[#D6B53B]"></i>;
       case 'payment': return <i className="fi fi-rr-wallet text-emerald-500"></i>;
       case 'inquiry': return <i className="fi fi-rr-messages text-blue-500"></i>;
+      case 'testimony': return <i className="fi fi-rr-comment-quote text-[#D6B53B]"></i>;
+      case 'email': return <i className="fi fi-rr-envelope text-red-500"></i>;
+      case 'workflow': return <i className="fi fi-rr-settings-sliders text-orange-500"></i>;
+      case 'task': return <i className="fi fi-rr-list-check text-[#D6B53B]"></i>;
       default: return <i className="fi fi-rr-info text-gray-500"></i>;
     }
   };
 
   return (
     <div 
-      className={`h-20 bg-white dark:bg-[#0C100B] border-b border-[#1a1f18]/10 dark:border-white/5 flex items-center justify-between px-8 sticky top-0 z-40 transition-colors duration-500 ease-in-out ${
-        isCollapsed ? 'ml-[80px]' : 'ml-[280px]'
+      className={`h-20 bg-white dark:bg-[#0C100B] border-b border-[#1a1f18]/10 dark:border-white/5 flex items-center justify-between gap-3 px-4 md:px-8 sticky top-0 z-40 transition-colors duration-500 ease-in-out ${
+        isCollapsed ? 'ml-[80px]' : 'ml-[80px] md:ml-[280px]'
       }`}
     >
       
       {/* Title */}
-      <h1 className="text-[22px] font-sahitya text-[#1a1f18] dark:text-[#F4F4F0] font-bold uppercase tracking-[0.1em] transition-colors duration-500">
+      <h1 className="min-w-0 truncate text-base font-sahitya text-[#1a1f18] dark:text-[#F4F4F0] font-bold uppercase tracking-[0.08em] transition-colors duration-500 sm:text-[22px] sm:tracking-[0.1em]">
         {getTitle()}
       </h1>
 
       {/* Right Side */}
-      <div className="flex items-center gap-6">
+      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
         
         {/* Search */}
         {!pathname.includes('/admin/profile') && (
-          <div className="relative z-50" ref={searchRef}>
+          <div className="relative z-50 hidden lg:block" ref={searchRef}>
             <div className={`flex items-center w-[290px] rounded-full border transition-all duration-300 bg-gray-50/50 dark:bg-[#141A13] ${isSearchFocused ? 'border-[#D6B53B] dark:border-[#D6B53B] bg-white dark:bg-[#1A2218] shadow-[0_0_0_4px_rgba(214,181,59,0.1)]' : 'border-gray-200 dark:border-[#1F2A1E] hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-[#1A2218]'}`}>
             <div className="pl-4 pr-2 flex items-center justify-center pointer-events-none pt-[2px]">
               <i className={`fi fi-rr-search text-[14px] leading-none transition-colors ${isSearchFocused ? 'text-[#D6B53B]' : 'text-gray-400 dark:text-[#A3B19B]'}`}></i>
@@ -166,6 +260,17 @@ export default function AdminTopbar({
                   <span className="text-[13px] font-sans font-medium tracking-wide text-gray-400/80 dark:text-[#A3B19B]/60">{hoveredSearch}</span>
                 </div>
               )}
+              {/* Animated Placeholder Text */}
+              {!searchQuery && !hoveredSearch && (
+                <div className="absolute inset-0 flex items-center pointer-events-none z-0 overflow-hidden">
+                  <span
+                    key={placeholderIndex}
+                    className="text-[13px] font-sans font-medium tracking-wide text-gray-400 dark:text-[#A3B19B] animate-[placeholderAnim_5s_ease-in-out]"
+                  >
+                    {SEARCH_PLACEHOLDERS[placeholderIndex]}
+                  </span>
+                </div>
+              )}
               <input 
                 ref={searchInputRef}
                 type="text" 
@@ -174,16 +279,15 @@ export default function AdminTopbar({
                 onFocus={() => setIsSearchFocused(true)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchQuery.trim()) {
-                    handleNavigation(`/admin/calendar?q=${encodeURIComponent(searchQuery.trim())}`);
+                    handleNavigation(`/admin/bookings?search=${encodeURIComponent(searchQuery.trim())}`);
                     setIsSearchFocused(false);
-                    // Add to recent searches if not already there
                     if (!recentSearches.includes(searchQuery.trim())) {
                       setRecentSearches(prev => [searchQuery.trim(), ...prev].slice(0, 5));
                     }
                   }
                 }}
-                placeholder={hoveredSearch ? "" : SEARCH_PLACEHOLDERS[placeholderIndex]}
-                className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] placeholder-gray-400 dark:placeholder-[#A3B19B] focus:outline-none transition-all duration-300 ease-in-out relative z-10"
+                placeholder=""
+                className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none transition-all duration-300 ease-in-out relative z-10"
               />
             </div>
             
@@ -211,7 +315,7 @@ export default function AdminTopbar({
                   </div>
                   <button 
                     onClick={() => {
-                      handleNavigation(`/admin/calendar?q=${encodeURIComponent(searchQuery.trim())}`);
+                      handleNavigation(`/admin/bookings?search=${encodeURIComponent(searchQuery.trim())}`);
                       setIsSearchFocused(false);
                       if (!recentSearches.includes(searchQuery.trim())) {
                         setRecentSearches(prev => [searchQuery.trim(), ...prev].slice(0, 5));
@@ -289,7 +393,7 @@ export default function AdminTopbar({
 
         {/* Notification Bell */}
         <div className="relative" ref={dropdownRef}>
-          <button 
+          <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className={`relative text-black dark:text-[#A3B19B] transition-colors p-1.5 rounded-full focus:outline-none flex items-center justify-center ${isDropdownOpen ? 'bg-[#FDF5CC] dark:bg-[#D6B53B]/20 text-[#D6B53B]' : 'hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#D6B53B] dark:hover:text-[#D6B53B]'}`}
           >
@@ -326,24 +430,28 @@ export default function AdminTopbar({
                   notifications.map((notification) => (
                     <div 
                       key={notification.id} 
-                      onClick={() => markAsRead(notification.id)}
-                      className={`flex gap-3.5 px-5 py-4 border-b border-gray-50 dark:border-white/5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/5 group ${!notification.isRead ? 'bg-gradient-to-r from-[#FDF5CC]/30 dark:from-[#D6B53B]/10 to-transparent' : ''}`}
+                      onClick={() => {
+                        markAsRead(notification.id);
+                        setIsDropdownOpen(false);
+                        router.push(notification.href);
+                      }}
+                      className={`flex gap-3.5 px-5 py-4 border-b border-gray-50 dark:border-white/5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/5 group ${!notification.is_read ? 'bg-gradient-to-r from-[#FDF5CC]/30 dark:from-[#D6B53B]/10 to-transparent' : ''}`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${!notification.isRead ? 'bg-white dark:bg-[#1F2A1E] shadow-sm dark:shadow-none border border-gray-100 dark:border-[#D6B53B]/20' : 'bg-gray-50 dark:bg-white/5'}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${!notification.is_read ? 'bg-white dark:bg-[#1F2A1E] shadow-sm dark:shadow-none border border-gray-100 dark:border-[#D6B53B]/20' : 'bg-gray-50 dark:bg-white/5'}`}>
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0 pt-0.5">
                         <div className="flex justify-between items-start mb-1">
-                          <p className={`text-[13px] tracking-wide truncate pr-3 ${!notification.isRead ? 'font-bold text-gray-900 dark:text-[#F4F4F0]' : 'font-semibold text-gray-700 dark:text-[#A3B19B]'}`}>
+                          <p className={`text-[13px] tracking-wide truncate pr-3 ${!notification.is_read ? 'font-bold text-gray-900 dark:text-[#F4F4F0]' : 'font-semibold text-gray-700 dark:text-[#A3B19B]'}`}>
                             {notification.title}
                           </p>
-                          <span className="text-[10px] text-gray-400 dark:text-[#A3B19B] font-semibold tracking-wide whitespace-nowrap flex-shrink-0 mt-0.5">{notification.time}</span>
+                          <span className="text-[10px] text-gray-400 dark:text-[#A3B19B] font-semibold tracking-wide whitespace-nowrap flex-shrink-0 mt-0.5">{formatNotificationTime(notification.created_at)}</span>
                         </div>
-                        <p className={`text-[12px] leading-snug line-clamp-2 tracking-wide ${!notification.isRead ? 'text-gray-700 dark:text-[#A3B19B] font-medium' : 'text-gray-500 dark:text-[#A3B19B]/70'}`}>
+                        <p className={`text-[12px] leading-snug line-clamp-2 tracking-wide ${!notification.is_read ? 'text-gray-700 dark:text-[#A3B19B] font-medium' : 'text-gray-500 dark:text-[#A3B19B]/70'}`}>
                           {notification.message}
                         </p>
                       </div>
-                      {!notification.isRead && (
+                      {!notification.is_read && (
                         <div className="w-2 h-2 rounded-full bg-[#D6B53B] flex-shrink-0 mt-2 shadow-[0_0_8px_rgba(214,181,59,0.5)]"></div>
                       )}
                     </div>
@@ -357,44 +465,56 @@ export default function AdminTopbar({
                 )}
               </div>
               
-              <div className="p-3.5 border-t border-gray-50 dark:border-white/5 text-center bg-gray-50/30 dark:bg-[#1A2218]/50 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                <button className="text-[12px] font-semibold tracking-[0.1em] uppercase text-gray-500 dark:text-[#A3B19B] hover:text-[#D6B53B] dark:hover:text-[#D6B53B] transition-colors">
-                  View all notifications
-                </button>
-              </div>
             </div>
           )}
         </div>
 
-        {/* Profile Avatar */}
-        <div className="relative" ref={profileRef}>
+        {/* Profile Controls */}
+        <div className="relative flex items-center gap-1" ref={profileRef}>
+          <button
+            onClick={() => handleNavigation('/admin/profile')}
+            className="cursor-pointer group focus:outline-none rounded-full"
+            title="Go to My Profile"
+          >
+            <UserAvatar
+              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[#D6B53B] font-bold text-[#1a1f18] shadow-sm transition-all duration-300 border-transparent hover:border-[#8E7722] hover:shadow-[0_0_12px_rgba(214,181,59,0.4)] ${pathname === '/admin/profile' ? 'border-[#8E7722] shadow-[0_0_12px_rgba(214,181,59,0.4)]' : ''}`}
+              initial={userInitial}
+              name={currentUser.username}
+              profileImage={currentUser.profileImage}
+            />
+          </button>
+
           <button 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2 cursor-pointer group focus:outline-none"
+            className={`p-1 rounded-full transition-colors focus:outline-none ${isProfileOpen ? 'bg-gray-100 dark:bg-white/10' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+            title="Open Profile Menu"
           >
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[#D6B53B] font-bold text-[#1a1f18] shadow-sm transition-all duration-300 ${isProfileOpen ? 'border-[#8E7722]' : 'border-transparent group-hover:border-[#8E7722]'}`}>
-              {userInitial}
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 transition-all duration-300 ${isProfileOpen ? 'text-[#D6B53B]' : 'text-gray-500 dark:text-[#A3B19B] group-hover:text-[#D6B53B]'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-3.5 h-3.5 transition-all duration-300 ${isProfileOpen ? 'text-[#D6B53B]' : 'text-gray-500 dark:text-[#A3B19B] hover:text-[#D6B53B]'}`}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           </button>
 
           {/* Profile Dropdown Panel */}
           {isProfileOpen && (
-            <div className="absolute right-0 mt-3 w-64 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-gray-100/50 dark:border-white/5 overflow-hidden origin-top-right z-50 transition-colors duration-500">
+            <div className="absolute top-full -right-2 mt-3 w-64 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-gray-100/50 dark:border-white/5 overflow-hidden origin-top-right z-50 transition-colors duration-500">
               
               {/* User Header */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-50 dark:border-white/5 bg-gradient-to-br from-white dark:from-[#141A13] to-gray-50/50 dark:to-white/5">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#D6B53B]/20 bg-[#D6B53B] font-bold text-[#1a1f18]">
-                  {userInitial}
-                </div>
+              <button
+                onClick={() => handleNavigation('/admin/profile')}
+                className="w-full text-left flex items-center gap-3 px-5 py-4 border-b border-gray-50 dark:border-white/5 bg-gradient-to-br from-white dark:from-[#141A13] to-gray-50/50 dark:to-white/5 hover:to-gray-100 dark:hover:to-[#1A2218] transition-colors focus:outline-none"
+              >
+                <UserAvatar
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#D6B53B]/20 bg-[#D6B53B] font-bold text-[#1a1f18]"
+                  initial={userInitial}
+                  name={currentUser.username}
+                  profileImage={currentUser.profileImage}
+                />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate">{currentUser.username}</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate group-hover:text-[#D6B53B] transition-colors">{currentUser.username}</h3>
                   <span className="text-[10px] font-semibold text-[#D6B53B] uppercase tracking-[0.1em]">{roleLabel}</span>
-                  <span className="max-w-[150px] truncate text-[10px] text-gray-400">{currentUser.email}</span>
+                  <span className="max-w-[150px] truncate text-[10px] text-gray-400 group-hover:text-gray-500 transition-colors">{currentUser.email}</span>
                 </div>
-              </div>
+              </button>
               
               {/* Menu Items */}
               <div className="p-2">

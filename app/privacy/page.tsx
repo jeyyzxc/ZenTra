@@ -1,9 +1,10 @@
 import React from 'react';
-import SubpageHero from '../components/SubpageHero';
+
+import SubpageHero from '@/components/client/SubpageHero';
 
 export default function PrivacyPage() {
   return (
-    <main className="flex flex-col min-h-screen bg-zentra-bg relative">
+    <main className="flex flex-col min-h-screen bg-transparent relative">
       <SubpageHero 
         title="Privacy Policy" 
         subtitle="How we protect your data." 

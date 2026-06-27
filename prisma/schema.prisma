@@ -26,9 +26,310 @@ enum EventStatus {
 }
 
 enum InquiryStatus {
-  UNREAD
+  NEW                  @map("new")
+  PENDING_RESPONSE     @map("pending_response")
+  ANSWERED             @map("answered")
+  FOLLOW_UP            @map("follow_up")
+  CONVERTED_TO_BOOKING @map("converted_to_booking")
+  CLOSED               @map("closed")
+  SPAM                 @map("spam")
+}
+
+enum InquiryPriority {
+  LOW    @map("low")
+  NORMAL @map("normal")
+  HIGH   @map("high")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+  CANCELLED
+  RESCHEDULED
+  EXPIRED
+  ON_HOLD
+}
+
+enum BookingSource {
+  ONLINE_FORM
+  ADMIN_MANUAL
+  N8N_WORKFLOW
+  PAYMENT_SYNC
+  CONTRACT_SYNC
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING_SYNC
+  FAILED_SYNC
+  MANUAL_UPDATE
+  CONFLICT_DETECTED
+}
+
+enum AutomationStatus {
+  NOT_STARTED
+  TRIGGERED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PaymentSummaryStatus {
+  UNPAID
+  FOR_VERIFICATION
+  RESERVATION_PAID
+  DOWN_PAYMENT_PAID
+  PARTIALLY_PAID
+  FULLY_PAID
+  OVERDUE
+  REJECTED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentType {
+  DOWN_PAYMENT
+  PARTIAL_PAYMENT
+  FULL_PAYMENT
+  RESERVATION_FEE
+  ADDITIONAL_PAYMENT
+}
+
+enum PaymentVerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentMilestoneStatus {
+  PENDING
+  FOR_VERIFICATION
+  PAID
+  OVERDUE
+  REJECTED
+}
+
+enum AuditAction {
+  CREATE
   READ
-  REPLIED
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  PROFILE_UPDATE
+  SETTINGS_CHANGE
+  APPROVAL
+  REJECTION
+  SUBMISSION
+  FILE_UPLOAD
+  FILE_DELETE
+  PERMISSION_CHANGE
+  ROLE_ASSIGNMENT
+  SYSTEM_CONFIG
+  EXPORT
+  ERROR
+}
+
+enum AuditStatus {
+  SUCCESS
+  FAILED
+  WARNING
+  INFO
+}
+
+enum EmailType {
+  EMAIL_VERIFICATION
+  BOOKING_CONFIRMATION
+  BOOKING_UPDATE
+  PAYMENT_REMINDER
+  CONTRACT_LINK
+  CONTRACT_DELIVERED
+  INQUIRY_REPLY
+  CANCELLATION_NOTICE
+  RESCHEDULE_NOTICE
+  ADMIN_NOTIFICATION
+  GENERAL
+}
+
+enum EmailStatus {
+  QUEUED
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  RETRIED
+  NOT_SENT
+}
+
+enum TriggerSource {
+  SYSTEM
+  AI_ORCHESTRATION
+  N8N_WORKFLOW
+  MANUAL_RESEND
+}
+
+enum RelatedModule {
+  BOOKING
+  CONTRACT
+  PAYMENT
+  INQUIRY
+  USER
+  ADMIN_NOTIFICATION
+}
+
+enum DashboardTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DashboardTaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum DashboardTaskSource {
+  MANUAL
+  SYSTEM
+  N8N_WORKFLOW
+  BOOKING
+  PAYMENT
+  CONTRACT
+  INQUIRY
+  CALENDAR
+}
+
+enum NotificationType {
+  BOOKING
+  PAYMENT
+  CONTRACT
+  INQUIRY
+  TESTIMONY
+  EMAIL
+  WORKFLOW
+  SYSTEM
+  CALENDAR
+  TASK
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum N8nWorkflowStatus {
+  QUEUED
+  PROCESSING
+  SUCCESS
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  GENERATED
+  READY_TO_SEND
+  SENT
+  DELIVERY_FAILED
+  VIEWED
+  SIGNED
+  SUPERSEDED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ContractWorkflowStatus {
+  NOT_STARTED
+  TRIGGERED
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+  MANUAL_FALLBACK
+}
+
+enum ContractSignatureStatus {
+  NOT_SENT
+  PENDING
+  VIEWED
+  SIGNED
+  DECLINED
+  EXPIRED
+  UNSIGNED
+}
+
+enum ContractTemplateType {
+  EVENT_CONTRACT
+}
+
+enum EventCategoryStatus {
+  ACTIVE   @map("active")
+  HIDDEN   @map("hidden")
+  ARCHIVED @map("archived")
+}
+
+enum PackageStatus {
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
+  HIDDEN   @map("hidden")
+  ARCHIVED @map("archived")
+}
+
+enum TestimonyStatus {
+  PENDING_REVIEW @map("pending_review")
+  APPROVED       @map("approved")
+  HIDDEN         @map("hidden")
+  FLAGGED        @map("flagged")
+  DELETED        @map("deleted")
+}
+
+enum SupportFaqStatus {
+  DRAFT        @map("draft")
+  PUBLISHED    @map("published")
+  HIDDEN       @map("hidden")
+  ARCHIVED     @map("archived")
+  NEEDS_REVIEW @map("needs_review")
+}
+
+enum SupportCategoryStatus {
+  ACTIVE   @map("active")
+  HIDDEN   @map("hidden")
+  ARCHIVED @map("archived")
+}
+
+enum SupportRelatedModule {
+  BOOKING     @map("booking")
+  PACKAGES    @map("packages")
+  PAYMENTS    @map("payments")
+  CONTRACTS   @map("contracts")
+  CALENDAR    @map("calendar")
+  VENUE       @map("venue")
+  INQUIRIES   @map("inquiries")
+  TESTIMONIES @map("testimonies")
+  GENERAL     @map("general")
+}
+
+enum AssistantQuestionStatus {
+  NEW              @map("new")
+  REVIEWED         @map("reviewed")
+  ANSWERED          @map("answered")
+  CONVERTED_TO_FAQ  @map("converted_to_faq")
+  IGNORED           @map("ignored")
+  ARCHIVED          @map("archived")
 }
 
 model User {
@@ -38,6 +339,7 @@ model User {
   password      String
   fullName      String?  @map("full_name") @db.VarChar(255)
   contactNumber String?  @map("contact_number") @db.VarChar(20)
+  profileImage  String?  @map("profile_image") @db.VarChar(500)
   role          Role     @default(CLIENT)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -46,19 +348,22 @@ model User {
 }
 
 model Event {
-  id         String      @id @default(cuid())
-  title      String
-  clientName String
-  date       DateTime
-  startTime  String?
-  endTime    String?
-  status     EventStatus @default(PENDING)
-  eventType  String
-  venue      String
-  pax        Int
-  notes      String?     @db.Text
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id           String      @id @default(cuid())
+  title        String
+  clientName   String
+  date         DateTime
+  startTime    String?
+  endTime      String?
+  status       EventStatus @default(PENDING)
+  eventType    String
+  venue        String
+  pax          Int
+  notes        String?     @db.Text
+  bookingId    String?     @unique @map("booking_id")
+  booking      Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  source       String?     @db.VarChar(80)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model TaskList {
@@ -87,11 +392,813 @@ model Task {
 }
 
 model Inquiry {
-  id        String        @id @default(cuid())
-  name      String
-  email     String
-  phone     String?
-  message   String        @db.Text
-  status    InquiryStatus @default(UNREAD)
-  createdAt DateTime      @default(now())
+  id                   String            @id @default(cuid())
+  inquiryReference     String            @unique @map("inquiry_reference") @db.VarChar(80)
+  fullName             String            @map("full_name") @db.VarChar(180)
+  phoneNumber          String?           @map("phone_number") @db.VarChar(40)
+  email                String            @db.VarChar(255)
+  preferredContactTime String?           @map("preferred_contact_time") @db.VarChar(100)
+  message              String            @db.Text
+  eventInterest        String?           @map("event_interest") @db.VarChar(180)
+  packageInterest      String?           @map("package_interest") @db.VarChar(255)
+  sourcePage           String            @default("contact_us") @map("source_page") @db.VarChar(80)
+  status               InquiryStatus     @default(NEW)
+  priority             InquiryPriority   @default(NORMAL)
+  assignedTo           String?           @map("assigned_to") @db.VarChar(180)
+  relatedBookingId     String?           @map("related_booking_id")
+  relatedBooking       Booking?          @relation(fields: [relatedBookingId], references: [id], onDelete: SetNull)
+  submittedAt          DateTime          @default(now()) @map("submitted_at")
+  answeredAt           DateTime?         @map("answered_at")
+  closedAt             DateTime?         @map("closed_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  notes                InquiryNote[]
+  activity             InquiryActivity[]
+
+  @@index([submittedAt])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([eventInterest])
+  @@index([preferredContactTime])
+  @@index([relatedBookingId])
+  @@index([status, priority, submittedAt])
+  @@map("inquiries")
+}
+
+model InquiryNote {
+  id        String   @id @default(cuid())
+  inquiryId String   @map("inquiry_id")
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  note      String   @db.Text
+  createdBy String   @map("created_by") @db.VarChar(180)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([inquiryId])
+  @@index([createdAt])
+  @@map("inquiry_notes")
+}
+
+model InquiryActivity {
+  id          String   @id @default(cuid())
+  inquiryId   String   @map("inquiry_id")
+  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  action      String   @db.VarChar(100)
+  description String   @db.Text
+  performedBy String   @map("performed_by") @db.VarChar(180)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([inquiryId])
+  @@index([createdAt])
+  @@map("inquiry_activity")
+}
+
+model Booking {
+  id                      String                  @id @default(cuid())
+  bookingReference        String                  @unique @map("booking_reference")
+  clientName              String                  @map("client_name")
+  clientEmail             String?                 @map("client_email")
+  clientPhone             String?                 @map("client_phone") @db.VarChar(20)
+  clientAddress           String?                 @map("client_address") @db.Text
+  eventTitle              String                  @map("event_title")
+  eventType               String                  @map("event_type")
+  eventCategoryId         String?                 @map("event_category_id")
+  eventCategory           EventCategory?          @relation(fields: [eventCategoryId], references: [id], onDelete: SetNull)
+  eventCategoryName       String?                 @map("event_category_name")
+  eventDate               DateTime                @map("event_date")
+  startTime               String?                 @map("start_time")
+  endTime                 String?                 @map("end_time")
+  venue                   String
+  guestCount              Int                     @default(0) @map("guest_count")
+  packageId               String?                 @map("package_id")
+  package                 Package?                @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packageVersion          Int?                    @map("package_version")
+  packageSelected         String?                 @map("package_selected")
+  theme                   String?
+  colors                  String?
+  specialRequests         String?                 @map("special_requests") @db.Text
+  status                  BookingStatus           @default(PENDING)
+  statusChangedAt         DateTime?               @map("status_changed_at")
+  statusChangedBy         String?                 @map("status_changed_by")
+  statusChangeReason      String?                 @map("status_change_reason") @db.Text
+  assignedCoordinator     String?                 @map("assigned_coordinator")
+  paymentRecordId         String?                 @map("payment_record_id")
+  paymentSummaryStatus    PaymentSummaryStatus    @default(UNPAID) @map("payment_summary_status")
+  paymentTotalAmount      Float?                  @map("payment_total_amount")
+  paymentAmountPaid       Float?                  @map("payment_amount_paid")
+  paymentRemainingBalance Float?                  @map("payment_remaining_balance")
+  paymentDueDate          DateTime?               @map("payment_due_date")
+  paymentLastDate         DateTime?               @map("payment_last_date")
+  paymentReference        String?                 @map("payment_reference")
+  contractRecordId        String?                 @map("contract_record_id")
+  contractStatus          String?                 @map("contract_status")
+  bookingSource           BookingSource           @default(ADMIN_MANUAL) @map("booking_source")
+  syncStatus              SyncStatus              @default(MANUAL_UPDATE) @map("sync_status")
+  automationStatus        AutomationStatus        @default(NOT_STARTED) @map("automation_status")
+  lastSyncedAt            DateTime?               @map("last_synced_at")
+  n8nWorkflowId           String?                 @map("n8n_workflow_id")
+  n8nExecutionId          String?                 @map("n8n_execution_id")
+  lastWorkflowResult      String?                 @map("last_workflow_result") @db.Text
+  emailLogReferenceId     String?                 @map("email_log_reference_id")
+  emailStatus             String?                 @default("pending") @map("email_status")
+  emailType               String?                 @map("email_type")
+  lastEmailSentAt         DateTime?               @map("last_email_sent_at")
+  internalNotes           String?                 @map("internal_notes") @db.Text
+  contracts               Contract[]
+  paymentRecord           PaymentRecord?
+  timeline                BookingTimeline[]
+  calendarEvent           Event?
+  packageSnapshot         BookingPackageSnapshot?
+  testimonies             Testimony[]
+  inquiries               Inquiry[]
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+
+  @@index([bookingReference])
+  @@index([clientEmail])
+  @@index([eventDate])
+  @@index([status])
+  @@index([bookingSource])
+  @@index([eventCategoryId])
+  @@index([packageId])
+  @@index([syncStatus])
+  @@index([automationStatus])
+  @@index([paymentSummaryStatus])
+  @@index([emailStatus])
+  @@index([emailType])
+  @@index([lastEmailSentAt])
+  @@index([eventDate, status])
+  @@index([clientEmail, eventDate])
+  @@map("bookings")
+}
+
+model Testimony {
+  id                  String          @id @default(cuid())
+  clientName          String          @map("client_name") @db.VarChar(160)
+  nickname            String?         @db.VarChar(120)
+  email               String?         @db.VarChar(255)
+  eventType           String          @map("event_type") @db.VarChar(160)
+  eventDate           DateTime        @map("event_date")
+  packageName         String?         @map("package_name") @db.VarChar(255)
+  bookingReference    String?         @map("booking_reference") @db.VarChar(120)
+  bookingId           String?         @map("booking_id")
+  booking             Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  overallRating       Int             @map("overall_rating")
+  approachRating      Int             @map("approach_rating")
+  foodRating          Int             @map("food_rating")
+  serviceRating       Int             @map("service_rating")
+  venueRating         Int?            @map("venue_rating")
+  communicationRating Int?            @map("communication_rating")
+  comment             String          @db.Text
+  photoUrl            String?         @map("photo_url") @db.Text
+  photoPath           String?         @map("photo_path") @db.Text
+  status              TestimonyStatus @default(PENDING_REVIEW)
+  isPublic            Boolean         @default(false) @map("is_public")
+  isFeatured          Boolean         @default(false) @map("is_featured")
+  submittedAt         DateTime        @default(now()) @map("submitted_at")
+  approvedBy          String?         @map("approved_by")
+  approvedAt          DateTime?       @map("approved_at")
+  hiddenBy            String?         @map("hidden_by")
+  hiddenAt            DateTime?       @map("hidden_at")
+  deletedBy           String?         @map("deleted_by")
+  deletedAt           DateTime?       @map("deleted_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([isPublic])
+  @@index([isFeatured])
+  @@index([submittedAt])
+  @@index([eventDate])
+  @@index([eventType])
+  @@index([overallRating])
+  @@index([bookingReference])
+  @@index([bookingId])
+  @@index([status, isPublic, submittedAt])
+  @@map("testimonies")
+}
+
+model EventCategory {
+  id               String                   @id @default(cuid())
+  name             String
+  slug             String                   @unique
+  description      String?                  @db.Text
+  coverImageUrl    String?                  @map("cover_image_url") @db.Text
+  displayOrder     Int                      @default(0) @map("display_order")
+  status           EventCategoryStatus      @default(ACTIVE)
+  clientVisible    Boolean                  @default(true) @map("client_visible")
+  createdBy        String?                  @map("created_by")
+  updatedBy        String?                  @map("updated_by")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  packages         Package[]
+  bookings         Booking[]
+  bookingSnapshots BookingPackageSnapshot[]
+
+  @@index([status])
+  @@index([clientVisible])
+  @@index([displayOrder])
+  @@index([status, clientVisible])
+  @@map("event_categories")
+}
+
+model Package {
+  id                           String                   @id @default(cuid())
+  eventCategoryId              String                   @map("event_category_id")
+  eventCategory                EventCategory            @relation(fields: [eventCategoryId], references: [id], onDelete: Restrict)
+  packageName                  String                   @map("package_name")
+  slug                         String
+  description                  String?                  @db.Text
+  price                        Float                    @default(0)
+  currency                     String                   @default("PHP") @db.VarChar(10)
+  paxIncluded                  Int                      @default(0) @map("pax_included")
+  excessPaxFee                 Float                    @default(0) @map("excess_pax_fee")
+  reservationFee               Float                    @default(0) @map("reservation_fee")
+  downPaymentAmount            Float                    @default(0) @map("down_payment_amount")
+  fullPaymentAmount            Float                    @default(0) @map("full_payment_amount")
+  checkInTime                  String?                  @map("check_in_time")
+  checkOutTime                 String?                  @map("check_out_time")
+  packageImageUrl              String?                  @map("package_image_url") @db.Text
+  contractItemDescription      String?                  @map("contract_item_description") @db.Text
+  contractInclusionDescription String?                  @map("contract_inclusion_description") @db.Text
+  status                       PackageStatus            @default(ACTIVE)
+  clientVisible                Boolean                  @default(true) @map("client_visible")
+  currentVersion               Int                      @default(1) @map("current_version")
+  internalNotes                String?                  @map("internal_notes") @db.Text
+  createdBy                    String?                  @map("created_by")
+  updatedBy                    String?                  @map("updated_by")
+  createdAt                    DateTime                 @default(now()) @map("created_at")
+  updatedAt                    DateTime                 @updatedAt @map("updated_at")
+  inclusions                   PackageInclusion[]
+  versions                     PackageVersion[]
+  bookings                     Booking[]
+  bookingSnapshots             BookingPackageSnapshot[]
+
+  @@unique([eventCategoryId, slug])
+  @@index([eventCategoryId])
+  @@index([status])
+  @@index([clientVisible])
+  @@index([status, clientVisible])
+  @@index([updatedAt])
+  @@map("packages")
+}
+
+model PackageInclusion {
+  id            String   @id @default(cuid())
+  packageId     String   @map("package_id")
+  package       Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  inclusionName String   @map("inclusion_name")
+  description   String?  @db.Text
+  isFree        Boolean  @default(true) @map("is_free")
+  isOptional    Boolean  @default(false) @map("is_optional")
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([packageId])
+  @@index([displayOrder])
+  @@map("package_inclusions")
+}
+
+model PackageVersion {
+  id            String   @id @default(cuid())
+  packageId     String   @map("package_id")
+  package       Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  versionNumber Int      @map("version_number")
+  snapshotData  Json     @map("snapshot_data")
+  changeSummary String?  @map("change_summary") @db.Text
+  createdBy     String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([packageId, versionNumber])
+  @@index([packageId])
+  @@index([createdAt])
+  @@map("package_versions")
+}
+
+model SupportCategory {
+  id            String                @id @default(cuid())
+  name          String
+  slug          String                @unique
+  description   String?               @db.Text
+  displayOrder  Int                   @default(0) @map("display_order")
+  status        SupportCategoryStatus @default(ACTIVE)
+  clientVisible Boolean               @default(true) @map("client_visible")
+  createdBy     String?               @map("created_by")
+  updatedBy     String?               @map("updated_by")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  entries       SupportFaqEntry[]
+
+  @@index([status])
+  @@index([clientVisible])
+  @@index([displayOrder])
+  @@index([status, clientVisible])
+  @@map("support_categories")
+}
+
+model SupportFaqEntry {
+  id                      String                        @id @default(cuid())
+  question                String                        @db.Text
+  answer                  String                        @db.Text
+  categoryId              String?                       @map("category_id")
+  category                SupportCategory?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags                    String[]                      @default([])
+  relatedModule           SupportRelatedModule          @default(GENERAL) @map("related_module")
+  status                  SupportFaqStatus              @default(DRAFT)
+  clientVisible           Boolean                       @default(false) @map("client_visible")
+  assistantEnabled        Boolean                       @default(false) @map("assistant_enabled")
+  priority                Int                           @default(0)
+  viewCount               Int                           @default(0) @map("view_count")
+  lastUsedByAssistantAt   DateTime?                     @map("last_used_by_assistant_at")
+  internalNotes           String?                       @map("internal_notes") @db.Text
+  createdBy               String?                       @map("created_by")
+  updatedBy               String?                       @map("updated_by")
+  createdAt               DateTime                      @default(now()) @map("created_at")
+  updatedAt               DateTime                      @updatedAt @map("updated_at")
+  versions                SupportFaqVersion[]
+  assistantTestLogs       AssistantTestLog[]
+  unansweredConversions   AssistantUnansweredQuestion[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([clientVisible])
+  @@index([assistantEnabled])
+  @@index([relatedModule])
+  @@index([priority])
+  @@index([updatedAt])
+  @@index([status, clientVisible])
+  @@index([status, assistantEnabled])
+  @@map("support_faq_entries")
+}
+
+model SupportFaqVersion {
+  id            String          @id @default(cuid())
+  faqEntryId    String          @map("faq_entry_id")
+  faqEntry      SupportFaqEntry @relation(fields: [faqEntryId], references: [id], onDelete: Cascade)
+  oldQuestion   String?         @map("old_question") @db.Text
+  oldAnswer     String?         @map("old_answer") @db.Text
+  newQuestion   String?         @map("new_question") @db.Text
+  newAnswer     String?         @map("new_answer") @db.Text
+  changeSummary String?         @map("change_summary") @db.Text
+  changedBy     String?         @map("changed_by")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@index([faqEntryId])
+  @@index([createdAt])
+  @@map("support_faq_versions")
+}
+
+model AssistantUnansweredQuestion {
+  id                String                  @id @default(cuid())
+  question          String                  @db.Text
+  sourcePage        String?                 @default("smart_assistant") @map("source_page")
+  suggestedCategory String?                 @map("suggested_category")
+  matchConfidence   Float                   @default(0) @map("match_confidence")
+  status            AssistantQuestionStatus @default(NEW)
+  convertedFaqId    String?                 @map("converted_faq_id")
+  convertedFaq      SupportFaqEntry?        @relation(fields: [convertedFaqId], references: [id], onDelete: SetNull)
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([sourcePage])
+  @@index([matchConfidence])
+  @@index([createdAt])
+  @@map("assistant_unanswered_questions")
+}
+
+model AssistantTestLog {
+  id              String           @id @default(cuid())
+  testQuestion    String           @map("test_question") @db.Text
+  matchedFaqId    String?          @map("matched_faq_id")
+  matchedFaq      SupportFaqEntry? @relation(fields: [matchedFaqId], references: [id], onDelete: SetNull)
+  responsePreview String           @map("response_preview") @db.Text
+  matchConfidence Float            @default(0) @map("match_confidence")
+  testedBy        String?          @map("tested_by")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@index([matchedFaqId])
+  @@index([matchConfidence])
+  @@index([createdAt])
+  @@map("assistant_test_logs")
+}
+
+model BookingPackageSnapshot {
+  id              String         @id @default(cuid())
+  bookingId       String         @unique @map("booking_id")
+  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  eventCategoryId String?        @map("event_category_id")
+  eventCategory   EventCategory? @relation(fields: [eventCategoryId], references: [id], onDelete: SetNull)
+  packageId       String?        @map("package_id")
+  package         Package?       @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packageVersion  Int            @map("package_version")
+  snapshotData    Json           @map("snapshot_data")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@index([eventCategoryId])
+  @@index([packageId])
+  @@map("booking_package_snapshots")
+}
+
+model BookingTimeline {
+  id          String   @id @default(cuid())
+  bookingId   String   @map("booking_id")
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  action      String
+  source      String
+  performedBy String   @map("performed_by")
+  description String   @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@index([createdAt])
+  @@map("booking_timeline")
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  timestamp      DateTime    @default(now())
+  userId         String?     @map("user_id")
+  userName       String      @map("user_name")
+  userRole       String      @map("user_role")
+  action         AuditAction
+  module         String
+  description    String      @db.Text
+  status         AuditStatus
+  ipAddress      String?     @map("ip_address")
+  userAgent      String?     @map("user_agent") @db.Text
+  previousValues Json?       @map("previous_values")
+  newValues      Json?       @map("new_values")
+  metadata       Json?
+  source         String?     @db.VarChar(80)
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([status])
+  @@index([timestamp, action])
+  @@index([timestamp, userId])
+  @@map("audit_logs")
+}
+
+model EmailLog {
+  id                  String         @id @default(cuid())
+  recipientEmail      String         @map("recipient_email")
+  recipientName       String?        @map("recipient_name")
+  emailType           EmailType      @map("email_type")
+  relatedModule       RelatedModule? @map("related_module")
+  relatedRecordId     String?        @map("related_record_id")
+  subject             String
+  triggerSource       TriggerSource  @map("trigger_source")
+  workflowName        String?        @map("workflow_name")
+  workflowExecutionId String?        @map("workflow_execution_id")
+  providerMessageId   String?        @map("provider_message_id")
+  status              EmailStatus    @default(QUEUED)
+  retryCount          Int            @default(0) @map("retry_count")
+  lastAttemptAt       DateTime?      @map("last_attempt_at")
+  sentAt              DateTime?      @map("sent_at")
+  deliveredAt         DateTime?      @map("delivered_at")
+  failedAt            DateTime?      @map("failed_at")
+  errorMessage        String?        @map("error_message") @db.Text
+  failureReason       String?        @map("failure_reason")
+  emailPreview        String?        @map("email_preview") @db.Text
+  payloadSummary      Json?          @map("payload_summary")
+  resentBy            String?        @map("resent_by")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@index([recipientEmail])
+  @@index([emailType])
+  @@index([status])
+  @@index([triggerSource])
+  @@index([relatedModule, relatedRecordId])
+  @@index([createdAt, status])
+  @@map("email_logs")
+}
+
+model Contract {
+  id                 String                  @id @default(cuid())
+  contractNumber     String                  @unique @map("contract_number")
+  bookingId          String                  @map("booking_id")
+  booking            Booking                 @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingReference   String                  @map("booking_reference")
+  clientName         String                  @map("client_name")
+  clientEmail        String?                 @map("client_email")
+  eventType          String                  @map("event_type")
+  eventDate          DateTime                @map("event_date")
+  packageName        String?                 @map("package_name")
+  templateId         String?                 @map("template_id")
+  template           ContractTemplate?       @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateVersion    Int                     @default(1) @map("template_version")
+  contractStatus     ContractStatus          @default(DRAFT) @map("contract_status")
+  emailStatus        EmailStatus?            @map("email_status")
+  workflowStatus     ContractWorkflowStatus  @default(NOT_STARTED) @map("workflow_status")
+  signatureStatus    ContractSignatureStatus @default(NOT_SENT) @map("signature_status")
+  contractAmount     Float?                  @map("contract_amount")
+  totalPaid          Float?                  @map("total_paid")
+  remainingBalance   Float?                  @map("remaining_balance")
+  pdfUrl             String?                 @map("pdf_url") @db.Text
+  htmlPreview        String?                 @map("html_preview") @db.Text
+  snapshotData       Json?                   @map("snapshot_data")
+  resendAttemptCount Int                     @default(0) @map("resend_attempt_count")
+  lastSentAt         DateTime?               @map("last_sent_at")
+  lastResendAt       DateTime?               @map("last_resend_at")
+  signedAt           DateTime?               @map("signed_at")
+  viewedAt           DateTime?               @map("viewed_at")
+  generatedBy        String?                 @map("generated_by")
+  sentBy             String?                 @map("sent_by")
+  internalNotes      String?                 @map("internal_notes") @db.Text
+  source             String?                 @db.VarChar(80)
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  versions           ContractVersion[]
+  timeline           ContractTimeline[]
+  sendAttempts       ContractSendAttempt[]
+
+  @@index([bookingId])
+  @@index([bookingReference])
+  @@index([clientEmail])
+  @@index([contractStatus])
+  @@index([emailStatus])
+  @@index([workflowStatus])
+  @@index([signatureStatus])
+  @@index([eventDate])
+  @@index([createdAt])
+  @@map("contracts")
+}
+
+model ContractVersion {
+  id              String   @id @default(cuid())
+  contractId      String   @map("contract_id")
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  versionNumber   Int      @map("version_number")
+  templateVersion Int      @map("template_version")
+  snapshotData    Json     @map("snapshot_data")
+  pdfUrl          String?  @map("pdf_url") @db.Text
+  htmlPreview     String?  @map("html_preview") @db.Text
+  changeSummary   String?  @map("change_summary") @db.Text
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([contractId, versionNumber])
+  @@index([contractId])
+  @@index([createdAt])
+  @@map("contract_versions")
+}
+
+model ContractTemplate {
+  id                 String               @id @default(cuid())
+  templateName       String               @map("template_name")
+  templateType       ContractTemplateType @default(EVENT_CONTRACT) @map("template_type")
+  templateVersion    Int                  @default(1) @map("template_version")
+  eventType          String?              @map("event_type")
+  htmlTemplate       String               @map("html_template") @db.Text
+  staticTermsContent String?              @map("static_terms_content") @db.Text
+  isActive           Boolean              @default(true) @map("is_active")
+  lockedSections     Json?                @map("locked_sections")
+  createdBy          String?              @map("created_by")
+  updatedBy          String?              @map("updated_by")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  contracts          Contract[]
+
+  @@index([templateType])
+  @@index([templateVersion])
+  @@index([eventType])
+  @@index([isActive])
+  @@map("contract_templates")
+}
+
+model ContractTimeline {
+  id          String   @id @default(cuid())
+  contractId  String   @map("contract_id")
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  action      String
+  description String   @db.Text
+  source      String
+  performedBy String?  @map("performed_by")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([contractId])
+  @@index([createdAt])
+  @@map("contract_timeline")
+}
+
+model ContractSendAttempt {
+  id             String      @id @default(cuid())
+  contractId     String      @map("contract_id")
+  contract       Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  emailLogId     String?     @map("email_log_id")
+  workflowLogId  String?     @map("workflow_log_id")
+  recipientEmail String      @map("recipient_email")
+  status         EmailStatus @default(PENDING)
+  attemptNumber  Int         @map("attempt_number")
+  errorMessage   String?     @map("error_message") @db.Text
+  sentAt         DateTime?   @map("sent_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  @@index([contractId])
+  @@index([emailLogId])
+  @@index([workflowLogId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("contract_send_attempts")
+}
+
+model DashboardTask {
+  id              String                @id @default(cuid())
+  title           String
+  description     String?               @db.Text
+  taskDate        DateTime              @map("task_date")
+  taskTime        String?               @map("task_time")
+  priority        DashboardTaskPriority @default(MEDIUM)
+  status          DashboardTaskStatus   @default(PENDING)
+  assignedTo      String?               @map("assigned_to")
+  assignedToRole  String?               @map("assigned_to_role")
+  relatedModule   String?               @map("related_module")
+  relatedRecordId String?               @map("related_record_id")
+  bookingReference String?              @map("booking_reference")
+  category        String?
+  source          DashboardTaskSource   @default(MANUAL)
+  workflowName    String?               @map("workflow_name")
+  workflowExecutionId String?           @map("workflow_execution_id")
+  reminderOption  String?               @map("reminder_option")
+  createdBy       String?               @map("created_by")
+  completedBy     String?               @map("completed_by")
+  completedAt     DateTime?             @map("completed_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  @@index([taskDate])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([assignedToRole])
+  @@index([bookingReference])
+  @@index([category])
+  @@index([workflowExecutionId])
+  @@index([relatedModule, relatedRecordId])
+  @@index([relatedRecordId, workflowExecutionId])
+  @@index([taskDate, status])
+  @@unique([relatedRecordId, workflowExecutionId, title])
+  @@map("dashboard_tasks")
+}
+
+model Notification {
+  id              String               @id @default(cuid())
+  title           String
+  message         String               @db.Text
+  type            NotificationType     @default(SYSTEM)
+  priority        NotificationPriority @default(MEDIUM)
+  relatedModule   String?              @map("related_module")
+  relatedRecordId String?              @map("related_record_id")
+  isRead          Boolean              @default(false) @map("is_read")
+  createdFor      String?              @map("created_for")
+  createdBy       String?              @map("created_by")
+  source          String?              @db.VarChar(80)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@index([isRead])
+  @@index([type])
+  @@index([priority])
+  @@index([createdFor])
+  @@index([relatedModule, relatedRecordId])
+  @@map("notifications")
+}
+
+model PaymentRecord {
+  id                 String                    @id @default(cuid())
+  paymentReference   String                    @unique @map("payment_reference")
+  bookingId          String                    @unique @map("booking_id")
+  booking            Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingReference   String                    @map("booking_reference")
+  clientName         String                    @map("client_name")
+  clientEmail        String?                   @map("client_email")
+  clientPhone        String?                   @map("client_phone") @db.VarChar(20)
+  eventTitle         String?                   @map("event_title")
+  eventType          String?                   @map("event_type")
+  eventDate          DateTime?                 @map("event_date")
+  packageName        String?                   @map("package_name")
+  paymentType        PaymentType?              @map("payment_type")
+  status             PaymentSummaryStatus      @default(UNPAID)
+  verificationStatus PaymentVerificationStatus @default(NOT_SUBMITTED) @map("verification_status")
+  totalAmount        Float                     @default(0) @map("total_amount")
+  amountPaid         Float                     @default(0) @map("amount_paid")
+  pendingAmount      Float                     @default(0) @map("pending_amount")
+  remainingBalance   Float                     @default(0) @map("remaining_balance")
+  paymentMethod      String?                   @map("payment_method")
+  paymentDate        DateTime?                 @map("payment_date")
+  dueDate            DateTime?                 @map("due_date")
+  proofPath          String?                   @map("proof_path") @db.Text
+  proofFileName      String?                   @map("proof_file_name")
+  proofFileType      String?                   @map("proof_file_type")
+  proofUploadedBy    String?                   @map("proof_uploaded_by")
+  proofUploadedAt    DateTime?                 @map("proof_uploaded_at")
+  verifiedBy         String?                   @map("verified_by")
+  verifiedAt         DateTime?                 @map("verified_at")
+  notes              String?                   @db.Text
+  source             String                    @db.VarChar(80)
+  createdBy          String?                   @map("created_by")
+  updatedBy          String?                   @map("updated_by")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  history            PaymentHistory[]
+  milestones         PaymentMilestone[]
+
+  @@index([status])
+  @@index([verificationStatus])
+  @@index([paymentType])
+  @@index([bookingReference])
+  @@index([dueDate])
+  @@index([paymentDate])
+  @@index([createdAt])
+  @@map("payment_records")
+}
+
+model PaymentHistory {
+  id            String                     @id @default(cuid())
+  paymentId     String                     @map("payment_id")
+  payment       PaymentRecord              @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  bookingId     String?                    @map("booking_id")
+  action        String
+  description   String                     @db.Text
+  oldStatus     PaymentSummaryStatus?      @map("old_status")
+  newStatus     PaymentSummaryStatus?      @map("new_status")
+  oldAmount     Float?                     @map("old_amount")
+  newAmount     Float?                     @map("new_amount")
+  oldBalance    Float?                     @map("old_balance")
+  newBalance    Float?                     @map("new_balance")
+  paymentAmount Float?                     @map("payment_amount")
+  paymentType   PaymentType?               @map("payment_type")
+  paymentMethod String?                    @map("payment_method")
+  proofPath     String?                    @map("proof_path") @db.Text
+  proofFileName String?                    @map("proof_file_name")
+  proofFileType String?                    @map("proof_file_type")
+  previousValue Json?                      @map("previous_value")
+  newValue      Json?                      @map("new_value")
+  verification  PaymentVerificationStatus? @map("verification_status")
+  performedBy   String                     @map("performed_by")
+  notes         String?                    @db.Text
+  source        String                     @db.VarChar(80)
+  createdAt     DateTime                   @default(now()) @map("created_at")
+
+  @@index([paymentId])
+  @@index([bookingId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("payment_history")
+}
+
+model PaymentMilestone {
+  id             String                 @id @default(cuid())
+  paymentId      String                 @map("payment_id")
+  payment        PaymentRecord          @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  bookingId      String                 @map("booking_id")
+  milestoneName  String                 @map("milestone_name")
+  amountRequired Float                  @default(0) @map("amount_required")
+  amountPaid     Float                  @default(0) @map("amount_paid")
+  dueDate        DateTime?              @map("due_date")
+  status         PaymentMilestoneStatus @default(PENDING)
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  @@index([paymentId])
+  @@index([bookingId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("payment_milestones")
+}
+
+model N8nWorkflowLog {
+  id                  String            @id @default(cuid())
+  workflowName        String            @map("workflow_name")
+  workflowExecutionId String?           @map("workflow_execution_id")
+  relatedModule       String?           @map("related_module")
+  relatedRecordId     String?           @map("related_record_id")
+  triggerSource       String?           @map("trigger_source")
+  requestPayload      Json?             @map("request_payload")
+  responsePayload     Json?             @map("response_payload")
+  status              N8nWorkflowStatus @default(PROCESSING)
+  errorMessage        String?           @map("error_message") @db.Text
+  startedAt           DateTime?         @map("started_at")
+  completedAt         DateTime?         @map("completed_at")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([workflowName])
+  @@index([workflowExecutionId])
+  @@index([relatedModule, relatedRecordId])
+  @@index([createdAt, status])
+  @@map("n8n_workflow_logs")
 }

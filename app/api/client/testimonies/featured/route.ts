@@ -1,0 +1,15 @@
+import {
+  getFeaturedTestimonies,
+  testimonyErrorResponse,
+} from '@/lib/testimony-service';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+  try {
+    const limit = Number(new URL(request.url).searchParams.get('limit')) || 6;
+    return Response.json({ testimonies: await getFeaturedTestimonies(limit) });
+  } catch (error) {
+    return testimonyErrorResponse(error, 'Unable to load featured testimonies.');
+  }
+}

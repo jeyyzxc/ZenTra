@@ -1,8 +1,9 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
-import { Role } from '@prisma/client';
+import { AuditAction, AuditStatus, Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { auditActor, createAuditLog, errorMetadata } from '@/lib/audit';
 import { requireAdmin } from '@/lib/authorization';
 import { assertStrongPassword } from '@/lib/password-policy';
 import { prisma } from '@/lib/prisma';
@@ -18,6 +19,7 @@ const PROFILE_SELECT = {
   email: true,
   fullName: true,
   contactNumber: true,
+  profileImage: true,
   role: true,
   createdAt: true,
   updatedAt: true,
@@ -29,6 +31,7 @@ function toAdminProfile(profile: {
   email: string;
   fullName: string | null;
   contactNumber: string | null;
+  profileImage: string | null;
   role: Role;
   createdAt: Date;
   updatedAt: Date;
@@ -47,18 +50,32 @@ function toAdminProfile(profile: {
 
 function normalizeProfileInput(data: UpdateProfileInput) {
   const fullName = data.fullName.trim();
-  const contactNumber = data.contactNumber.trim();
+  const rawContactNumber = data.contactNumber.trim();
+  let contactNumber = '';
 
   if (fullName.length < 2 || fullName.length > 255) {
     throw new Error('Full name must be between 2 and 255 characters.');
   }
 
-  if (contactNumber.length > 20) {
-    throw new Error('Contact number cannot exceed 20 characters.');
+  if (rawContactNumber && !/^[0-9+().\-\s]+$/.test(rawContactNumber)) {
+    throw new Error('Contact number contains unsupported characters.');
   }
 
-  if (contactNumber && !/^[0-9+().\-\s]+$/.test(contactNumber)) {
-    throw new Error('Contact number contains unsupported characters.');
+  if (rawContactNumber) {
+    const digits = rawContactNumber.replace(/\D/g, '');
+    const localDigits = digits.startsWith('63')
+      ? digits.slice(2)
+      : digits.startsWith('0') ? digits.slice(1) : digits;
+
+    if (localDigits.length < 10) {
+      throw new Error('Please enter a valid Philippine phone number.');
+    }
+
+    if (localDigits.length > 12) {
+      throw new Error('Contact number is too long.');
+    }
+
+    contactNumber = `+63${localDigits}`;
   }
 
   return {
@@ -83,17 +100,63 @@ export async function getOwnProfile(): Promise<AdminProfile> {
 
 export async function updateOwnProfile(data: UpdateProfileInput): Promise<AdminProfile> {
   const actor = await requireAdmin();
-  const normalized = normalizeProfileInput(data);
 
-  const profile = await prisma.user.update({
-    where: { id: actor.id },
-    data: normalized,
-    select: PROFILE_SELECT,
-  });
+  try {
+    const normalized = normalizeProfileInput(data);
+    const previous = await prisma.user.findUnique({
+      where: { id: actor.id },
+      select: PROFILE_SELECT,
+    });
 
-  revalidatePath('/admin/profile');
-  revalidatePath('/admin', 'layout');
-  return toAdminProfile(profile);
+    if (!previous) {
+      throw new Error('Your account no longer exists.');
+    }
+
+    const profile = await prisma.user.update({
+      where: { id: actor.id },
+      data: normalized,
+      select: PROFILE_SELECT,
+    });
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.PROFILE_UPDATE,
+      module: 'Profile',
+      description: `${actor.username} updated their profile details.`,
+      status: AuditStatus.SUCCESS,
+      previousValues: {
+        fullName: previous.fullName,
+        contactNumber: previous.contactNumber,
+      },
+      newValues: {
+        fullName: profile.fullName,
+        contactNumber: profile.contactNumber,
+      },
+      metadata: {
+        targetUserId: actor.id,
+      },
+    });
+
+    revalidatePath('/admin/profile');
+    revalidatePath('/admin', 'layout');
+    return toAdminProfile(profile);
+  } catch (error) {
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.PROFILE_UPDATE,
+      module: 'Profile',
+      description: `${actor.username} failed to update their profile details.`,
+      status: AuditStatus.FAILED,
+      metadata: {
+        targetUserId: actor.id,
+        fullName: data.fullName,
+        contactNumber: data.contactNumber,
+        ...errorMetadata(error),
+      },
+    });
+
+    throw error;
+  }
 }
 
 export async function changeOwnPassword(
@@ -101,36 +164,63 @@ export async function changeOwnPassword(
 ): Promise<{ success: true }> {
   const actor = await requireAdmin();
 
-  if (!data.currentPassword || !data.newPassword || !data.confirmNewPassword) {
-    throw new Error('All password fields are required.');
+  try {
+    if (!data.currentPassword || !data.newPassword || !data.confirmNewPassword) {
+      throw new Error('All password fields are required.');
+    }
+
+    if (data.newPassword !== data.confirmNewPassword) {
+      throw new Error('New password and confirmation do not match.');
+    }
+
+    assertStrongPassword(data.newPassword);
+
+    const user = await prisma.user.findUnique({
+      where: { id: actor.id },
+      select: { password: true },
+    });
+
+    if (!user || !(await bcrypt.compare(data.currentPassword, user.password))) {
+      throw new Error('Current password is incorrect.');
+    }
+
+    if (await bcrypt.compare(data.newPassword, user.password)) {
+      throw new Error('New password must be different from your current password.');
+    }
+
+    await prisma.user.update({
+      where: { id: actor.id },
+      data: {
+        password: await bcrypt.hash(data.newPassword, 12),
+      },
+    });
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.PASSWORD_CHANGE,
+      module: 'Profile',
+      description: `${actor.username} changed their admin password.`,
+      status: AuditStatus.SUCCESS,
+      metadata: {
+        targetUserId: actor.id,
+      },
+    });
+
+    revalidatePath('/admin/profile');
+    return { success: true };
+  } catch (error) {
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.PASSWORD_CHANGE,
+      module: 'Profile',
+      description: `${actor.username} failed to change their admin password.`,
+      status: AuditStatus.FAILED,
+      metadata: {
+        targetUserId: actor.id,
+        ...errorMetadata(error),
+      },
+    });
+
+    throw error;
   }
-
-  if (data.newPassword !== data.confirmNewPassword) {
-    throw new Error('New password and confirmation do not match.');
-  }
-
-  assertStrongPassword(data.newPassword);
-
-  const user = await prisma.user.findUnique({
-    where: { id: actor.id },
-    select: { password: true },
-  });
-
-  if (!user || !(await bcrypt.compare(data.currentPassword, user.password))) {
-    throw new Error('Current password is incorrect.');
-  }
-
-  if (await bcrypt.compare(data.newPassword, user.password)) {
-    throw new Error('New password must be different from your current password.');
-  }
-
-  await prisma.user.update({
-    where: { id: actor.id },
-    data: {
-      password: await bcrypt.hash(data.newPassword, 12),
-    },
-  });
-
-  revalidatePath('/admin/profile');
-  return { success: true };
 }

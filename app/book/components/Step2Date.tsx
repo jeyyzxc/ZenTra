@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BookFormData } from './BookFlow';
 
 interface Props {
@@ -99,8 +99,6 @@ export default function Step2Date({ data, updateData }: Props) {
             {days.map(day => {
               const dateObj = new Date(year, month, day);
               const isPast = dateObj < today;
-              
-              // Deterministically mock some days as booked for aesthetic/demo purposes
               const isBooked = !isPast && (day % 11 === 0 || day % 17 === 0);
               
               const dateString = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -116,17 +114,17 @@ export default function Step2Date({ data, updateData }: Props) {
                     relative h-12 md:h-14 w-full flex items-center justify-center rounded-xl md:rounded-2xl text-lg font-sans transition-all duration-300
                     ${isPast 
                       ? 'text-[#3A4B3C]/20 cursor-not-allowed' 
-                      : isBooked 
-                        ? 'bg-[#E0E0E0] text-[#9E9E9E] cursor-not-allowed border border-black/5 shadow-inner' 
-                        : isSelected 
-                          ? 'bg-[#2F3E32] text-[#EAE5C3] shadow-xl scale-110 font-bold z-10 ring-2 ring-[#2F3E32]/30' 
-                          : 'bg-white text-[#2F3E32] font-semibold hover:bg-[#D4A017] hover:text-white cursor-pointer shadow-sm hover:shadow-lg hover:scale-105 border border-[#3A4B3C]/10'
+                      : isBooked
+                        ? 'bg-black/5 text-[#3A4B3C]/40 cursor-not-allowed border border-black/5 shadow-inner'
+                        : isSelected
+                          ? 'bg-[#2F3E32] text-[#EAE5C3] shadow-xl scale-110 font-bold z-10 ring-2 ring-[#2F3E32]/30'
+                            : 'bg-white text-[#2F3E32] font-semibold hover:bg-[#D4A017] hover:text-white cursor-pointer shadow-sm hover:shadow-lg hover:scale-105 border border-[#3A4B3C]/10'
                     }
                   `}
                 >
                   {day}
                   {/* Subtle indicator dot for today */}
-                  {dateObj.getTime() === today.getTime() && !isSelected && !isBooked && (
+                  {dateObj.getTime() === today.getTime() && !isSelected && (
                     <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4A017]" />
                   )}
                 </div>
@@ -140,19 +138,25 @@ export default function Step2Date({ data, updateData }: Props) {
       <div className="flex flex-col gap-6 items-center font-serif text-center bg-white/60 backdrop-blur-sm p-8 rounded-[2rem] border border-[#3A4B3C]/10 shadow-sm h-fit">
         <h3 className="text-2xl font-bold text-[#2F3E32] mb-2 tracking-wide">Availability</h3>
         
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-12 bg-white border border-[#3A4B3C]/10 shadow-sm rounded-xl flex items-center justify-center text-[#2F3E32] font-sans font-bold text-base">
-            15
+        <div className="flex gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-14 h-12 bg-white border border-[#3A4B3C]/10 shadow-sm rounded-xl flex items-center justify-center text-[#2F3E32] font-sans font-bold text-base">
+              15
+            </div>
+            <span className="text-lg text-[#2F3E32] font-medium">Available</span>
           </div>
-          <span className="text-lg text-[#2F3E32] font-medium">Available</span>
+
+          <div className="flex flex-col items-center gap-2 opacity-60">
+            <div className="w-14 h-12 bg-black/5 border border-black/5 shadow-inner rounded-xl flex items-center justify-center text-[#3A4B3C]/60 font-sans font-bold text-base relative">
+              <div className="w-full h-[1px] bg-[#3A4B3C]/20 absolute rotate-45 transform origin-center"></div>
+            </div>
+            <span className="text-lg text-[#2F3E32] font-medium">Booked</span>
+          </div>
         </div>
         
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-12 bg-[#E0E0E0] border border-black/5 rounded-xl shadow-inner flex items-center justify-center text-[#9E9E9E] font-sans font-semibold text-base">
-            22
-          </div>
-          <span className="text-lg text-[#9E9E9E] font-medium">Booked</span>
-        </div>
+        <p className="max-w-48 text-sm leading-6 text-[#3A4B3C]/60">
+          Final availability is reviewed by the Zion Events Place team after submission.
+        </p>
       </div>
       
     </div>

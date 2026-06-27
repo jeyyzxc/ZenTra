@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, isAfter, startOfDay } from 'date-fns';
-import { CalendarEvent, getStatusColor } from './MockData';
+import { CalendarEvent, getStatusColor } from './types';
 import { Clock, MapPin, Users } from 'lucide-react';
 
 interface ListViewProps {

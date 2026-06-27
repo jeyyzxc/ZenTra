@@ -1,6 +1,6 @@
 import React from 'react';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
-import { CalendarEvent, getStatusColor } from './MockData';
+import { CalendarEvent, getStatusColor } from './types';
 
 interface WeekViewProps {
   currentDate: Date;

@@ -1,9 +1,10 @@
 import React from 'react';
-import SubpageHero from '../components/SubpageHero';
+
+import SubpageHero from '@/components/client/SubpageHero';
 
 export default function RulesPage() {
   return (
-    <main className="flex flex-col min-h-screen bg-zentra-bg relative">
+    <main className="flex flex-col min-h-screen bg-transparent relative">
       <SubpageHero 
         title="Rules & Regulation" 
         subtitle="Guidelines for a seamless event experience." 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import SubpageHero from '../../components/SubpageHero';
+import SubpageHero from '@/components/client/SubpageHero';
 import Step1EventType from './Step1EventType';
 import Step2Date from './Step2Date'; 
 import Step3Theme from './Step3Theme';
@@ -16,6 +16,8 @@ import Step11Result from './Step11Result';
 
 export type BookFormData = {
   eventType: string;
+  eventCategoryId: string;
+  eventCategorySlug: string;
   date: string;
   theme: string;
   guestCount: string;
@@ -29,6 +31,8 @@ export default function BookFlow() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<BookFormData>({
     eventType: '',
+    eventCategoryId: '',
+    eventCategorySlug: '',
     date: '',
     theme: '',
     guestCount: '',
@@ -45,6 +49,43 @@ export default function BookFlow() {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 11));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
   const goToStep = (s: number) => setStep(s);
+  const [validationMessage, setValidationMessage] = useState('');
+
+  const cancelBooking = () => {
+    setFormData({
+      eventType: '',
+      eventCategoryId: '',
+      eventCategorySlug: '',
+      date: '',
+      theme: '',
+      guestCount: '',
+      time: '',
+      budget: '',
+      addOns: [],
+      notes: '',
+    });
+    setValidationMessage('');
+    setStep(1);
+  };
+
+  const advanceWithValidation = () => {
+    const requiredField: Partial<Record<number, keyof BookFormData>> = {
+      2: 'date',
+      3: 'theme',
+      4: 'guestCount',
+      5: 'time',
+      6: 'budget',
+    };
+    const field = requiredField[step];
+
+    if (field && !formData[field]) {
+      setValidationMessage('Please make a selection before continuing.');
+      return;
+    }
+
+    setValidationMessage('');
+    nextStep();
+  };
 
   // Constants for design
   const totalSteps = 9; // Not counting generating/result for the progress bar
@@ -77,9 +118,15 @@ export default function BookFlow() {
       case 6: return <Step6Budget data={formData} updateData={updateData} />;
       case 7: return <Step7AddOns data={formData} updateData={updateData} />;
       case 8: return <Step8Notes data={formData} updateData={updateData} />;
-      case 9: return <Step9Review data={formData} nextStep={nextStep} goToStep={goToStep} />;
+      case 9: return <Step9Review data={formData} nextStep={advanceWithValidation} goToStep={goToStep} />;
       case 10: return <Step10Generating nextStep={nextStep} />;
-      case 11: return <Step11Result data={formData} goToStep={goToStep} />;
+      case 11: return (
+        <Step11Result
+          cancelBooking={cancelBooking}
+          data={formData}
+          goToStep={goToStep}
+        />
+      );
       default: return null;
     }
   };
@@ -160,7 +207,13 @@ export default function BookFlow() {
 
         {/* Navigation Buttons (only steps 1-9) */}
         {step > 1 && step <= 9 && (
-          <div className="flex gap-8 justify-center mt-auto pt-8">
+          <div className="flex flex-col items-center gap-4 mt-auto pt-8">
+            {validationMessage && (
+              <p className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
+                {validationMessage}
+              </p>
+            )}
+            <div className="flex gap-8 justify-center">
             {/* Back Button */}
             <button 
               onClick={prevStep}
@@ -174,7 +227,8 @@ export default function BookFlow() {
             {/* Next Button */}
             {step < 9 && (
               <button 
-                onClick={nextStep}
+                onClick={advanceWithValidation}
+                aria-label="Next step"
                 className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
@@ -182,6 +236,14 @@ export default function BookFlow() {
                 </svg>
               </button>
             )}
+            </div>
+            <button
+              type="button"
+              onClick={cancelBooking}
+              className="text-sm font-bold uppercase tracking-[0.16em] text-[#3A4B3C]/60 underline-offset-4 hover:text-[#1a1f18] hover:underline"
+            >
+              Cancel booking
+            </button>
           </div>
         )}
 

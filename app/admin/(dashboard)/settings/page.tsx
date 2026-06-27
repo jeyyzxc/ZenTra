@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
-  const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
-
-  useEffect(() => setMounted(true), []);
+  const router = useRouter();
 
   // Notification States
   const [notifications, setNotifications] = useState({
@@ -36,12 +35,12 @@ export default function SettingsPage() {
 
   // UI States
   const [isSaving, setIsSaving] = useState(false);
-  const [saveNotification, setSaveNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const [saveNotification, setSaveNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const handleSaveSettings = () => {
     setIsSaving(true);
     setSaveNotification(null);
-    
+
     setTimeout(() => {
       setIsSaving(false);
       setSaveNotification({ type: 'success', message: 'All settings have been successfully saved.' });
@@ -51,7 +50,7 @@ export default function SettingsPage() {
 
   // Ultra-smooth Reusable Toggle Component with Micro-Interactions
   const Toggle = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <div 
+    <div
       onClick={onChange}
       className={`w-10 h-5 rounded-full relative cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] border shadow-inner flex-shrink-0 active:scale-90 ${checked ? 'bg-[#D6B53B] border-[#D6B53B]' : 'bg-gray-200 dark:bg-white/10 border-gray-300 dark:border-white/20 hover:bg-gray-300 dark:hover:bg-white/20'}`}
     >
@@ -62,15 +61,31 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className={`px-6 pb-8 pt-4 w-full max-w-[1400px] mx-auto transition-all duration-1000 ease-[cubic-bezier(0.2,0.8,0.2,1)] transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-      
+    <div className="px-6 pb-8 pt-4 w-full opacity-100 translate-y-0 transition-all duration-1000 ease-[cubic-bezier(0.2,0.8,0.2,1)] transform">
+
+      {/* Back Button */}
+      <div className="mb-5 flex -ml-3 sm:-ml-5">
+        <button 
+          onClick={() => router.back()} 
+          className="group flex items-center gap-3 text-gray-500 hover:text-[#D6B53B] dark:text-[#A3B19B] dark:hover:text-[#D6B53B] transition-all duration-500 focus:outline-none"
+          aria-label="Go back"
+        >
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-[#141A13] border border-gray-200 dark:border-white/10 shadow-sm group-hover:shadow-[0_0_12px_rgba(214,181,59,0.4)] group-hover:border-[#D6B53B]/50 transition-all duration-500">
+            <i className="fi fi-rr-arrow-left text-[14px] leading-[0] mt-[2px] transition-transform duration-500 group-hover:-translate-x-0.5"></i>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 ease-out">
+            Go Back
+          </span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
         <div>
-          <h1 className="text-[22px] font-sahitya text-[#1a1f18] dark:text-[#F4F4F0] font-bold uppercase tracking-[0.1em] mb-1.5 transition-colors duration-500">Settings</h1>
-          <p className="text-gray-500 dark:text-[#A3B19B] font-sans text-[13px] font-medium tracking-wide transition-colors duration-500">Manage system preferences, localization, and advanced security configurations.</p>
+          <h1 className="font-sahitya text-3xl font-bold uppercase tracking-[0.08em] text-[#1a1f18] dark:text-[#F4F4F0] leading-none m-0">Settings</h1>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500 dark:text-[#A3B19B]">Manage system preferences, localization, and advanced security configurations.</p>
         </div>
-        <button 
+        <button
           onClick={handleSaveSettings}
           disabled={isSaving}
           className="px-8 py-3 bg-[#1a1f18] dark:bg-[#D6B53B] text-white dark:text-[#0C100B] text-[11.5px] font-semibold tracking-[0.15em] uppercase rounded-xl hover:bg-[#D6B53B] dark:hover:bg-white transition-all duration-500 ease-out shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-95 whitespace-nowrap overflow-hidden relative group"
@@ -103,10 +118,10 @@ export default function SettingsPage() {
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        
+
         {/* Left Column */}
         <div className="xl:col-span-7 space-y-6">
-          
+
           {/* Appearance Section */}
           <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group">
             <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
@@ -118,9 +133,9 @@ export default function SettingsPage() {
               </h2>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-              
+
               {/* Light Mode Toggle */}
-              <div 
+              <div
                 onClick={() => toggleTheme('light')}
                 className={`border rounded-xl p-5 cursor-pointer relative overflow-hidden bg-white dark:bg-[#0C100B] shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none ${theme === 'light' ? 'border-[#D6B53B] ring-1 ring-[#D6B53B]/20' : 'border-gray-200 dark:border-white/10 opacity-80 hover:opacity-100'}`}
               >
@@ -135,7 +150,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Dark Mode Toggle */}
-              <div 
+              <div
                 onClick={() => toggleTheme('dark')}
                 className={`border rounded-xl p-5 cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-[#0C100B] shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none ${theme === 'dark' ? 'border-[#D6B53B] ring-1 ring-[#D6B53B]/20' : 'border-gray-200 dark:border-white/10 opacity-80 hover:opacity-100'}`}
               >
@@ -163,12 +178,12 @@ export default function SettingsPage() {
               </h2>
             </div>
             <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Session Timeout</label>
                   <div className="relative group/select">
-                    <select 
+                    <select
                       value={sessionTimeout}
                       onChange={(e) => setSessionTimeout(e.target.value)}
                       className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none cursor-pointer shadow-sm"
@@ -192,8 +207,8 @@ export default function SettingsPage() {
                         {security.twoFactorAuth && <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-[8.5px] uppercase tracking-widest font-bold rounded-full">Active</span>}
                       </h4>
                       <p className="text-[12px] text-gray-600 dark:text-[#A3B19B] font-medium tracking-wide mb-3 leading-relaxed">Add extra security with 2FA.</p>
-                      <button 
-                        onClick={() => setSecurity({...security, twoFactorAuth: !security.twoFactorAuth})}
+                      <button
+                        onClick={() => setSecurity({ ...security, twoFactorAuth: !security.twoFactorAuth })}
                         className="text-[10.5px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
                       >
                         {security.twoFactorAuth ? 'Disable' : 'Set Up'}
@@ -216,9 +231,9 @@ export default function SettingsPage() {
                   ].map((item) => (
                     <div key={item.id} className="flex items-center justify-between bg-white dark:bg-[#1A2218] border border-gray-100 dark:border-white/5 px-4 py-3 rounded-xl">
                       <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                      <Toggle 
-                        checked={item.state} 
-                        onChange={() => setSecurity({...security, [item.id as keyof typeof security]: !item.state})}
+                      <Toggle
+                        checked={item.state}
+                        onChange={() => setSecurity({ ...security, [item.id as keyof typeof security]: !item.state })}
                       />
                     </div>
                   ))}
@@ -232,7 +247,7 @@ export default function SettingsPage() {
 
         {/* Right Column */}
         <div className="xl:col-span-5 space-y-6">
-          
+
           {/* Notification Preferences */}
           <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group h-auto">
             <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
@@ -253,9 +268,9 @@ export default function SettingsPage() {
               ].map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                   <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                  <Toggle 
-                    checked={item.state} 
-                    onChange={() => setNotifications({...notifications, [item.id as keyof typeof notifications]: !item.state})}
+                  <Toggle
+                    checked={item.state}
+                    onChange={() => setNotifications({ ...notifications, [item.id as keyof typeof notifications]: !item.state })}
                   />
                 </div>
               ))}
@@ -268,9 +283,9 @@ export default function SettingsPage() {
               ].map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                   <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                  <Toggle 
-                    checked={item.state} 
-                    onChange={() => setNotifications({...notifications, [item.id as keyof typeof notifications]: !item.state})}
+                  <Toggle
+                    checked={item.state}
+                    onChange={() => setNotifications({ ...notifications, [item.id as keyof typeof notifications]: !item.state })}
                   />
                 </div>
               ))}
@@ -288,11 +303,11 @@ export default function SettingsPage() {
               </h2>
             </div>
             <div className="p-6 space-y-5">
-              
+
               <div className="space-y-2.5">
                 <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Preferred Language</label>
                 <div className="relative group/select">
-                  <select 
+                  <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
                     className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
@@ -310,7 +325,7 @@ export default function SettingsPage() {
               <div className="space-y-2.5">
                 <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Timezone</label>
                 <div className="relative group/select">
-                  <select 
+                  <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
                     className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
@@ -329,7 +344,7 @@ export default function SettingsPage() {
               <div className="space-y-2.5">
                 <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Date & Time Format</label>
                 <div className="relative group/select">
-                  <select 
+                  <select
                     value={dateFormat}
                     onChange={(e) => setDateFormat(e.target.value)}
                     className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
