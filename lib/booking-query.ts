@@ -12,9 +12,13 @@ import { findBookingConflicts } from '@/lib/booking-validation';
 import { prisma } from '@/lib/prisma';
 
 export const BOOKING_STATUSES = Object.values(BookingStatus);
-export const BOOKING_SOURCES = Object.values(BookingSource);
+export const BOOKING_SOURCES: BookingSource[] = Object.values(BookingSource).filter(
+  (source) => source !== BookingSource.DEMO_CLIENT_ADMIN_BRIDGE,
+);
 export const BOOKING_SYNC_STATUSES = Object.values(SyncStatus);
-export const BOOKING_AUTOMATION_STATUSES = Object.values(AutomationStatus);
+export const BOOKING_AUTOMATION_STATUSES: AutomationStatus[] = Object.values(AutomationStatus).filter(
+  (status) => status !== AutomationStatus.DEMO_MODE,
+);
 export const BOOKING_PAYMENT_STATUSES = Object.values(PaymentSummaryStatus);
 
 const SORT_FIELDS = [
@@ -114,9 +118,17 @@ export function serializeBooking(
   booking: Booking & { timeline?: BookingTimeline[] },
 ): BookingDto {
   const { timeline, ...record } = booking;
+  const bookingSource = booking.bookingSource === BookingSource.DEMO_CLIENT_ADMIN_BRIDGE
+    ? BookingSource.ADMIN_MANUAL
+    : booking.bookingSource;
+  const automationStatus = booking.automationStatus === AutomationStatus.DEMO_MODE
+    ? AutomationStatus.NOT_STARTED
+    : booking.automationStatus;
 
   return {
     ...record,
+    bookingSource,
+    automationStatus,
     eventDate: booking.eventDate.toISOString(),
     statusChangedAt: booking.statusChangedAt?.toISOString() ?? null,
     paymentDueDate: booking.paymentDueDate?.toISOString() ?? null,
@@ -201,9 +213,14 @@ export function buildBookingQuery(searchParams: URLSearchParams) {
     ...(eventType ? { eventType } : {}),
   };
 
+  const statusGroupOrder: Prisma.BookingOrderByWithRelationInput = { status: 'asc' };
+  const requestedOrder: Prisma.BookingOrderByWithRelationInput = { [sortBy]: sortOrder };
+
   return {
     where,
-    orderBy: { [sortBy]: sortOrder } as Prisma.BookingOrderByWithRelationInput,
+    orderBy: sortBy === 'status'
+      ? [requestedOrder, { updatedAt: 'desc' } as Prisma.BookingOrderByWithRelationInput]
+      : [statusGroupOrder, requestedOrder],
   };
 }
 

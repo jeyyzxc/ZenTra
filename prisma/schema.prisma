@@ -59,6 +59,7 @@ enum BookingSource {
   N8N_WORKFLOW
   PAYMENT_SYNC
   CONTRACT_SYNC
+  DEMO_CLIENT_ADMIN_BRIDGE
 }
 
 enum SyncStatus {
@@ -75,6 +76,7 @@ enum AutomationStatus {
   PROCESSING
   COMPLETED
   FAILED
+  DEMO_MODE
 }
 
 enum PaymentSummaryStatus {
@@ -167,6 +169,8 @@ enum EmailStatus {
   BOUNCED
   RETRIED
   NOT_SENT
+  PENDING_DEMO
+  SENT_DEMO
 }
 
 enum TriggerSource {
@@ -174,6 +178,7 @@ enum TriggerSource {
   AI_ORCHESTRATION
   N8N_WORKFLOW
   MANUAL_RESEND
+  DEMO_CLIENT_ADMIN_BRIDGE
 }
 
 enum RelatedModule {
@@ -260,6 +265,7 @@ enum ContractWorkflowStatus {
   FAILED
   RETRYING
   MANUAL_FALLBACK
+  DEMO_MODE
 }
 
 enum ContractSignatureStatus {
@@ -401,6 +407,7 @@ model Inquiry {
   message              String            @db.Text
   eventInterest        String?           @map("event_interest") @db.VarChar(180)
   packageInterest      String?           @map("package_interest") @db.VarChar(255)
+  requestedEventDate   DateTime?         @map("requested_event_date")
   sourcePage           String            @default("contact_us") @map("source_page") @db.VarChar(80)
   status               InquiryStatus     @default(NEW)
   priority             InquiryPriority   @default(NORMAL)
@@ -420,6 +427,7 @@ model Inquiry {
   @@index([priority])
   @@index([assignedTo])
   @@index([eventInterest])
+  @@index([requestedEventDate])
   @@index([preferredContactTime])
   @@index([relatedBookingId])
   @@index([status, priority, submittedAt])
@@ -510,6 +518,7 @@ model Booking {
   timeline                BookingTimeline[]
   calendarEvent           Event?
   packageSnapshot         BookingPackageSnapshot?
+  orchestrationContext    BookingOrchestrationContext?
   testimonies             Testimony[]
   inquiries               Inquiry[]
   createdAt               DateTime                @default(now()) @map("created_at")
@@ -803,6 +812,32 @@ model BookingPackageSnapshot {
   @@map("booking_package_snapshots")
 }
 
+model BookingOrchestrationContext {
+  id                   String   @id @default(cuid())
+  bookingId            String   @unique @map("booking_id")
+  booking              Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingReference     String   @map("booking_reference")
+  eventCategory        String   @map("event_category")
+  eventCategoryKey     String   @map("event_category_key")
+  packageCategory      String   @map("package_category")
+  packageTier          String   @map("package_tier")
+  taskTemplateKey      String   @map("task_template_key")
+  riskLevel            String   @map("risk_level")
+  hasScheduleConflict  Boolean  @default(false) @map("has_schedule_conflict")
+  requiresManualReview Boolean  @default(false) @map("requires_manual_review")
+  suggestedAdminRole   String   @default("ADMIN") @map("suggested_admin_role")
+  tags                 Json?
+  reasonCodes          Json?    @map("reason_codes")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([bookingReference])
+  @@index([eventCategoryKey])
+  @@index([taskTemplateKey])
+  @@index([riskLevel])
+  @@map("booking_orchestration_contexts")
+}
+
 model BookingTimeline {
   id          String   @id @default(cuid())
   bookingId   String   @map("booking_id")
@@ -1029,6 +1064,12 @@ model DashboardTask {
   source          DashboardTaskSource   @default(MANUAL)
   workflowName    String?               @map("workflow_name")
   workflowExecutionId String?           @map("workflow_execution_id")
+  orderIndex      Int                   @default(0) @map("order_index")
+  taskTemplateKey String?               @map("task_template_key")
+  activationStatus String?              @default("active") @map("activation_status")
+  isActive        Boolean               @default(true) @map("is_active")
+  isEditable      Boolean               @default(true) @map("is_editable")
+  startedAt       DateTime?             @map("started_at")
   reminderOption  String?               @map("reminder_option")
   createdBy       String?               @map("created_by")
   completedBy     String?               @map("completed_by")
@@ -1044,6 +1085,10 @@ model DashboardTask {
   @@index([bookingReference])
   @@index([category])
   @@index([workflowExecutionId])
+  @@index([taskTemplateKey])
+  @@index([activationStatus])
+  @@index([isActive])
+  @@index([relatedRecordId, orderIndex])
   @@index([relatedModule, relatedRecordId])
   @@index([relatedRecordId, workflowExecutionId])
   @@index([taskDate, status])

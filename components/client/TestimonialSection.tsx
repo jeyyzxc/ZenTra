@@ -94,7 +94,7 @@ export default function TestimonialSection() {
         ) : (
           <div className="mt-8 max-w-xl">
             <MessageSquareQuote className="mx-auto h-10 w-10 text-[#D6B53B]/70" />
-            <p className="mt-4 font-serif text-lg leading-7 text-neutral-600">Client stories will appear here after they have been reviewed and approved.</p>
+            <p className="mt-4 font-serif text-lg leading-7 text-neutral-600">Your story belongs here. Share your unforgettable Zion experience.</p>
           </div>
         )}
 

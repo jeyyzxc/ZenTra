@@ -4,12 +4,23 @@ import {
   RelatedModule,
   TriggerSource,
 } from '@prisma/client';
-import { requireBookingOrchestrationKey } from '@/services/booking-orchestration';
+import {
+  requireBookingOrchestrationKey,
+  requireN8nWorkflowHeaders,
+} from '@/services/booking-orchestration';
 import { dashboardCreated, dashboardError } from '@/lib/dashboard-api';
 import { DashboardService, DashboardServiceError } from '@/lib/dashboard-service';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+
+const PRODUCTION_EMAIL_STATUSES: readonly EmailStatus[] = Object.values(EmailStatus).filter(
+  (status) => status !== EmailStatus.PENDING_DEMO && status !== EmailStatus.SENT_DEMO,
+);
+
+const PRODUCTION_TRIGGER_SOURCES: readonly TriggerSource[] = Object.values(TriggerSource).filter(
+  (source) => source !== TriggerSource.DEMO_CLIENT_ADMIN_BRIDGE,
+);
 
 function text(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -34,9 +45,10 @@ function enumValue<T extends string>(value: unknown, options: readonly T[], fall
 export async function POST(request: Request) {
   try {
     requireBookingOrchestrationKey(request);
+    requireN8nWorkflowHeaders(request);
     const body = await request.json() as Record<string, unknown>;
     const now = new Date();
-    const status = enumValue(body.status, Object.values(EmailStatus), EmailStatus.QUEUED);
+    const status = enumValue(body.status, PRODUCTION_EMAIL_STATUSES, EmailStatus.QUEUED);
     const isSent = status === EmailStatus.SENT || status === EmailStatus.DELIVERED;
     const isFailed = status === EmailStatus.FAILED || status === EmailStatus.BOUNCED;
     const emailLog = await prisma.emailLog.create({
@@ -49,7 +61,7 @@ export async function POST(request: Request) {
           : null,
         relatedRecordId: text(body.relatedRecordId),
         subject: requiredText(body.subject, 'subject'),
-        triggerSource: enumValue(body.triggerSource, Object.values(TriggerSource), TriggerSource.N8N_WORKFLOW),
+        triggerSource: enumValue(body.triggerSource, PRODUCTION_TRIGGER_SOURCES, TriggerSource.N8N_WORKFLOW),
         workflowName: text(body.workflowName),
         workflowExecutionId: text(body.workflowExecutionId) ?? text(body.n8nExecutionId),
         providerMessageId: text(body.providerMessageId),

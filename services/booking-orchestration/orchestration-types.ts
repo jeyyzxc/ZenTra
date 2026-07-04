@@ -8,8 +8,14 @@ export type {
   EmailResultInput,
   ManualBookingInput,
   OrchestrationBookingDetails,
+  OrchestrationBookingDetailsResponse,
+  OrchestrationBookingReceiptEmail,
   PaymentSyncInput,
   TimelineEntryInput,
   WorkflowResultInput,
 } from './orchestration.service';
 
+export type {
+  BookingCategorizationInput,
+  BookingCategorizationResult,
+} from './booking-categorization.service';

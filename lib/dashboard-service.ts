@@ -1,6 +1,7 @@
 import {
   AuditAction,
   AuditStatus,
+  AutomationStatus,
   BookingStatus,
   DashboardTaskPriority,
   DashboardTaskSource,
@@ -31,6 +32,10 @@ const PENDING_BOOKING_STATUSES = [
   BookingStatus.PENDING,
   BookingStatus.ON_HOLD,
 ] as const;
+
+function isBookingApprovedOrActive(status: BookingStatus) {
+  return status === BookingStatus.CONFIRMED || status === BookingStatus.IN_PROGRESS;
+}
 
 const REVENUE_PAYMENT_STATUSES = [
   PaymentSummaryStatus.FOR_VERIFICATION,
@@ -139,6 +144,11 @@ export type DashboardAgendaItem = {
   category: string | null;
   created_source: string;
   workflow_execution_id: string | null;
+  order_index: number;
+  task_template_key: string | null;
+  activation_status: string | null;
+  is_active: boolean;
+  is_editable: boolean;
   can_complete: boolean;
 };
 
@@ -214,11 +224,16 @@ export type DashboardAgendaInput = {
 };
 
 export type AdminTodoTaskInput = {
+  orderIndex?: unknown;
   title?: unknown;
   description?: unknown;
   priority?: unknown;
   status?: unknown;
+  activationStatus?: unknown;
+  isActive?: unknown;
+  isEditable?: unknown;
   category?: unknown;
+  taskTemplateKey?: unknown;
   dueDate?: unknown;
   assignedToRole?: unknown;
 };
@@ -232,12 +247,14 @@ export type AdminTodoBulkCreateInput = {
   workflowExecutionId?: unknown;
   eventType?: unknown;
   clientName?: unknown;
+  categorization?: unknown;
   tasks?: unknown;
 };
 
 export type AdminTodoBulkCreateResult = {
   bookingReference: string;
   createdCount: number;
+  taskIds: string[];
 };
 
 export type WorkflowLogInput = {
@@ -255,14 +272,18 @@ export type WorkflowLogInput = {
 };
 
 export type NotificationInput = {
+  bookingReference?: unknown;
   title?: unknown;
   message?: unknown;
   type?: unknown;
   priority?: unknown;
   relatedModule?: unknown;
   relatedRecordId?: unknown;
+  audience?: unknown;
+  payload?: unknown;
   createdFor?: unknown;
   createdBy?: unknown;
+  source?: unknown;
 };
 
 export class DashboardServiceError extends Error {
@@ -417,28 +438,82 @@ function parseAdminTodoTasks(value: unknown) {
     const record = task as AdminTodoTaskInput;
 
     return {
+      orderIndex: parseAdminTodoOrderIndex(record.orderIndex, index),
       title: requiredText(record.title, `tasks[${index}].title`),
       description: requiredText(record.description, `tasks[${index}].description`),
       priority: parseAdminTodoPriority(record.priority, index),
       status: parseAdminTodoStatus(record.status, index),
+      activationStatus: parseAdminTodoActivationStatus(record.activationStatus),
+      isActive: parseOptionalBoolean(record.isActive, false),
+      isEditable: parseOptionalBoolean(record.isEditable, true),
       category: requiredText(record.category, `tasks[${index}].category`).toLowerCase(),
+      taskTemplateKey: trimText(record.taskTemplateKey),
       dueDate: parseAdminTodoDueDate(record.dueDate, index),
-      assignedToRole: requiredText(record.assignedToRole, `tasks[${index}].assignedToRole`).toLowerCase(),
+      assignedToRole: requiredText(record.assignedToRole, `tasks[${index}].assignedToRole`).toUpperCase(),
     };
   });
 }
 
 function uniqueAdminTodoTasks(tasks: ReturnType<typeof parseAdminTodoTasks>) {
-  const seenTitles = new Set<string>();
+  const seenKeys = new Set<string>();
 
   return tasks.filter((task) => {
-    if (seenTitles.has(task.title)) {
+    const key = `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`;
+
+    if (seenKeys.has(key)) {
       return false;
     }
 
-    seenTitles.add(task.title);
+    seenKeys.add(key);
     return true;
   });
+}
+
+function parseOptionalBoolean(value: unknown, fallback: boolean) {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+
+  return fallback;
+}
+
+function parseAdminTodoOrderIndex(value: unknown, index: number) {
+  if (value === undefined || value === null || value === '') {
+    return index + 1;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new DashboardServiceError(`tasks[${index}].orderIndex must be a positive whole number.`);
+  }
+
+  return parsed;
+}
+
+function parseAdminTodoActivationStatus(value: unknown) {
+  const status = trimText(value)?.toLowerCase();
+
+  if (!status) {
+    return 'pending_booking_approval';
+  }
+
+  if (status === 'pending_booking_approval' || status === 'active' || status === 'inactive') {
+    return status;
+  }
+
+  throw new DashboardServiceError('activationStatus is invalid.');
 }
 
 function parseAdminTodoPriority(value: unknown, index: number) {
@@ -482,6 +557,36 @@ function normalizeTaskRelatedModule(value: unknown) {
   }
 
   throw new DashboardServiceError('relatedModule must be booking.');
+}
+
+function normalizeNotificationModule(value: unknown) {
+  const relatedModule = trimText(value);
+
+  if (!relatedModule) {
+    return null;
+  }
+
+  const normalized = relatedModule.toLowerCase();
+
+  if (normalized === 'booking' || normalized === 'bookings') return 'bookings';
+  if (normalized === 'payment' || normalized === 'payments') return 'payments';
+  if (normalized === 'contract' || normalized === 'contracts') return 'contracts';
+  if (normalized === 'inquiry' || normalized === 'inquiries') return 'inquiries';
+  if (normalized === 'task' || normalized === 'tasks') return 'tasks';
+  if (normalized === 'email' || normalized === 'email_logs') return 'email_logs';
+  if (normalized === 'workflow' || normalized === 'workflow_logs') return 'workflow_logs';
+
+  return normalized;
+}
+
+function parseNotificationType(value: unknown) {
+  const raw = trimText(value)?.toUpperCase();
+
+  if (raw === 'NEW_BOOKING_TASK_LIST_CREATED') {
+    return NotificationType.TASK;
+  }
+
+  return parseEnumValue(raw, Object.values(NotificationType), NotificationType.SYSTEM);
 }
 
 function hrefFor(module: RelatedModule | string | null, recordId?: string | null) {
@@ -559,6 +664,31 @@ function taskStatusForDate(task: { status: DashboardTaskStatus; taskDate: Date }
   }
 
   return task.status;
+}
+
+function sortDashboardTasksForDisplay<T extends {
+  orderIndex: number;
+  status: DashboardTaskStatus;
+  taskTime: string | null;
+  createdAt: Date;
+}>(tasks: T[]) {
+  const allCompleted = tasks.length > 0 &&
+    tasks.every((task) => task.status === DashboardTaskStatus.COMPLETED);
+
+  return [...tasks].sort((a, b) => {
+    if (!allCompleted) {
+      const aGroup = a.status === DashboardTaskStatus.COMPLETED ? 1 : 0;
+      const bGroup = b.status === DashboardTaskStatus.COMPLETED ? 1 : 0;
+
+      if (aGroup !== bGroup) {
+        return aGroup - bGroup;
+      }
+    }
+
+    return a.orderIndex - b.orderIndex ||
+      (a.taskTime ?? '').localeCompare(b.taskTime ?? '') ||
+      a.createdAt.getTime() - b.createdAt.getTime();
+  });
 }
 
 function actorTaskFilter(actor: CurrentAdmin): Prisma.DashboardTaskWhereInput {
@@ -1307,7 +1437,7 @@ export class DashboardService {
           },
           status: { not: DashboardTaskStatus.CANCELLED },
         },
-        orderBy: [{ taskTime: 'asc' }, { createdAt: 'asc' }],
+        orderBy: [{ orderIndex: 'asc' }, { taskTime: 'asc' }, { createdAt: 'asc' }],
       }),
       prisma.task.findMany({
         where: {
@@ -1319,9 +1449,10 @@ export class DashboardService {
         orderBy: [{ dueTime: 'asc' }, { createdAt: 'asc' }],
       }),
     ]);
+    const orderedDashboardTasks = sortDashboardTasksForDisplay(dashboardTasks);
 
     return [
-      ...dashboardTasks.map((task) => ({
+      ...orderedDashboardTasks.map((task) => ({
         id: task.id,
         title: task.title,
         description: task.description,
@@ -1337,7 +1468,12 @@ export class DashboardService {
         category: task.category,
         created_source: task.source.toLowerCase(),
         workflow_execution_id: task.workflowExecutionId,
-        can_complete: task.status !== DashboardTaskStatus.COMPLETED,
+        order_index: task.orderIndex,
+        task_template_key: task.taskTemplateKey,
+        activation_status: task.activationStatus,
+        is_active: task.isActive,
+        is_editable: task.isEditable,
+        can_complete: task.isActive && task.status !== DashboardTaskStatus.COMPLETED,
       })),
       ...calendarTasks.map((task) => ({
         id: `calendar-task:${task.id}`,
@@ -1355,6 +1491,11 @@ export class DashboardService {
         category: null,
         created_source: 'calendar',
         workflow_execution_id: null,
+        order_index: 0,
+        task_template_key: null,
+        activation_status: 'active',
+        is_active: true,
+        is_editable: true,
         can_complete: false,
       })),
     ];
@@ -1637,14 +1778,100 @@ export class DashboardService {
       throw new DashboardServiceError('Agenda task not found.', 404);
     }
 
-    const task = await prisma.dashboardTask.update({
-      where: { id },
-      data: {
-        status: DashboardTaskStatus.COMPLETED,
-        completedAt: new Date(),
-        completedBy: actor.id,
-      },
+    const result = await prisma.$transaction(async (transaction) => {
+      const task = await transaction.dashboardTask.update({
+        where: { id },
+        data: {
+          status: DashboardTaskStatus.COMPLETED,
+          completedAt: new Date(),
+          completedBy: actor.id,
+        },
+      });
+      let completedBooking: {
+        id: string;
+        bookingReference: string;
+        bookingSource: string;
+        n8nExecutionId: string | null;
+      } | null = null;
+
+      if (
+        task.relatedModule === 'bookings' &&
+        task.relatedRecordId &&
+        task.source === DashboardTaskSource.N8N_WORKFLOW
+      ) {
+        const booking = await transaction.booking.findUnique({
+          where: { id: task.relatedRecordId },
+          select: {
+            id: true,
+            bookingReference: true,
+            bookingSource: true,
+            status: true,
+            n8nExecutionId: true,
+          },
+        });
+
+        if (
+          booking &&
+          booking.status !== BookingStatus.COMPLETED &&
+          isBookingApprovedOrActive(booking.status)
+        ) {
+          const activeTasks = await transaction.dashboardTask.findMany({
+            where: {
+              relatedModule: 'bookings',
+              relatedRecordId: booking.id,
+              source: DashboardTaskSource.N8N_WORKFLOW,
+              isActive: true,
+              status: { not: DashboardTaskStatus.CANCELLED },
+            },
+            select: {
+              id: true,
+              status: true,
+            },
+          });
+          const allActiveTasksCompleted = activeTasks.length > 0 &&
+            activeTasks.every((item) => item.status === DashboardTaskStatus.COMPLETED);
+
+          if (allActiveTasksCompleted) {
+            const nextBooking = await transaction.booking.update({
+              where: { id: booking.id },
+              data: {
+                status: BookingStatus.COMPLETED,
+                automationStatus: AutomationStatus.COMPLETED,
+                statusChangedAt: new Date(),
+                statusChangedBy: actor.id,
+                statusChangeReason: 'All activated admin tasks were completed.',
+                lastWorkflowResult: 'Booking workflow completed after all activated admin tasks were completed.',
+                lastSyncedAt: new Date(),
+              },
+              select: {
+                id: true,
+                bookingReference: true,
+                bookingSource: true,
+                n8nExecutionId: true,
+              },
+            });
+
+            await transaction.bookingTimeline.create({
+              data: {
+                bookingId: booking.id,
+                action: 'Booking Workflow Completed',
+                source: 'System',
+                performedBy: 'System',
+                description: `All activated admin tasks were completed for booking ${booking.bookingReference}.`,
+                metadata: {
+                  completedTaskCount: activeTasks.length,
+                },
+              },
+            });
+
+            completedBooking = nextBooking;
+          }
+        }
+      }
+
+      return { task, completedBooking };
     });
+    const { task, completedBooking } = result;
 
     await createAuditLog({
       ...auditActor(actor),
@@ -1662,6 +1889,21 @@ export class DashboardService {
         completedAt: task.completedAt?.toISOString(),
       },
     });
+
+    if (completedBooking) {
+      await createAuditLog({
+        ...auditActor(actor),
+        action: AuditAction.UPDATE,
+        module: 'Bookings',
+        description: `Completed booking workflow for ${completedBooking.bookingReference}.`,
+        status: AuditStatus.SUCCESS,
+        metadata: {
+          bookingId: completedBooking.id,
+          bookingReference: completedBooking.bookingReference,
+          n8nExecutionId: completedBooking.n8nExecutionId,
+        },
+      });
+    }
 
     return task;
   }
@@ -1810,6 +2052,12 @@ export class DashboardService {
     const workflowName = requiredText(input.workflowName, 'workflowName');
     const workflowExecutionId = requiredText(input.workflowExecutionId, 'workflowExecutionId');
     const tasks = uniqueAdminTodoTasks(parseAdminTodoTasks(input.tasks));
+    const categorization = input.categorization &&
+      typeof input.categorization === 'object' &&
+      !Array.isArray(input.categorization)
+      ? input.categorization as Record<string, unknown>
+      : {};
+    const bulkTaskTemplateKey = trimText(categorization.taskTemplateKey);
 
     if (source !== 'n8n_workflow') {
       throw new DashboardServiceError('source must be n8n_workflow.');
@@ -1826,6 +2074,7 @@ export class DashboardService {
       select: {
         id: true,
         bookingReference: true,
+        status: true,
       },
     });
 
@@ -1834,32 +2083,58 @@ export class DashboardService {
     }
 
     const resolvedBookingReference = booking.bookingReference || bookingReference;
+    const shouldActivateTasks = booking.status === BookingStatus.CONFIRMED ||
+      booking.status === BookingStatus.IN_PROGRESS;
     const taskTitles = tasks.map((task) => task.title);
-    const existingTasks = await prisma.$queryRaw<Array<{ title: string }>>`
-      SELECT "title"
+    const existingTasks = await prisma.$queryRaw<Array<{
+      title: string;
+      orderIndex: number;
+      taskTemplateKey: string | null;
+    }>>`
+      SELECT
+        "title",
+        "order_index" AS "orderIndex",
+        "task_template_key" AS "taskTemplateKey"
       FROM "dashboard_tasks"
       WHERE "related_record_id" = ${relatedRecordId}
         AND "workflow_execution_id" = ${workflowExecutionId}
         AND "title" IN (${Prisma.join(taskTitles)})
     `;
 
-    const existingTitles = new Set(existingTasks.map((task) => task.title));
-    const tasksToCreate = tasks.filter((task) => !existingTitles.has(task.title));
+    const existingKeys = new Set(existingTasks.map((task) => (
+      `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`
+    )));
+    const tasksToCreate = tasks.filter((task) => {
+      const taskTemplateKey = task.taskTemplateKey ?? bulkTaskTemplateKey;
+      const key = `${task.title.toLowerCase()}|${task.orderIndex}|${taskTemplateKey ?? ''}`;
+
+      return !existingKeys.has(key);
+    });
 
     if (tasksToCreate.length === 0) {
       return {
         bookingReference: resolvedBookingReference,
         createdCount: 0,
+        taskIds: [],
       };
     }
 
-    const createdTaskCounts = await prisma.$transaction(
-      tasksToCreate.map((task) => prisma.$executeRaw`
+    const createdTaskIds = await prisma.$transaction(async (transaction) => {
+      const taskIds: string[] = [];
+
+      for (const task of tasksToCreate) {
+        const taskId = randomUUID();
+        const taskTemplateKey = task.taskTemplateKey ?? bulkTaskTemplateKey;
+        const activationStatus = shouldActivateTasks ? 'active' : 'pending_booking_approval';
+        const isActive = shouldActivateTasks ? true : false;
+        const startedAt = shouldActivateTasks ? new Date() : null;
+        const rows = await transaction.$queryRaw<Array<{ id: string }>>`
         INSERT INTO "dashboard_tasks" (
           "id",
           "title",
           "description",
           "task_date",
+          "task_time",
           "priority",
           "status",
           "assigned_to",
@@ -1871,16 +2146,23 @@ export class DashboardService {
           "source",
           "workflow_name",
           "workflow_execution_id",
+          "order_index",
+          "task_template_key",
+          "activation_status",
+          "is_active",
+          "is_editable",
+          "started_at",
           "reminder_option",
           "created_by",
           "created_at",
           "updated_at"
         )
         VALUES (
-          ${randomUUID()},
+          ${taskId},
           ${task.title},
           ${task.description},
           ${task.dueDate},
+          ${null},
           ${task.priority}::"DashboardTaskPriority",
           ${task.status}::"DashboardTaskStatus",
           ${task.assignedToRole},
@@ -1892,15 +2174,46 @@ export class DashboardService {
           ${DashboardTaskSource.N8N_WORKFLOW}::"DashboardTaskSource",
           ${workflowName},
           ${workflowExecutionId},
-          ${task.category},
+          ${task.orderIndex},
+          ${taskTemplateKey},
+          ${activationStatus},
+          ${isActive},
+          ${task.isEditable},
+          ${startedAt},
+          ${taskTemplateKey ?? task.category},
           ${source},
           NOW(),
           NOW()
         )
         ON CONFLICT ("related_record_id", "workflow_execution_id", "title") DO NOTHING
-      `),
-    );
-    const createdCount = createdTaskCounts.reduce((total, count) => total + count, 0);
+        RETURNING "id"
+      `;
+
+        taskIds.push(...rows.map((row) => row.id));
+      }
+
+      if (taskIds.length > 0) {
+        await transaction.bookingTimeline.create({
+          data: {
+            bookingId: booking.id,
+            action: 'Admin To-Do List Created',
+            source: 'n8n Workflow',
+            performedBy: workflowName,
+            description: `Admin To-Do list created for booking ${resolvedBookingReference}.`,
+            metadata: {
+              workflowExecutionId,
+              taskCount: taskIds.length,
+              taskIds,
+              activationStatus: shouldActivateTasks ? 'active' : 'pending_booking_approval',
+              taskTemplateKey: bulkTaskTemplateKey,
+            },
+          },
+        });
+      }
+
+      return taskIds;
+    });
+    const createdCount = createdTaskIds.length;
 
     if (createdCount > 0) {
       await createAuditLog({
@@ -1918,6 +2231,7 @@ export class DashboardService {
           workflowName,
           workflowExecutionId,
           relatedRecordId,
+          taskIds: createdTaskIds,
         },
       });
     }
@@ -1925,28 +2239,50 @@ export class DashboardService {
     return {
       bookingReference: resolvedBookingReference,
       createdCount,
+      taskIds: createdTaskIds,
     };
   }
 
   static async createNotification(input: NotificationInput) {
+    const notificationType = parseNotificationType(input.type);
+    const relatedModule = normalizeNotificationModule(input.relatedModule);
+    const relatedRecordId = trimText(input.relatedRecordId);
+
+    if (
+      trimText(input.type)?.toUpperCase() === 'NEW_BOOKING_TASK_LIST_CREATED' &&
+      relatedRecordId
+    ) {
+      const taskCount = await prisma.dashboardTask.count({
+        where: {
+          relatedModule: 'bookings',
+          relatedRecordId,
+          source: DashboardTaskSource.N8N_WORKFLOW,
+        },
+      });
+
+      if (taskCount === 0) {
+        throw new DashboardServiceError(
+          'Booking task list notification requires existing n8n tasks.',
+          409,
+        );
+      }
+    }
+
     const notification = await prisma.notification.create({
       data: {
         title: requiredText(input.title, 'title'),
         message: requiredText(input.message, 'message'),
-        type: parseEnumValue(
-          typeof input.type === 'string' ? input.type.toUpperCase() : input.type,
-          Object.values(NotificationType),
-          NotificationType.SYSTEM,
-        ),
+        type: notificationType,
         priority: parseEnumValue(
           typeof input.priority === 'string' ? input.priority.toUpperCase() : input.priority,
           Object.values(NotificationPriority),
           NotificationPriority.MEDIUM,
         ),
-        relatedModule: trimText(input.relatedModule),
-        relatedRecordId: trimText(input.relatedRecordId),
+        relatedModule,
+        relatedRecordId,
         createdFor: trimText(input.createdFor),
         createdBy: trimText(input.createdBy) ?? 'n8n',
+        source: trimText(input.source) ?? 'n8n_workflow',
       },
     });
 

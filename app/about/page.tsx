@@ -4,38 +4,39 @@ import { Star, Leaf, CalendarCheck, Award, ShieldCheck, Clock } from 'lucide-rea
 
 import SubpageHero from '@/components/client/SubpageHero';
 import TestimonialSection from '@/components/client/TestimonialSection';
+import ImageSlideshow from '@/components/client/ImageSlideshow';
 import FadeIn from '@/components/shared/FadeIn';
 import AnimatedNumber from '@/components/shared/AnimatedNumber';
 
 export default function AboutPage() {
   return (
     <main className="flex flex-col min-h-screen bg-transparent relative overflow-hidden">
-      <SubpageHero 
-        title="The Experience" 
-        subtitle="Experience the art of effortless celebration. We combine premium spaces with meticulous management to deliver a flawless experience." 
-        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop" 
+      <SubpageHero
+        title="The Experience"
+        subtitle="Experience the art of effortless celebration. We combine premium spaces with meticulous management to deliver a flawless experience."
+        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
       />
-      
+
       <div className="w-full relative z-10 bg-transparent pb-6">
-        
+
         {/* Story Section - Modern Asymmetric Layout */}
         <section className="max-w-7xl mx-auto px-4 md:px-12 py-16 md:py-20 relative">
           <div className="absolute top-0 right-10 w-64 h-64 bg-[#D6B53B]/5 rounded-full blur-3xl -z-10" />
-          
+
           <div className="flex flex-col lg:flex-row gap-12 items-center">
             <FadeIn direction="right" className="flex-1 w-full relative">
               <div className="relative z-10 p-4 md:p-6 bg-white/40 backdrop-blur-md rounded-3xl border border-white/60 shadow-[0_20px_40px_-15px_rgba(214,181,59,0.15)]">
-                <img 
-                  src="/about-story-2.jpg" 
-                  alt="Zion Indoor Hall Setup" 
-                  className="w-full h-[400px] md:h-[550px] object-cover rounded-2xl" 
+                <img
+                  src="/about-story-2.jpg"
+                  alt="Zion Indoor Hall Setup"
+                  className="w-full h-[400px] md:h-[550px] object-cover rounded-2xl"
                 />
               </div>
               <div className="absolute -bottom-8 -right-8 w-2/3 h-64 md:h-80 z-20 hidden md:block">
-                <img 
-                  src="/about-story-1.jpg" 
-                  alt="Zion Outdoor Stage Setup" 
-                  className="w-full h-full object-cover rounded-2xl shadow-2xl border-4 border-white" 
+                <img
+                  src="/about-story-1.jpg"
+                  alt="Zion Outdoor Stage Setup"
+                  className="w-full h-full object-cover rounded-2xl shadow-2xl border-4 border-white"
                 />
               </div>
             </FadeIn>
@@ -54,7 +55,7 @@ export default function AboutPage() {
               <p className="font-serif text-lg text-neutral-600 leading-relaxed mb-10">
                 What began as a passion for hosting intimate gatherings has blossomed into San Pedro City&apos;s premier venue, where meticulous attention to detail meets unparalleled elegance to bring your grandest visions to life.
               </p>
-              
+
               <Link href="/book" className="group relative inline-flex items-center gap-4 px-10 py-4 bg-transparent border border-[#1a1f18] text-[#1a1f18] font-sans text-sm font-bold uppercase tracking-widest overflow-hidden rounded-full transition-all hover:border-[#D6B53B] hover:shadow-[0_0_20px_rgba(214,181,59,0.3)]">
                 <div className="absolute inset-0 bg-[#1a1f18] transition-transform duration-500 ease-in-out -translate-x-full group-hover:translate-x-0" />
                 <span className="relative z-10 transition-colors duration-500 group-hover:text-white">Start Planning</span>
@@ -97,7 +98,7 @@ export default function AboutPage() {
             </div>
             <h2 className="text-4xl md:text-6xl font-sahitya text-[#1a1f18]">Why Choose Zion?</h2>
           </FadeIn>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { icon: Star, title: "Premium Venue", desc: "Meticulously designed interiors featuring elegant finishes and adaptable layouts for any occasion." },
@@ -121,24 +122,20 @@ export default function AboutPage() {
         </section>
 
         {/* Full width image banner with parallax feel */}
-        <section className="w-full h-[40vh] min-h-[300px] relative overflow-hidden my-8">
+        <section className="w-full h-[40vh] min-h-[320px] relative overflow-hidden mt-8 mb-2 md:mb-4">
+          <ImageSlideshow />
           <div className="absolute inset-0 bg-neutral-900/40 z-10" />
-          <img 
-            src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop" 
-            alt="Full width banner" 
-            className="w-full h-full object-cover scale-105" 
-          />
-          <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <FadeIn direction="up">
-              <h2 className="text-white text-4xl md:text-6xl font-segoe drop-shadow-xl">Moments made timeless</h2>
+              <h2 className="text-white text-4xl md:text-6xl font-segoe drop-shadow-xl text-center px-4">Moments made timeless</h2>
             </FadeIn>
           </div>
         </section>
 
         {/* Founders Section */}
-        <section className="max-w-7xl mx-auto px-4 md:px-12 py-16 md:py-20">
-          <div className="flex flex-col-reverse md:flex-row gap-12 items-center">
-            <FadeIn direction="right" className="flex-1">
+        <section className="max-w-7xl mx-auto px-4 md:px-12 pt-4 pb-16 md:pt-6 md:pb-20">
+          <div className="flex flex-col-reverse md:flex-row gap-12 items-start">
+            <FadeIn direction="right" className="flex-1 md:mt-16">
               <div className="inline-flex items-center gap-3 mb-6">
                 <div className="h-[1px] w-12 bg-[#D6B53B]"></div>
                 <h3 className="font-serif text-sm tracking-[0.2em] text-[#D6B53B] uppercase font-bold">Our Founders</h3>
@@ -153,12 +150,12 @@ export default function AboutPage() {
                 With decades of combined experience in event management, they have cultivated a dedicated team that shares their unwavering commitment to excellence, ensuring that every occasion hosted at Zion is nothing short of perfection.
               </p>
             </FadeIn>
-            <FadeIn direction="left" className="flex-1 w-full">
-              <div className="relative p-3 md:p-4 bg-white/60 backdrop-blur-sm border border-white rounded-[2.5rem] shadow-xl">
-                <img 
-                  src="/about-founders.png" 
-                  alt="Founders" 
-                  className="w-full h-[450px] md:h-[600px] object-cover rounded-[2rem]" 
+            <FadeIn direction="left" className="flex-1 w-full md:mt-12">
+              <div className="relative p-2 md:p-3 bg-white/60 backdrop-blur-sm border border-white rounded-3xl shadow-xl">
+                <img
+                  src="/zion/Screenshot 2026-01-31 203841.png"
+                  alt="Founders"
+                  className="w-full h-[450px] md:h-[600px] object-cover rounded-2xl"
                 />
               </div>
             </FadeIn>

@@ -5,8 +5,10 @@ import {
   AuditAction,
   AuditStatus,
   AutomationStatus,
+  BookingOrchestrationContext,
   BookingSource,
   BookingStatus,
+  DashboardTaskSource,
   EmailStatus,
   EmailType,
   EventStatus,
@@ -19,6 +21,8 @@ import {
   TriggerSource,
 } from '@prisma/client';
 import { createAuditLog } from '@/lib/audit';
+import { assertClientBookingDateAvailable } from '@/lib/client-calendar-availability';
+
 import type { CurrentAdmin } from '@/lib/authorization';
 import {
   assertConflictOverride,
@@ -30,6 +34,15 @@ import {
 } from '@/lib/booking-validation';
 import { prisma } from '@/lib/prisma';
 import { attachPackageSnapshotToBooking } from '@/lib/services-packages';
+import {
+  buildBookingReceiptEmail,
+  type BookingReceiptEmailPayload,
+} from './receipt-email';
+import {
+  categorizeBooking,
+  type BookingCategorizationInput,
+  type BookingCategorizationResult,
+} from './booking-categorization.service';
 
 type JsonObject = Record<string, unknown>;
 
@@ -74,12 +87,18 @@ export type ClientBookingInput = {
   clientName?: unknown;
   clientEmail?: unknown;
   clientPhone?: unknown;
+  clientAddress?: unknown;
   facebook?: unknown;
+  preferredContactMethod?: unknown;
   eventType?: unknown;
+  eventTitle?: unknown;
   eventCategoryId?: unknown;
   eventCategorySlug?: unknown;
   eventDate?: unknown;
   preferredTime?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;
+  alternativeDate?: unknown;
   guestCount?: unknown;
   packageId?: unknown;
   packageVersion?: unknown;
@@ -161,12 +180,14 @@ type BookingCreatedWorkflowBooking = {
   id?: string | null;
   bookingReference?: string | null;
   eventType?: string | null;
+  categorization?: BookingCategorizationResult | null;
 };
 
 type ValidBookingCreatedWorkflowBooking = {
   id: string;
   bookingReference: string;
   eventType: string;
+  categorization: BookingCategorizationResult;
 };
 
 type BookingWebhookPayload = {
@@ -174,6 +195,7 @@ type BookingWebhookPayload = {
   booking_reference: string;
   event_type: string;
   triggered_at: string;
+  categorization: BookingCategorizationResult;
 };
 
 export type OrchestrationBookingDetails = {
@@ -196,6 +218,17 @@ export type OrchestrationBookingDetails = {
   special_requests: string | null;
   booking_status: string;
   receipt_link: string;
+};
+
+export type OrchestrationBookingDetailsResponse = {
+  booking: OrchestrationBookingDetails;
+  categorization: BookingCategorizationResult | null;
+};
+
+export type OrchestrationBookingReceiptEmail = {
+  booking: OrchestrationBookingDetails;
+  categorization: BookingCategorizationResult | null;
+  email: BookingReceiptEmailPayload;
 };
 
 type BookingDetailsRecord = Prisma.BookingGetPayload<{
@@ -221,12 +254,22 @@ type BookingDetailsRecord = Prisma.BookingGetPayload<{
         packageName: true;
       };
     };
+    orchestrationContext: true;
   };
 }>;
 
 const BOOKING_CREATED_WORKFLOW_NAME = 'Zion - New Booking Orchestration';
 const BOOKING_CREATED_EVENT = 'booking.created';
 const DEFAULT_N8N_WEBHOOK_TIMEOUT_MS = 8000;
+const PRODUCTION_BOOKING_SOURCES: readonly BookingSource[] = Object.values(BookingSource).filter(
+  (source) => source !== BookingSource.DEMO_CLIENT_ADMIN_BRIDGE,
+);
+const PRODUCTION_AUTOMATION_STATUSES: readonly AutomationStatus[] = Object.values(AutomationStatus).filter(
+  (status) => status !== AutomationStatus.DEMO_MODE,
+);
+const PRODUCTION_EMAIL_STATUSES: readonly EmailStatus[] = Object.values(EmailStatus).filter(
+  (status) => status !== EmailStatus.PENDING_DEMO && status !== EmailStatus.SENT_DEMO,
+);
 const BOOKING_EMAIL_STATUSES = ['pending', 'sent', 'failed', 'skipped'] as const;
 const BOOKING_EMAIL_TYPES = [
   'booking_receipt',
@@ -366,6 +409,38 @@ function parseGuestCount(value: unknown) {
   return parsed;
 }
 
+function parseClientGuestCount(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  const text = optionalText(value);
+  if (!text) {
+    return 0;
+  }
+
+  const wholeNumber = /^\+?(\d+)\+?$/.exec(text);
+  if (wholeNumber) {
+    return Number(wholeNumber[1]);
+  }
+
+  const range = /^(\d+)\s*-\s*(\d+)\+?$/.exec(text);
+  if (range) {
+    const lowerBound = Number(range[1]);
+    const upperBound = Number(range[2]);
+
+    if (upperBound >= lowerBound) {
+      return upperBound;
+    }
+  }
+
+  return Number(text);
+}
+
 function parseOptionalDate(value: unknown, label: string) {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -423,6 +498,10 @@ function mapBookingStatusToEventStatus(status: BookingStatus): EventStatus {
   }
 
   return EventStatus.PENDING;
+}
+
+function isBookingApprovedOrActive(status: BookingStatus) {
+  return status === BookingStatus.CONFIRMED || status === BookingStatus.IN_PROGRESS;
 }
 
 async function syncBookingToCalendar(
@@ -528,16 +607,26 @@ function normalizeCoreBookingInput(data: BookingUpsertInput) {
 function normalizeClientBookingInput(data: ClientBookingInput): BookingUpsertInput {
   const clientName = requireText(data.clientName, 'clientName');
   const eventType = requireText(data.eventType, 'eventType');
+  const eventTitle = optionalText(data.eventTitle) ?? `${clientName} - ${eventType}`;
   const preferredTime = optionalText(data.preferredTime);
+  const preferredContactMethod = optionalText(data.preferredContactMethod);
+  const alternativeDate = optionalText(data.alternativeDate);
   const budget = optionalText(data.budget);
   const facebook = optionalText(data.facebook);
   const notes = optionalText(data.specialRequests);
+  const guestCount = parseClientGuestCount(data.guestCount);
+  const guestCountLabel = optionalText(data.guestCount);
   const addOns = Array.isArray(data.addOns)
     ? data.addOns.map((item) => optionalText(item)).filter((item): item is string => Boolean(item))
     : [];
   const specialRequests = [
     preferredTime ? `Preferred time: ${preferredTime}` : null,
+    alternativeDate ? `Alternative date: ${alternativeDate}` : null,
+    preferredContactMethod ? `Preferred contact method: ${preferredContactMethod}` : null,
     budget ? `Estimated budget: ${budget}` : null,
+    guestCountLabel && guestCountLabel !== String(guestCount)
+      ? `Estimated guest count: ${guestCountLabel}`
+      : null,
     facebook ? `Facebook: ${facebook}` : null,
     addOns.length ? `Requested add-ons: ${addOns.join(', ')}` : null,
     notes,
@@ -547,11 +636,14 @@ function normalizeClientBookingInput(data: ClientBookingInput): BookingUpsertInp
     clientName,
     clientEmail: optionalText(data.clientEmail),
     clientPhone: optionalText(data.clientPhone),
-    eventTitle: `${clientName} - ${eventType}`,
+    clientAddress: optionalText(data.clientAddress),
+    eventTitle,
     eventType,
     eventDate: requireText(data.eventDate, 'eventDate'),
+    startTime: optionalText(data.startTime),
+    endTime: optionalText(data.endTime),
     venue: 'Zion Events Place',
-    guestCount: data.guestCount === undefined ? 0 : Number(data.guestCount),
+    guestCount,
     packageId: optionalText(data.packageId),
     packageVersion: data.packageVersion === undefined || data.packageVersion === null
       ? null
@@ -611,6 +703,7 @@ function bookingWebhookPayload(booking: ValidBookingCreatedWorkflowBooking): Boo
     booking_reference: booking.bookingReference,
     event_type: booking.eventType,
     triggered_at: new Date().toISOString(),
+    categorization: booking.categorization,
   };
 }
 
@@ -628,6 +721,65 @@ function jsonRecord(value: Prisma.JsonValue | null | undefined) {
   }
 
   return value as Record<string, unknown>;
+}
+
+function stringArray(value: Prisma.JsonValue | null | undefined) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+}
+
+function safeRiskLevel(value: string): BookingCategorizationResult['riskLevel'] {
+  if (value === 'low' || value === 'medium' || value === 'high') {
+    return value;
+  }
+
+  return 'medium';
+}
+
+function safeSuggestedAdminRole(value: string): BookingCategorizationResult['suggestedAdminRole'] {
+  return value === 'SUPERADMIN' ? 'SUPERADMIN' : 'ADMIN';
+}
+
+function categorizationFromContext(
+  context: BookingOrchestrationContext | null | undefined,
+): BookingCategorizationResult | null {
+  if (!context) {
+    return null;
+  }
+
+  return {
+    eventCategory: context.eventCategory,
+    eventCategoryKey: context.eventCategoryKey,
+    packageCategory: context.packageCategory,
+    packageTier: context.packageTier,
+    taskTemplateKey: context.taskTemplateKey,
+    riskLevel: safeRiskLevel(context.riskLevel),
+    hasScheduleConflict: context.hasScheduleConflict,
+    requiresManualReview: context.requiresManualReview,
+    suggestedAdminRole: safeSuggestedAdminRole(context.suggestedAdminRole),
+    tags: stringArray(context.tags),
+    reasonCodes: stringArray(context.reasonCodes),
+  };
+}
+
+function categorizationDbData(result: BookingCategorizationResult, bookingReference: string) {
+  return {
+    bookingReference,
+    eventCategory: result.eventCategory,
+    eventCategoryKey: result.eventCategoryKey,
+    packageCategory: result.packageCategory,
+    packageTier: result.packageTier,
+    taskTemplateKey: result.taskTemplateKey,
+    riskLevel: result.riskLevel,
+    hasScheduleConflict: result.hasScheduleConflict,
+    requiresManualReview: result.requiresManualReview,
+    suggestedAdminRole: result.suggestedAdminRole,
+    tags: result.tags as Prisma.InputJsonValue,
+    reasonCodes: result.reasonCodes as Prisma.InputJsonValue,
+  };
 }
 
 function snapshotText(snapshot: Record<string, unknown>, key: string) {
@@ -667,11 +819,18 @@ function bookingStatusForOrchestration(status: BookingStatus) {
   return status.toLowerCase();
 }
 
-function receiptLink(request: Request, bookingReference: string) {
+function requestBaseUrl(request: Request) {
   const configuredBaseUrl = optionalText(process.env.NEXTAUTH_URL);
-  const baseUrl = configuredBaseUrl ?? new URL(request.url).origin;
 
-  return `${baseUrl.replace(/\/+$/, '')}/booking-receipt/${encodeURIComponent(bookingReference)}`;
+  return (configuredBaseUrl ?? new URL(request.url).origin).replace(/\/+$/, '');
+}
+
+function receiptLink(request: Request, bookingReference: string) {
+  return `${requestBaseUrl(request)}/booking-receipt/${encodeURIComponent(bookingReference)}`;
+}
+
+function zionLogoUrl(request: Request) {
+  return optionalText(process.env.ZION_LOGO_URL) ?? `${requestBaseUrl(request)}/zion-logo.png`;
 }
 
 function bookingDetailsPayload(
@@ -700,11 +859,7 @@ function bookingDetailsPayload(
     booking.paymentAmountPaid,
     booking.paymentRecord?.amountPaid,
   );
-  const remainingBalance = firstMoneyValue(
-    booking.paymentRemainingBalance,
-    booking.paymentRecord?.remainingBalance,
-    packagePrice - firstMoneyValue(booking.paymentAmountPaid, booking.paymentRecord?.amountPaid),
-  );
+  const remainingBalance = Math.max(packagePrice - downPayment, 0);
 
   return {
     booking_id: booking.id,
@@ -727,6 +882,166 @@ function bookingDetailsPayload(
     booking_status: bookingStatusForOrchestration(booking.status),
     receipt_link: receiptLink(request, booking.bookingReference),
   };
+}
+
+type BookingCategorizationSourceRecord = {
+  id: string;
+  bookingReference: string;
+  eventType: string;
+  eventCategoryName: string | null;
+  packageId: string | null;
+  packageSelected: string | null;
+  guestCount: number;
+  eventDate: Date;
+  startTime: string | null;
+  endTime: string | null;
+  paymentSummaryStatus?: PaymentSummaryStatus | null;
+  paymentTotalAmount?: number | null;
+  paymentAmountPaid?: number | null;
+  paymentRemainingBalance?: number | null;
+  package?: {
+    packageName: string;
+  } | null;
+  packageSnapshot?: {
+    snapshotData: Prisma.JsonValue;
+  } | null;
+  paymentRecord?: {
+    totalAmount: number;
+    amountPaid: number;
+    remainingBalance: number;
+    packageName: string | null;
+  } | null;
+};
+
+function bookingCategorizationInput(
+  booking: BookingCategorizationSourceRecord,
+  conflicts: unknown[],
+): BookingCategorizationInput {
+  const snapshot = jsonRecord(booking.packageSnapshot?.snapshotData);
+
+  return {
+    bookingId: booking.id,
+    bookingReference: booking.bookingReference,
+    eventType: booking.eventType,
+    eventCategoryName: booking.eventCategoryName,
+    packageId: booking.packageId,
+    packageName: optionalText(booking.packageSelected) ??
+      snapshotText(snapshot, 'packageName') ??
+      optionalText(booking.paymentRecord?.packageName) ??
+      optionalText(booking.package?.packageName),
+    packageSnapshot: booking.packageSnapshot?.snapshotData ?? null,
+    guestCount: booking.guestCount,
+    eventDate: booking.eventDate,
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+    conflicts,
+    paymentSummary: {
+      status: booking.paymentSummaryStatus ?? null,
+      totalAmount: booking.paymentTotalAmount ?? booking.paymentRecord?.totalAmount ?? null,
+      amountPaid: booking.paymentAmountPaid ?? booking.paymentRecord?.amountPaid ?? null,
+      remainingBalance: booking.paymentRemainingBalance ?? booking.paymentRecord?.remainingBalance ?? null,
+    },
+  };
+}
+
+async function persistBookingCategorization(input: {
+  transaction: Prisma.TransactionClient;
+  booking: BookingCategorizationSourceRecord;
+  conflicts: unknown[];
+  writeTimeline?: boolean;
+}) {
+  const result = categorizeBooking(bookingCategorizationInput(input.booking, input.conflicts));
+  const data = categorizationDbData(result, input.booking.bookingReference);
+
+  await input.transaction.bookingOrchestrationContext.upsert({
+    where: { bookingId: input.booking.id },
+    create: {
+      bookingId: input.booking.id,
+      ...data,
+    },
+    update: data,
+  });
+
+  if (input.writeTimeline !== false) {
+    await input.transaction.bookingTimeline.create({
+      data: {
+        bookingId: input.booking.id,
+        action: 'Booking Categorized',
+        source: 'System',
+        performedBy: 'System',
+        description: `Booking categorized as ${result.eventCategory} with ${result.riskLevel} risk.`,
+        metadata: {
+          eventCategoryKey: result.eventCategoryKey,
+          taskTemplateKey: result.taskTemplateKey,
+          riskLevel: result.riskLevel,
+          requiresManualReview: result.requiresManualReview,
+          reasonCodes: result.reasonCodes,
+        },
+      },
+    });
+  }
+
+  return result;
+}
+
+async function ensureBookingCategorization(
+  bookingId: string,
+  existing?: BookingCategorizationResult | null,
+): Promise<BookingCategorizationResult | null> {
+  if (existing) {
+    return existing;
+  }
+
+  const context = await prisma.bookingOrchestrationContext.findUnique({
+    where: { bookingId },
+  });
+  const fromContext = categorizationFromContext(context);
+
+  if (fromContext) {
+    return fromContext;
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      package: {
+        select: {
+          packageName: true,
+        },
+      },
+      packageSnapshot: {
+        select: {
+          snapshotData: true,
+        },
+      },
+      paymentRecord: {
+        select: {
+          totalAmount: true,
+          amountPaid: true,
+          remainingBalance: true,
+          packageName: true,
+        },
+      },
+    },
+  });
+
+  if (!booking) {
+    return null;
+  }
+
+  const conflicts = await findBookingConflicts({
+    eventDate: booking.eventDate,
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+    venue: booking.venue,
+    excludeBookingId: booking.id,
+  });
+
+  return prisma.$transaction((transaction) => persistBookingCategorization({
+    transaction,
+    booking,
+    conflicts,
+  }));
 }
 
 function safeWebhookLog(input: {
@@ -863,6 +1178,7 @@ export async function triggerBookingCreatedWorkflow(
     id: optionalText(booking?.id),
     bookingReference: optionalText(booking?.bookingReference),
     eventType: optionalText(booking?.eventType),
+    categorization: booking?.categorization ?? null,
   };
 
   if (!normalizedBooking.id || !normalizedBooking.bookingReference || !normalizedBooking.eventType) {
@@ -876,10 +1192,49 @@ export async function triggerBookingCreatedWorkflow(
     return;
   }
 
-  const validBooking: ValidBookingCreatedWorkflowBooking = {
+  const validBookingBase = {
     id: normalizedBooking.id,
     bookingReference: normalizedBooking.bookingReference,
     eventType: normalizedBooking.eventType,
+  };
+
+  const categorization = await ensureBookingCategorization(
+    validBookingBase.id,
+    normalizedBooking.categorization,
+  );
+
+  if (!categorization) {
+    const message = 'Booking categorization is required before n8n trigger.';
+    writeWebhookLog('warn', {
+      event: 'booking.webhook_missing_categorization',
+      bookingId: validBookingBase.id,
+      bookingReference: validBookingBase.bookingReference,
+      status: 'skipped',
+      errorMessage: message,
+    });
+    await prisma.n8nWorkflowLog.create({
+      data: {
+        workflowName: BOOKING_CREATED_WORKFLOW_NAME,
+        relatedModule: 'booking',
+        relatedRecordId: validBookingBase.id,
+        triggerSource: BOOKING_CREATED_EVENT,
+        requestPayload: {
+          booking_id: validBookingBase.id,
+          booking_reference: validBookingBase.bookingReference,
+          event_type: validBookingBase.eventType,
+        },
+        status: N8nWorkflowStatus.FAILED,
+        errorMessage: message,
+        startedAt: new Date(),
+        completedAt: new Date(),
+      },
+    });
+    return;
+  }
+
+  const validBooking: ValidBookingCreatedWorkflowBooking = {
+    ...validBookingBase,
+    categorization,
   };
   const payload = bookingWebhookPayload(validBooking);
   const enabled = process.env.N8N_WEBHOOK_ENABLED === 'true';
@@ -1138,8 +1493,10 @@ export async function createClientBooking(data: ClientBookingInput) {
     throw new BookingRequestError('packageId is required.');
   }
 
+  await assertClientBookingDateAvailable(normalized.eventDate);
+
   const conflicts = await findBookingConflicts(normalized);
-  const booking = await prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const bookingReference = await generateBookingReference(transaction);
     const created = await transaction.booking.create({
       data: {
@@ -1163,6 +1520,26 @@ export async function createClientBooking(data: ClientBookingInput) {
 
     const saved = await transaction.booking.findUniqueOrThrow({
       where: { id: created.id },
+      include: {
+        package: {
+          select: {
+            packageName: true,
+          },
+        },
+        packageSnapshot: {
+          select: {
+            snapshotData: true,
+          },
+        },
+        paymentRecord: {
+          select: {
+            totalAmount: true,
+            amountPaid: true,
+            remainingBalance: true,
+            packageName: true,
+          },
+        },
+      },
     });
 
     await transaction.bookingTimeline.create({
@@ -1196,9 +1573,16 @@ export async function createClientBooking(data: ClientBookingInput) {
       });
     }
 
+    const categorization = await persistBookingCategorization({
+      transaction,
+      booking: saved,
+      conflicts,
+    });
+
     await syncBookingToCalendar(transaction, saved);
-    return saved;
+    return { booking: saved, categorization };
   });
+  const { booking, categorization } = result;
 
   await auditBooking({
     actor: {
@@ -1218,9 +1602,14 @@ export async function createClientBooking(data: ClientBookingInput) {
     },
   });
 
-  await triggerBookingCreatedWorkflow(booking);
+  await triggerBookingCreatedWorkflow({
+    id: booking.id,
+    bookingReference: booking.bookingReference,
+    eventType: booking.eventType,
+    categorization,
+  });
 
-  return { booking, conflicts };
+  return { booking, conflicts, categorization };
 }
 
 export async function updateManualBooking(id: string, data: BookingEditInput, admin: CurrentAdmin) {
@@ -1391,6 +1780,8 @@ export async function changeBookingStatus(input: {
     actorRole: input.actor.role,
     overrideReason: input.overrideReason,
   });
+  const shouldActivateTasks = isBookingApprovedOrActive(input.newStatus) &&
+    !isBookingApprovedOrActive(booking.status);
 
   const updated = await prisma.$transaction(async (transaction) => {
     const next = await transaction.booking.update({
@@ -1405,6 +1796,25 @@ export async function changeBookingStatus(input: {
         ...(input.n8nExecutionId ? { n8nExecutionId: input.n8nExecutionId } : {}),
       },
     });
+
+    let activatedTaskCount = 0;
+
+    if (shouldActivateTasks) {
+      const activation = await transaction.dashboardTask.updateMany({
+        where: {
+          relatedModule: 'bookings',
+          relatedRecordId: booking.id,
+          source: DashboardTaskSource.N8N_WORKFLOW,
+          isActive: false,
+        },
+        data: {
+          isActive: true,
+          activationStatus: 'active',
+          startedAt: new Date(),
+        },
+      });
+      activatedTaskCount = activation.count;
+    }
 
     await transaction.bookingTimeline.create({
       data: {
@@ -1423,6 +1833,37 @@ export async function changeBookingStatus(input: {
         },
       },
     });
+
+    if (shouldActivateTasks) {
+      await transaction.bookingTimeline.create({
+        data: {
+          bookingId: next.id,
+          action: 'Booking Approved',
+          source: input.actor.source,
+          performedBy: input.actor.name,
+          description: `Booking ${next.bookingReference} was approved for operations preparation.`,
+          metadata: {
+            previousStatus: booking.status,
+            newStatus: input.newStatus,
+          },
+        },
+      });
+
+      if (activatedTaskCount > 0) {
+        await transaction.bookingTimeline.create({
+          data: {
+            bookingId: next.id,
+            action: 'Admin To-Do List Activated',
+            source: 'System',
+            performedBy: 'System',
+            description: `${activatedTaskCount} admin task(s) activated after booking approval.`,
+            metadata: {
+              activatedTaskCount,
+            },
+          },
+        });
+      }
+    }
 
     await syncBookingToCalendar(transaction, next);
     return next;
@@ -1518,7 +1959,7 @@ export async function overrideBookingPaymentStatus(input: {
 export async function upsertBookingFromWorkflow(data: BookingUpsertInput) {
   const normalized = normalizeCoreBookingInput(data);
   const bookingSource = data.bookingSource &&
-    isEnumValue(data.bookingSource, Object.values(BookingSource))
+    isEnumValue(data.bookingSource, PRODUCTION_BOOKING_SOURCES)
     ? data.bookingSource
     : BookingSource.N8N_WORKFLOW;
   const bookingReference = optionalText(data.bookingReference);
@@ -1712,7 +2153,7 @@ export async function syncBookingPaymentSummary(data: PaymentSyncInput): Promise
 }
 
 export async function updateBookingAutomationStatus(data: WorkflowResultInput): Promise<void> {
-  if (!isEnumValue(data.automationStatus, Object.values(AutomationStatus))) {
+  if (!isEnumValue(data.automationStatus, PRODUCTION_AUTOMATION_STATUSES)) {
     throw new BookingRequestError('automationStatus is not supported.');
   }
 
@@ -1772,7 +2213,7 @@ export async function saveBookingEmailResult(data: EmailResultInput): Promise<vo
     throw new BookingRequestError('emailType is not supported.');
   }
 
-  if (!isEnumValue(data.status, Object.values(EmailStatus))) {
+  if (!isEnumValue(data.status, PRODUCTION_EMAIL_STATUSES)) {
     throw new BookingRequestError('status is not supported.');
   }
 
@@ -2153,7 +2594,8 @@ function requireBookingDetailsHeaders(request: Request) {
 export async function getBookingDetailsForOrchestration(input: {
   bookingId: string;
   request: Request;
-}): Promise<OrchestrationBookingDetails | null> {
+  auditEndpoint?: string;
+}): Promise<OrchestrationBookingDetailsResponse | null> {
   const bookingId = requireText(input.bookingId, 'bookingId');
   const headers = requireBookingDetailsHeaders(input.request);
   const booking = await prisma.booking.findFirst({
@@ -2183,6 +2625,7 @@ export async function getBookingDetailsForOrchestration(input: {
           packageName: true,
         },
       },
+      orchestrationContext: true,
     },
   });
 
@@ -2197,6 +2640,10 @@ export async function getBookingDetailsForOrchestration(input: {
   }
 
   const details = bookingDetailsPayload(booking, input.request);
+  const categorization = await ensureBookingCategorization(
+    booking.id,
+    categorizationFromContext(booking.orchestrationContext),
+  );
 
   writeBookingDetailsLog('info', {
     event: 'booking.details_fetched',
@@ -2212,11 +2659,43 @@ export async function getBookingDetailsForOrchestration(input: {
     description: `n8n fetched orchestration details for booking ${booking.bookingReference}.`,
     metadata: {
       workflow: headers.workflow,
-      endpoint: '/api/orchestration/bookings/:bookingId/details',
+      endpoint: input.auditEndpoint ?? '/api/orchestration/bookings/:bookingId/details',
     },
   });
 
-  return details;
+  return {
+    booking: details,
+    categorization,
+  };
+}
+
+export async function getBookingReceiptEmailForOrchestration(input: {
+  bookingId: string;
+  request: Request;
+}): Promise<OrchestrationBookingReceiptEmail | null> {
+  const details = await getBookingDetailsForOrchestration({
+    ...input,
+    auditEndpoint: '/api/orchestration/bookings/:bookingId/receipt-email',
+  });
+
+  if (!details) {
+    return null;
+  }
+
+  if (!optionalText(details.booking.client_email)) {
+    throw new BookingRequestError('Client email is required to prepare booking receipt email.', 422);
+  }
+
+  return {
+    booking: details.booking,
+    categorization: details.categorization,
+    email: buildBookingReceiptEmail(details.booking, {
+      logoUrl: zionLogoUrl(input.request),
+      supportEmail: optionalText(process.env.ZION_SUPPORT_EMAIL),
+      supportPhone: optionalText(process.env.ZION_SUPPORT_PHONE),
+      socialLink: optionalText(process.env.ZION_SOCIAL_LINK),
+    }),
+  };
 }
 
 export function requireBookingOrchestrationKey(request: Request) {
@@ -2241,6 +2720,21 @@ export function requireBookingOrchestrationKey(request: Request) {
   }
 }
 
+export function requireN8nWorkflowHeaders(request: Request) {
+  const source = optionalText(request.headers.get('x-zion-source'))?.toLowerCase();
+  const workflow = optionalText(request.headers.get('x-zion-workflow'));
+
+  if (source !== 'n8n') {
+    throw new BookingRequestError('Invalid orchestration source.', 401);
+  }
+
+  if (workflow !== BOOKING_CREATED_WORKFLOW_NAME) {
+    throw new BookingRequestError('Invalid orchestration workflow.', 401);
+  }
+
+  return { source, workflow };
+}
+
 export function parseBookingStatus(value: unknown) {
   if (!isEnumValue(value, Object.values(BookingStatus))) {
     throw new BookingRequestError('newStatus is not supported.');
@@ -2258,7 +2752,7 @@ export function parsePaymentSummaryStatus(value: unknown) {
 }
 
 export function parseAutomationStatus(value: unknown) {
-  if (!isEnumValue(value, Object.values(AutomationStatus))) {
+  if (!isEnumValue(value, PRODUCTION_AUTOMATION_STATUSES)) {
     throw new BookingRequestError('automationStatus is not supported.');
   }
 
@@ -2274,7 +2768,7 @@ export function parseEmailType(value: unknown) {
 }
 
 export function parseEmailStatus(value: unknown) {
-  if (!isEnumValue(value, Object.values(EmailStatus))) {
+  if (!isEnumValue(value, PRODUCTION_EMAIL_STATUSES)) {
     throw new BookingRequestError('status is not supported.');
   }
 
@@ -2282,7 +2776,7 @@ export function parseEmailStatus(value: unknown) {
 }
 
 export function parseBookingSource(value: unknown) {
-  if (!isEnumValue(value, Object.values(BookingSource))) {
+  if (!isEnumValue(value, PRODUCTION_BOOKING_SOURCES)) {
     throw new BookingRequestError('bookingSource is not supported.');
   }
 

@@ -75,6 +75,45 @@ function timeToMinutes(value: string) {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
+const DISPLAY_MONTHS = new Map([
+  ['january', 0],
+  ['february', 1],
+  ['march', 2],
+  ['april', 3],
+  ['may', 4],
+  ['june', 5],
+  ['july', 6],
+  ['august', 7],
+  ['september', 8],
+  ['october', 9],
+  ['november', 10],
+  ['december', 11],
+]);
+
+function parseDisplayDate(value: string) {
+  const match = /^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/.exec(value.trim());
+
+  if (!match) {
+    return null;
+  }
+
+  const month = DISPLAY_MONTHS.get(match[1].toLowerCase());
+  const day = Number(match[2]);
+  const year = Number(match[3]);
+
+  if (month === undefined || !Number.isInteger(day) || day < 1 || day > 31) {
+    return null;
+  }
+
+  const parsed = new Date(Date.UTC(year, month, day));
+
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month &&
+    parsed.getUTCDate() === day
+    ? parsed
+    : null;
+}
+
 export function validateTimeRange(startTime?: string | null, endTime?: string | null) {
   if (!startTime && !endTime) {
     return;
@@ -96,9 +135,10 @@ export function parseBookingDate(value: unknown, label = 'eventDate') {
 
   const parsed = value instanceof Date
     ? new Date(value)
-    : /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T00:00:00.000Z`)
-      : new Date(value);
+    : parseDisplayDate(value) ??
+      (/^\d{4}-\d{2}-\d{2}$/.test(value)
+        ? new Date(`${value}T00:00:00.000Z`)
+        : new Date(value));
 
   if (Number.isNaN(parsed.getTime())) {
     throw new BookingRequestError(`${label} must be a valid date.`);

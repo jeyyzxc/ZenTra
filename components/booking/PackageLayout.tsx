@@ -18,20 +18,20 @@ interface PackageLayoutProps {
   galleryImages: string[];
 }
 
-export default function PackageLayout({ 
-  title, 
-  subtitle, 
-  heroImage, 
-  contentBlocks, 
-  packageText, 
-  galleryImages 
+export default function PackageLayout({
+  title,
+  subtitle,
+  heroImage,
+  contentBlocks,
+  packageText,
+  galleryImages
 }: PackageLayoutProps) {
   return (
     <main className="flex flex-col min-h-screen bg-transparent relative">
       <SubpageHero title={title} subtitle={subtitle} imageSrc={heroImage} />
-      
+
       <div className="w-full relative z-10 bg-transparent pb-0">
-        
+
         {/* Content Blocks (Alternating Layout) */}
         <div className="w-full max-w-7xl mx-auto py-8 md:py-10 px-4 md:px-12 flex flex-col gap-8 md:gap-12">
           {contentBlocks.map((block, index) => (
@@ -59,21 +59,21 @@ export default function PackageLayout({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {/* Manual Spaces rendering to match the design exactly without altering global SpacesSection */}
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer shadow-md max-w-sm mx-auto w-full">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069&auto=format&fit=crop')" }} />
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('/zion/684222572_17948428422152473_4013856636383990076_n.jpg')" }} />
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white drop-shadow-md">
                   <h3 className="font-script text-3xl md:text-4xl text-center leading-tight">The<br/>glass hall</h3>
                 </div>
               </div>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer shadow-md max-w-sm mx-auto w-full">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=2098&auto=format&fit=crop')" }} />
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('/zion/ChatGPT Image Jul 2, 2026, 10_19_13 PM.png')" }} />
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white drop-shadow-md">
                   <h3 className="font-script text-3xl md:text-4xl text-center leading-tight">The<br/>Pavilion<br/>garden</h3>
                 </div>
               </div>
               <div className="relative aspect-[3/4] overflow-hidden group cursor-pointer shadow-md max-w-sm mx-auto w-full">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1572331165267-854da2b10ccc?q=80&w=2070&auto=format&fit=crop')" }} />
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('/zion/620971763_782204770989828_1960603748204775146_n.jpg')" }} />
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white drop-shadow-md">
                   <h3 className="font-script text-3xl md:text-4xl text-center leading-tight">The pool</h3>

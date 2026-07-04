@@ -35,18 +35,18 @@ export default function HeroSection() {
 
 
         {/* Hero Text Content */}
-        <div 
+        <div
           className="relative z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-auto mt-72"
-          style={{ 
+          style={{
             opacity: textOpacity,
-            transform: textTransform 
+            transform: textTransform
           }}
         >
           <h1 className="text-white text-4xl md:text-5xl lg:text-[4.5rem] mb-3 drop-shadow-md font-segoe leading-tight">
-            The best view in San Pedro City
+            Overlooking San Pedro City lights
           </h1>
-          <p className="text-white text-xl md:text-2xl lg:text-[1.85rem] font-sahitya max-w-none w-full px-4 sm:px-8 mb-6 drop-shadow-md">
-            Celebrate life&apos;s best moments with the view you&apos;ll always remember.
+          <p className="text-white text-xl md:text-2xl lg:text-[1.85rem] font-serif font-light italic tracking-wide max-w-none w-full px-4 sm:px-8 mb-6 drop-shadow-md opacity-90">
+            Elevate your celebrations with a breathtaking panoramic view of the sparkling city below.
           </p>
           <Link href="/about" className="px-8 py-2.5 rounded-md bg-transparent border-[1.5px] border-white text-white font-serif transition-all hover:bg-[#DFD48A] hover:border-[#DFD48A] hover:text-neutral-900 hover:shadow-[0_0_20px_rgba(223,212,138,0.4)] pointer-events-auto mt-12 inline-block text-base tracking-widest">
             OUR STORY

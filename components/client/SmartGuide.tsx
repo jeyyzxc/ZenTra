@@ -49,6 +49,7 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 
 export default function SmartGuide() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [lang, setLang] = useState<'en' | 'tl'>('en');
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -151,7 +152,7 @@ export default function SmartGuide() {
     <>
       <div
         ref={chatWindowRef}
-        className={`fixed bottom-6 right-6 z-[200] flex h-[550px] max-h-[85vh] w-[340px] flex-col overflow-hidden rounded-[32px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-all duration-500 sm:w-[380px] ${
+        className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[200] flex h-[550px] max-h-[85vh] w-[340px] flex-col overflow-hidden rounded-[32px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-all duration-500 sm:w-[380px] ${
           isOpen ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-16 scale-90 opacity-0'
         }`}
       >
@@ -277,23 +278,57 @@ export default function SmartGuide() {
         </div>
       </div>
 
-      <button
-        id="zeni-fab"
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          setIsOpen(true);
-        }}
-        className={`fixed bottom-6 right-6 z-[190] flex h-16 w-16 items-center justify-center rounded-full border border-[#D4AF37]/50 bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-[0_12px_30px_rgba(212,175,55,0.2)] ${
-          isOpen ? 'pointer-events-none translate-y-10 scale-50 opacity-0' : 'pointer-events-auto scale-100 opacity-100'
-        }`}
+      <div
+        className={`fixed z-[190] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          isOpen ? 'pointer-events-none translate-y-10 scale-50 opacity-0' : 'pointer-events-auto opacity-100'
+        } ${isMinimized ? 'bottom-8 -right-2 md:bottom-10' : 'bottom-6 right-6 md:bottom-8 md:right-8'}`}
       >
-        <img src="/zion-logo.png" alt="Zion" className="h-9 w-9 object-contain brightness-0 opacity-85" />
-        <span className="absolute bottom-0.5 right-0.5 flex h-4 w-4">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-75" />
-          <span className="relative inline-flex h-4 w-4 rounded-full border-2 border-white bg-[#00E676]" />
-        </span>
-      </button>
+        {isMinimized ? (
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="group relative flex h-16 w-12 items-center justify-start pl-2.5 rounded-l-2xl border border-r-0 border-[#D4AF37]/40 bg-white/90 backdrop-blur-md shadow-[-4px_4px_20px_rgba(212,175,55,0.15)] hover:-translate-x-2 transition-all duration-500 ease-out"
+            title="Show Smart Assistant"
+          >
+            <div className="relative">
+              <Bot className="h-6 w-6 text-[#D4AF37] opacity-80 group-hover:opacity-100 transition-opacity" />
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#00E676]" />
+            </div>
+            {/* Elegant glow effect on hover */}
+            <div className="absolute inset-0 rounded-l-2xl bg-gradient-to-l from-transparent to-[#D4AF37]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          </button>
+        ) : (
+          <div className="relative group">
+            {/* Hide/Minimize Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMinimized(true);
+              }}
+              className="absolute -top-1 -left-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-[#D4AF37]/30 text-neutral-400 opacity-0 shadow-[0_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:bg-[#FAFAFA] hover:text-[#D4AF37] hover:border-[#D4AF37]/60 hover:scale-110 group-hover:opacity-100 scale-75 group-hover:scale-100"
+              title="Hide Assistant"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Main FAB */}
+            <button
+              id="zeni-fab"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsOpen(true);
+              }}
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/50 bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-[0_12px_30px_rgba(212,175,55,0.2)]"
+            >
+              <img src="/zion-logo.png" alt="Zion" className="h-8 w-8 object-contain brightness-0 opacity-85" />
+              <span className="absolute bottom-0.5 right-0.5 flex h-4 w-4">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-75" />
+                <span className="relative inline-flex h-4 w-4 rounded-full border-2 border-white bg-[#00E676]" />
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 }

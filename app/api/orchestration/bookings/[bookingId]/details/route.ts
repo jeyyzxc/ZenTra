@@ -12,12 +12,12 @@ type RouteContext = {
 export async function GET(request: Request, context: RouteContext) {
   try {
     const { bookingId } = await context.params;
-    const booking = await getBookingDetailsForOrchestration({
+    const result = await getBookingDetailsForOrchestration({
       bookingId: bookingId ?? '',
       request,
     });
 
-    if (!booking) {
+    if (!result) {
       return Response.json({
         success: false,
         message: 'Booking not found.',
@@ -26,7 +26,8 @@ export async function GET(request: Request, context: RouteContext) {
 
     return Response.json({
       success: true,
-      booking,
+      booking: result.booking,
+      categorization: result.categorization,
     });
   } catch (error) {
     if (error instanceof BookingRequestError) {

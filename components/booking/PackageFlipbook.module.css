@@ -1,0 +1,588 @@
+.coverButton {
+  position: relative;
+  display: block;
+  width: min(100%, 24rem);
+  aspect-ratio: 3 / 4;
+  overflow: visible;
+  border: 1px solid rgba(30, 34, 30, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.94), rgba(246, 247, 242, 0.9) 48%, rgba(238, 241, 235, 0.96)),
+    repeating-linear-gradient(90deg, rgba(35, 39, 34, 0.026) 0 1px, transparent 1px 16px);
+  box-shadow:
+    0 34px 72px rgba(31, 36, 31, 0.18),
+    0 12px 28px rgba(154, 131, 73, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  color: #171a17;
+  cursor: pointer;
+  text-align: center;
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  transition:
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    transform 420ms ease;
+}
+
+.coverButton::before {
+  content: "";
+  position: absolute;
+  inset: 13px -10px -12px 15px;
+  z-index: -2;
+  border: 1px solid rgba(30, 34, 30, 0.08);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #ffffff 0,
+      #ffffff 5px,
+      #dfe3db 6px,
+      #f7f8f4 8px
+    );
+  box-shadow: 0 24px 42px rgba(31, 36, 31, 0.12);
+}
+
+.coverButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(105deg, transparent 0 30%, rgba(255, 255, 255, 0.68) 46%, transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), transparent 38%, rgba(34, 38, 34, 0.06));
+  opacity: 0.48;
+  transform: translateX(-62%);
+  transition:
+    opacity 520ms ease,
+    transform 900ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.coverButton:hover,
+.coverButton:focus-visible {
+  border-color: rgba(164, 133, 58, 0.46);
+  box-shadow:
+    0 42px 90px rgba(31, 36, 31, 0.22),
+    0 14px 34px rgba(154, 131, 73, 0.18),
+    0 0 0 1px rgba(164, 133, 58, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transform: translate3d(0, -6px, 0) scale(1.01);
+}
+
+.coverButton:hover::after,
+.coverButton:focus-visible::after {
+  opacity: 0.78;
+  transform: translateX(34%);
+}
+
+.coverButton:focus-visible {
+  outline: 2px solid #a4853a;
+  outline-offset: 6px;
+}
+
+.pageStack {
+  position: absolute;
+  inset: 12px -7px 12px auto;
+  z-index: -1;
+  width: 14px;
+  border-radius: 0 8px 8px 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #ffffff 0,
+      #ffffff 4px,
+      #dfe3db 5px,
+      #f7f8f4 7px
+    );
+  box-shadow: 8px 12px 24px rgba(31, 36, 31, 0.16);
+}
+
+.magazineEdge {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 2;
+  width: 0.55rem;
+  border-radius: 8px 0 0 8px;
+  background:
+    linear-gradient(180deg, #1c201c, #3f453b 48%, #161916),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent);
+  box-shadow:
+    inset -1px 0 0 rgba(164, 133, 58, 0.44),
+    inset 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+
+.coverRule {
+  position: absolute;
+  inset: 1.15rem 1.15rem auto 1.55rem;
+  z-index: 3;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(23, 26, 23, 0.84), rgba(164, 133, 58, 0.62), rgba(23, 26, 23, 0.1));
+}
+
+.coverRule::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 38%;
+  height: 1px;
+  background: rgba(164, 133, 58, 0.42);
+}
+
+.coverIssue {
+  position: absolute;
+  top: 1.55rem;
+  right: 1.2rem;
+  z-index: 4;
+  color: #667067;
+  font-family: var(--font-zentra-serif);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.coverInner {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3.3rem 1.55rem 1.35rem 1.9rem;
+}
+
+.coverMeta {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  gap: 0.38rem;
+}
+
+.coverKicker,
+.readerKicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  color: #667067;
+  font-family: var(--font-zentra-serif);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.coverTitle {
+  display: block;
+  color: #171a17;
+  font-family: var(--font-zentra-serif);
+  font-size: 4.35rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 0.86;
+  text-transform: uppercase;
+}
+
+.coverTitleSmall,
+.readerTitle {
+  display: block;
+  color: #2f352f;
+  font-family: var(--font-zentra-serif);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.logoSeal {
+  position: relative;
+  display: grid;
+  width: 11.6rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(164, 133, 58, 0.3);
+  border-radius: 999px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(239, 243, 237, 0.72)),
+    radial-gradient(circle at 50% 46%, rgba(164, 133, 58, 0.14), transparent 64%);
+  box-shadow:
+    0 18px 42px rgba(31, 36, 31, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.logoSeal::before,
+.logoSeal::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.logoSeal::before {
+  inset: 0.58rem;
+  border: 1px solid rgba(164, 133, 58, 0.24);
+}
+
+.logoSeal::after {
+  inset: -0.7rem;
+  border-top: 1px solid rgba(23, 26, 23, 0.2);
+  border-bottom: 1px solid rgba(164, 133, 58, 0.28);
+}
+
+.logoImage {
+  position: relative;
+  z-index: 2;
+  width: 74%;
+  height: auto;
+  opacity: 0.94;
+  filter:
+    brightness(0)
+    saturate(100%)
+    invert(14%)
+    sepia(10%)
+    saturate(494%)
+    hue-rotate(60deg)
+    brightness(92%)
+    contrast(91%)
+    drop-shadow(0 10px 18px rgba(31, 36, 31, 0.12));
+}
+
+.coverSubtitle {
+  max-width: 17rem;
+  color: #454d46;
+  font-family: var(--font-zentra-serif);
+  font-size: 0.96rem;
+  letter-spacing: 0;
+  line-height: 1.6;
+}
+
+.coverAction {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(23, 26, 23, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #171a17;
+  font-family: var(--font-zentra-serif);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 0.78rem 1.05rem;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px rgba(31, 36, 31, 0.08);
+  transition:
+    background 320ms ease,
+    border-color 320ms ease,
+    color 320ms ease,
+    transform 320ms ease;
+}
+
+.coverButton:hover .coverAction,
+.coverButton:focus-visible .coverAction {
+  border-color: rgba(164, 133, 58, 0.72);
+  background: #1c201c;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.readerShell {
+  position: relative;
+  width: min(100%, 60rem);
+  overflow: visible;
+  border: 1px solid rgba(30, 34, 30, 0.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, #1c201c 0 0.55rem, transparent 0.55rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 246, 240, 0.96));
+  box-shadow:
+    0 34px 78px rgba(31, 36, 31, 0.16),
+    10px 10px 0 rgba(225, 229, 219, 0.88),
+    17px 17px 34px rgba(31, 36, 31, 0.1);
+  animation: readerEnter 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.readerShell::before {
+  content: "";
+  position: absolute;
+  inset: 12px -9px 12px auto;
+  z-index: -1;
+  width: 13px;
+  border-radius: 0 8px 8px 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #ffffff 0,
+      #ffffff 4px,
+      #dfe3db 5px,
+      #f7f8f4 7px
+    );
+}
+
+.readerShell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.readerShell:fullscreen .iframeFrame,
+.readerShell:fullscreen .flipbookFrame {
+  height: calc(100vh - 5.8rem);
+  min-height: 0;
+}
+
+.readerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(30, 34, 30, 0.12);
+  border-radius: 8px 8px 0 0;
+  background:
+    linear-gradient(90deg, #1c201c 0 0.55rem, transparent 0.55rem),
+    rgba(255, 255, 255, 0.82);
+  padding: 1.05rem 1rem 1rem 1.45rem;
+}
+
+.readerKicker {
+  color: #667067;
+  font-size: 0.76rem;
+}
+
+.readerTitle {
+  margin-top: 0.18rem;
+  color: #171a17;
+  font-size: 1.4rem;
+}
+
+.readerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.iconButton {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 1px solid rgba(30, 34, 30, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #1c201c;
+  box-shadow: 0 10px 22px rgba(31, 36, 31, 0.08);
+  transition:
+    background 260ms ease,
+    border-color 260ms ease,
+    color 260ms ease,
+    transform 260ms ease;
+}
+
+.iconButton:hover,
+.iconButton:focus-visible {
+  border-color: rgba(164, 133, 58, 0.6);
+  background: #1c201c;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid #a4853a;
+  outline-offset: 3px;
+}
+
+.iframeFrame {
+  position: relative;
+  min-height: 42rem;
+  padding: 0.9rem 0.9rem 1rem 1.25rem;
+  border-radius: 0 0 8px 8px;
+  background:
+    linear-gradient(90deg, #1c201c 0 0.55rem, rgba(164, 133, 58, 0.32) 0.55rem 0.62rem, transparent 0.62rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(241, 245, 238, 0.92));
+}
+
+.flipbookFrame {
+  display: block;
+  width: 100%;
+  height: 42rem;
+  border: 1px solid rgba(30, 34, 30, 0.12);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 18px 34px rgba(31, 36, 31, 0.1);
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0.9rem 0.9rem 1rem 1.25rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  gap: 0.85rem;
+  align-content: center;
+  border: 1px solid rgba(30, 34, 30, 0.08);
+  border-radius: 6px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(243, 246, 240, 0.94));
+  color: #2f352f;
+  font-family: var(--font-zentra-serif);
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.loadingMark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px solid rgba(164, 133, 58, 0.34);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #a4853a;
+  box-shadow: 0 12px 26px rgba(31, 36, 31, 0.09);
+  animation: pulseMark 1200ms ease-in-out infinite;
+}
+
+@keyframes readerEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pulseMark {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (min-width: 768px) {
+  .readerShell {
+    width: min(100%, 64rem);
+  }
+
+  .iframeFrame {
+    min-height: 48rem;
+  }
+
+  .flipbookFrame {
+    height: 48rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .coverButton {
+    width: 100%;
+    max-width: 22rem;
+  }
+
+  .coverInner {
+    padding: 3rem 1.25rem 1.2rem 1.55rem;
+  }
+
+  .coverTitle {
+    font-size: 3.2rem;
+  }
+
+  .coverTitleSmall {
+    font-size: 0.9rem;
+  }
+
+  .coverSubtitle {
+    max-width: 14.5rem;
+    font-size: 0.9rem;
+  }
+
+  .logoSeal {
+    width: 9.8rem;
+  }
+
+  .coverAction {
+    font-size: 0.78rem;
+    padding: 0.72rem 0.95rem;
+  }
+
+  .readerHeader {
+    align-items: flex-start;
+    padding: 0.95rem 0.85rem 0.9rem 1.2rem;
+  }
+
+  .readerTitle {
+    font-size: 1.08rem;
+  }
+
+  .readerActions {
+    gap: 0.38rem;
+  }
+
+  .iconButton {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .iframeFrame {
+    min-height: 34rem;
+    height: 68vh;
+    padding: 0.68rem 0.68rem 0.78rem 1.05rem;
+  }
+
+  .flipbookFrame {
+    height: 68vh;
+  }
+
+  .loadingOverlay {
+    inset: 0.68rem 0.68rem 0.78rem 1.05rem;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .coverTitle {
+    font-size: 2.75rem;
+  }
+
+  .coverSubtitle {
+    max-width: 13rem;
+  }
+
+  .logoSeal {
+    width: 8.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coverButton,
+  .coverButton::after,
+  .coverAction,
+  .iconButton {
+    transition: none;
+  }
+
+  .readerShell,
+  .loadingMark {
+    animation: none;
+  }
+}

@@ -10,15 +10,25 @@ export default function PartnersSection() {
   ];
 
   return (
-    <section className="bg-transparent w-full px-4 py-16 md:px-12 border-t border-neutral-900/10">
+    <section className="bg-transparent w-full px-4 pt-6 pb-16 md:pt-8 md:px-12 border-t border-neutral-900/10">
       <div className="max-w-7xl mx-auto">
-        <h2 className="font-serif text-neutral-900 text-xl md:text-2xl uppercase tracking-[0.2em] mb-12 text-center drop-shadow-sm">
-          Partners
-        </h2>
+        <div className="mb-12 flex justify-center w-full overflow-hidden">
+          <div className="group relative flex items-center justify-center gap-4 md:gap-6 cursor-default">
+            {/* Left elegant fading line */}
+            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+
+            <h2 className="font-serif text-neutral-900 text-2xl md:text-4xl uppercase tracking-[0.2em] transition-all duration-700 ease-out group-hover:text-[#D4AF37] group-hover:tracking-[0.3em] whitespace-nowrap">
+              OUR TRUSTED PARTNERS
+            </h2>
+
+            {/* Right elegant fading line */}
+            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+          </div>
+        </div>
         <div className="flex flex-wrap justify-center gap-4 md:gap-8 items-center">
           {partners.map((partner) => (
-            <div 
-              key={partner.id} 
+            <div
+              key={partner.id}
               className={`w-[160px] h-16 md:w-[200px] md:h-20 ${partner.color} rounded-full flex flex-col items-center justify-center shadow-sm hover:shadow-[0_0_15px_rgba(223,212,138,0.3)] hover:scale-105 transition-all border border-neutral-900/10 hover:border-neutral-900/40 relative group overflow-hidden`}
             >
               <div className="absolute inset-0 border border-neutral-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>

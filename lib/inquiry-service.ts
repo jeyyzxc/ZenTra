@@ -21,7 +21,7 @@ import {
   createManualBooking,
   type ManualBookingInput,
 } from '@/services/booking-orchestration';
-import { BookingRequestError } from '@/lib/booking-validation';
+import { BookingRequestError, parseBookingDate } from '@/lib/booking-validation';
 import { prisma } from '@/lib/prisma';
 
 const URGENT_PATTERN = /\b(asap|urgent|today|immediately|right away)\b/i;
@@ -53,6 +53,14 @@ function optionalText(value: unknown, maxLength = 255) {
   return typeof value === 'string' && value.trim()
     ? value.trim().slice(0, maxLength)
     : null;
+}
+
+function optionalDate(value: unknown, label: string) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return parseBookingDate(value, label);
 }
 
 function parseEnum<T extends string>(
@@ -99,6 +107,7 @@ function inquiryToListDto(inquiry: {
   message: string;
   eventInterest: string | null;
   packageInterest: string | null;
+  requestedEventDate: Date | null;
   sourcePage: string;
   status: InquiryStatus;
   priority: InquiryPriority;
@@ -120,6 +129,7 @@ function inquiryToListDto(inquiry: {
     message: inquiry.message,
     eventInterest: inquiry.eventInterest,
     packageInterest: inquiry.packageInterest,
+    requestedEventDate: inquiry.requestedEventDate?.toISOString() ?? null,
     sourcePage: inquiry.sourcePage,
     status: inquiry.status.toLowerCase(),
     priority: inquiry.priority.toLowerCase(),
@@ -164,6 +174,7 @@ export async function submitInquiry(request: Request) {
   const message = requiredText(body.message, 'Message', 3000);
   const eventInterest = optionalText(body.eventInterest, 180);
   const packageInterest = optionalText(body.packageInterest, 255);
+  const requestedEventDate = optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
   const sourcePage = optionalText(body.sourcePage, 80) ?? 'contact_us';
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -187,6 +198,7 @@ export async function submitInquiry(request: Request) {
           message,
           eventInterest,
           packageInterest,
+          requestedEventDate,
           sourcePage,
           priority,
         },
@@ -195,14 +207,18 @@ export async function submitInquiry(request: Request) {
       await activity(tx, {
         inquiryId: inquiry.id,
         action: 'submitted',
-        description: `Inquiry ${inquiryReference} was submitted from ${sourcePage}.`,
+        description: requestedEventDate
+          ? `Inquiry ${inquiryReference} was submitted from ${sourcePage} for ${requestedEventDate.toISOString().slice(0, 10)}.`
+          : `Inquiry ${inquiryReference} was submitted from ${sourcePage}.`,
         performedBy: fullName,
       });
 
       await tx.notification.create({
         data: {
           title: 'New inquiry submitted',
-          message: `New inquiry submitted by ${fullName}.`,
+          message: requestedEventDate
+            ? `New inquiry submitted by ${fullName} for ${requestedEventDate.toISOString().slice(0, 10)}.`
+            : `New inquiry submitted by ${fullName}.`,
           type: NotificationType.INQUIRY,
           priority: NotificationPriority.MEDIUM,
           relatedModule: 'inquiries',
@@ -232,6 +248,7 @@ export async function submitInquiry(request: Request) {
       preferredContactTime,
       eventInterest,
       packageInterest,
+      requestedEventDate: requestedEventDate?.toISOString() ?? null,
       priority,
       sourcePage,
     },
@@ -522,6 +539,7 @@ async function updateWithActivity(input: {
       priority: updated.priority,
       assignedTo: updated.assignedTo,
       relatedBookingId: updated.relatedBookingId,
+      requestedEventDate: updated.requestedEventDate?.toISOString() ?? null,
     },
     metadata: {
       inquiryId: updated.id,
@@ -561,6 +579,9 @@ export async function updateInquiry(
   }
   if ('eventInterest' in body) data.eventInterest = optionalText(body.eventInterest, 180);
   if ('packageInterest' in body) data.packageInterest = optionalText(body.packageInterest, 255);
+  if ('requestedEventDate' in body || 'eventDate' in body) {
+    data.requestedEventDate = optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
+  }
   if ('preferredContactTime' in body) {
     data.preferredContactTime = optionalText(body.preferredContactTime, 100);
   }
@@ -579,6 +600,7 @@ export async function updateInquiry(
       priority: existing.priority,
       eventInterest: existing.eventInterest,
       packageInterest: existing.packageInterest,
+      requestedEventDate: existing.requestedEventDate?.toISOString() ?? null,
       preferredContactTime: existing.preferredContactTime,
     },
   });
@@ -717,13 +739,18 @@ export async function convertInquiryToBooking(
     throw new InquiryError('This inquiry is already linked to a booking.', 409);
   }
 
+  const conversionEventDate = optionalText(body.eventDate, 40) ?? inquiry.requestedEventDate;
+  if (!conversionEventDate) {
+    throw new InquiryError('Event date is required.');
+  }
+
   const bookingInput: ManualBookingInput = {
     clientName: inquiry.fullName,
     clientEmail: inquiry.email,
     clientPhone: inquiry.phoneNumber,
     eventTitle: requiredText(body.eventTitle, 'Event title', 255),
     eventType: requiredText(body.eventType ?? inquiry.eventInterest, 'Event type', 180),
-    eventDate: requiredText(body.eventDate, 'Event date', 40),
+    eventDate: conversionEventDate,
     startTime: optionalText(body.startTime, 10),
     endTime: optionalText(body.endTime, 10),
     venue: requiredText(body.venue, 'Venue', 255),

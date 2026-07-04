@@ -15,6 +15,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import ServicesImageUploadField, { uploadServicesImage } from '@/components/admin/services/ServicesImageUploadField';
 
 type EventCategory = {
   id: string;
@@ -188,6 +189,7 @@ export default function EventCategoryPackagesPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingPackage, setEditingPackage] = useState<PackageRecord | null>(null);
   const [form, setForm] = useState<PackageForm>(emptyPackageForm);
+  const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
   const [previewPackage, setPreviewPackage] = useState<PackageRecord | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
 
@@ -253,12 +255,14 @@ export default function EventCategoryPackagesPage() {
         { inclusionName: 'Tables and chairs', description: '', isFree: true, isOptional: false, displayOrder: 20 },
       ],
     });
+    setPackageImageFile(null);
     setModalMode('create');
   };
 
   const openEdit = (packageRecord: PackageRecord) => {
     setEditingPackage(packageRecord);
     setForm(packageToForm(packageRecord));
+    setPackageImageFile(null);
     setModalMode('edit');
   };
 
@@ -266,6 +270,7 @@ export default function EventCategoryPackagesPage() {
     setModalMode(null);
     setEditingPackage(null);
     setForm(emptyPackageForm);
+    setPackageImageFile(null);
     setSaving(false);
   };
 
@@ -325,6 +330,14 @@ export default function EventCategoryPackagesPage() {
     setError('');
 
     try {
+      let packageImageUrl = form.packageImageUrl;
+
+      if (packageImageFile) {
+        packageImageUrl = await uploadServicesImage(packageImageFile, 'package');
+        setForm((current) => ({ ...current, packageImageUrl }));
+        setPackageImageFile(null);
+      }
+
       const endpoint = editingPackage
         ? `/api/admin/packages/${encodeURIComponent(editingPackage.id)}`
         : `/api/admin/event-categories/${encodeURIComponent(slug)}/packages`;
@@ -344,7 +357,7 @@ export default function EventCategoryPackagesPage() {
           fullPaymentAmount: Number(form.fullPaymentAmount || form.price || 0),
           checkInTime: form.checkInTime,
           checkOutTime: form.checkOutTime,
-          packageImageUrl: form.packageImageUrl,
+          packageImageUrl,
           contractItemDescription: form.contractItemDescription,
           contractInclusionDescription: form.contractInclusionDescription,
           status: form.status,
@@ -739,14 +752,14 @@ export default function EventCategoryPackagesPage() {
                   className="rounded-lg border border-gray-200 bg-white px-4 py-3 font-sans text-sm outline-none focus:border-[#D6B53B] dark:border-white/10 dark:bg-white/5"
                 />
               </label>
-              <label className="lg:col-span-4 flex flex-col gap-2 text-sm font-bold">
-                Package image URL
-                <input
-                  value={form.packageImageUrl}
-                  onChange={(event) => setForm((current) => ({ ...current, packageImageUrl: event.target.value }))}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-3 font-sans text-sm outline-none focus:border-[#D6B53B] dark:border-white/10 dark:bg-white/5"
-                />
-              </label>
+              <ServicesImageUploadField
+                label="Package image"
+                value={form.packageImageUrl}
+                pendingFile={packageImageFile}
+                onFileChange={setPackageImageFile}
+                onUrlChange={(packageImageUrl) => setForm((current) => ({ ...current, packageImageUrl }))}
+                className="lg:col-span-4"
+              />
               <label className="lg:col-span-2 flex flex-col gap-2 text-sm font-bold">
                 Contract item description
                 <textarea

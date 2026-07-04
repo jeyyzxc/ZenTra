@@ -490,7 +490,7 @@ Headers:
 
 ```text
 Content-Type: application/json
-x-api-key: local-zion-booking-orchestration-key-change-before-production
+x-api-key: {{$env.BOOKING_ORCHESTRATION_API_KEY}}
 x-zion-source: n8n
 x-zion-workflow: Zion - New Booking Orchestration
 ```
@@ -930,9 +930,7 @@ Verify booking.booking_id from Prepare Zion Booking Receipt Email node.
 
 The current local key:
 
-```text
-local-zion-booking-orchestration-key-change-before-production
-```
+Use the current `BOOKING_ORCHESTRATION_API_KEY` value from the app `.env.local` file. Do not paste old placeholder keys into the n8n workflow.
 
 is only for local testing.
 

@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#FBF4C4] via-white/0 to-transparent dark:from-[#111610] dark:via-[#0C100B]/0 dark:to-transparent"></div>
         <div className="absolute inset-0 w-full h-full bg-gradient-to-bl from-[#FBF4C4] via-white/0 to-transparent dark:from-[#111610] dark:via-[#0C100B]/0 dark:to-transparent"></div>
       </div>
-      
+
       <div className="relative z-10 w-full pt-8 pb-4 border-t border-neutral-900/10">
       <div className="w-full mx-auto px-4 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-2">
@@ -18,7 +18,7 @@ export default function Footer() {
           <div className="flex flex-col gap-1 md:col-span-3">
             <h3 className="font-serif text-neutral-900 text-2xl md:text-3xl font-medium tracking-wide transition-all duration-300 hover:text-[#D4AF37] hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.3)] cursor-pointer">ZION EVENTS PLACE</h3>
             <p className="text-neutral-900 text-sm md:text-base font-serif max-w-xs opacity-80">
-              Sophisticated Celebrations, <span className="whitespace-nowrap">Excellent Service -</span> Overlooking Laguna
+              Overlooking San Pedro City lights.
             </p>
           </div>
 
@@ -40,9 +40,9 @@ export default function Footer() {
               <div className="flex flex-col gap-2">
                 <h4 className="font-serif text-neutral-600 text-sm md:text-base font-bold uppercase drop-shadow-sm">VISIT US</h4>
                 <div className="flex flex-col text-neutral-900 text-sm md:text-base font-serif leading-relaxed">
-                  <span>Father Masi Street,</span>
-                  <span>Holiday Hills, Barangay San Antonio,</span>
-                  <span>San Pedro, Philippines, 4023</span>
+                  <span className="whitespace-nowrap">Father Masi Street,</span>
+                  <span className="whitespace-nowrap">Holiday Hills, Barangay San&nbsp;Antonio,</span>
+                  <span className="whitespace-nowrap">San Pedro, Philippines, 4023</span>
                 </div>
               </div>
 
@@ -53,11 +53,11 @@ export default function Footer() {
               <div className="flex flex-col gap-2">
                 <h4 className="font-serif text-neutral-600 text-sm md:text-base font-bold uppercase drop-shadow-sm">CONTACT US</h4>
                 <div className="flex flex-col gap-1 text-neutral-900 text-sm md:text-base font-serif leading-relaxed">
-                  <a href="tel:+639123456789" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
-                    Tel: +63 912 345 6789
+                  <a href="tel:09194442327" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
+                    Tel: 0919 444 2327
                   </a>
-                  <a href="mailto:inquire@zionevents.com" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
-                    inquire@zionevents.com
+                  <a href="mailto:teamzioneventsplace@gmail.com" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
+                    teamzioneventsplace@gmail.com
                   </a>
                 </div>
               </div>

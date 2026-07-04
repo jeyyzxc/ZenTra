@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import Navbar from './Navbar';
 import { usePathname } from 'next/navigation';
@@ -32,6 +33,7 @@ export default function GlobalHeader() {
   const logoScale = 1 - (progress * 0.65);
   // Logo translates up to the navbar area
   const logoTranslateY = -(progress * 40.5); // in vh units
+  const logoOpacity = 1 - (progress * 0.12);
 
   return (
     <div className="fixed inset-0 h-screen pointer-events-none z-[100]">
@@ -42,12 +44,13 @@ export default function GlobalHeader() {
 
       {/* Center Logo */}
       <div
-        className="absolute inset-0 flex items-center justify-center transition-transform duration-75 pointer-events-none z-[60]"
+        className="absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-150 pointer-events-none z-[60]"
         style={{
           transform: `translateY(${logoTranslateY}vh) scale(${logoScale})`,
+          opacity: logoOpacity,
         }}
       >
-        <a 
+        <a
           href="#"
           onClick={(e) => {
             e.preventDefault();
@@ -58,11 +61,14 @@ export default function GlobalHeader() {
             }
           }}
           className="relative block w-80 md:w-96 lg:w-[450px] transition-transform duration-300 pointer-events-auto hover:scale-[1.02] cursor-pointer"
+          style={{ pointerEvents: 'auto' }}
         >
           {/* Hidden image to force natural aspect ratio */}
-          <img
+          <Image
             src="/zion-logo.png"
             alt="Zion Events Place Logo"
+            width={960}
+            height={960}
             className="w-full h-auto opacity-0"
           />
           {/* Colored Mask */}

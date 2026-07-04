@@ -12,6 +12,7 @@ import {
   Plus,
   X,
 } from 'lucide-react';
+import ServicesImageUploadField, { uploadServicesImage } from '@/components/admin/services/ServicesImageUploadField';
 
 type EventCategory = {
   id: string;
@@ -77,6 +78,7 @@ export default function ServicesAndPackages() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingCategory, setEditingCategory] = useState<EventCategory | null>(null);
   const [form, setForm] = useState<CategoryForm>(emptyForm);
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<EventCategory | null>(null);
 
   const loadCategories = useCallback(async () => {
@@ -117,6 +119,7 @@ export default function ServicesAndPackages() {
   const openCreate = () => {
     setEditingCategory(null);
     setForm(emptyForm);
+    setCategoryImageFile(null);
     setModalMode('create');
   };
 
@@ -131,6 +134,7 @@ export default function ServicesAndPackages() {
       status: category.status,
       clientVisible: category.clientVisible,
     });
+    setCategoryImageFile(null);
     setModalMode('edit');
   };
 
@@ -138,6 +142,7 @@ export default function ServicesAndPackages() {
     setModalMode(null);
     setEditingCategory(null);
     setForm(emptyForm);
+    setCategoryImageFile(null);
     setSaving(false);
   };
 
@@ -147,6 +152,14 @@ export default function ServicesAndPackages() {
     setError('');
 
     try {
+      let coverImageUrl = form.coverImageUrl;
+
+      if (categoryImageFile) {
+        coverImageUrl = await uploadServicesImage(categoryImageFile, 'category');
+        setForm((current) => ({ ...current, coverImageUrl }));
+        setCategoryImageFile(null);
+      }
+
       const endpoint = editingCategory
         ? `/api/admin/event-categories/${encodeURIComponent(editingCategory.id)}`
         : '/api/admin/event-categories';
@@ -157,7 +170,7 @@ export default function ServicesAndPackages() {
           name: form.name,
           slug: form.slug || slugify(form.name),
           description: form.description,
-          coverImageUrl: form.coverImageUrl,
+          coverImageUrl,
           displayOrder: Number(form.displayOrder || 0),
           status: form.status,
           clientVisible: form.clientVisible,
@@ -421,14 +434,14 @@ export default function ServicesAndPackages() {
                 />
               </label>
 
-              <label className="md:col-span-2 flex flex-col gap-2 text-sm font-bold text-[#1a1f18] dark:text-[#F4F4F0]">
-                Cover image URL
-                <input
-                  value={form.coverImageUrl}
-                  onChange={(event) => setForm((current) => ({ ...current, coverImageUrl: event.target.value }))}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-3 font-sans text-sm outline-none focus:border-[#D6B53B] dark:border-white/10 dark:bg-white/5"
-                />
-              </label>
+              <ServicesImageUploadField
+                label="Event category image"
+                value={form.coverImageUrl}
+                pendingFile={categoryImageFile}
+                onFileChange={setCategoryImageFile}
+                onUrlChange={(coverImageUrl) => setForm((current) => ({ ...current, coverImageUrl }))}
+                className="md:col-span-2 text-[#1a1f18] dark:text-[#F4F4F0]"
+              />
 
               <label className="flex flex-col gap-2 text-sm font-bold text-[#1a1f18] dark:text-[#F4F4F0]">
                 Display order

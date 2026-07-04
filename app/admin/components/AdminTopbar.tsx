@@ -90,7 +90,7 @@ export default function AdminTopbar({
   const router = useRouter();
   const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Super Admin' : 'Administrator';
   const userInitial = currentUser.username.charAt(0).toUpperCase();
-  
+
   // Notification State
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -199,7 +199,7 @@ export default function AdminTopbar({
       method: 'PATCH',
     });
   };
-  
+
   const getTitle = () => {
     if (pathname.includes('/dashboard')) return 'Admin / Dashboard';
     if (pathname.includes('/bookings')) return 'Booking Management';
@@ -232,12 +232,12 @@ export default function AdminTopbar({
   };
 
   return (
-    <div 
+    <div
       className={`h-20 bg-white dark:bg-[#0C100B] border-b border-[#1a1f18]/10 dark:border-white/5 flex items-center justify-between gap-3 px-4 md:px-8 sticky top-0 z-40 transition-colors duration-500 ease-in-out ${
         isCollapsed ? 'ml-[80px]' : 'ml-[80px] md:ml-[280px]'
       }`}
     >
-      
+
       {/* Title */}
       <h1 className="min-w-0 truncate text-base font-sahitya text-[#1a1f18] dark:text-[#F4F4F0] font-bold uppercase tracking-[0.08em] transition-colors duration-500 sm:text-[22px] sm:tracking-[0.1em]">
         {getTitle()}
@@ -245,7 +245,7 @@ export default function AdminTopbar({
 
       {/* Right Side */}
       <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
-        
+
         {/* Search */}
         {!pathname.includes('/admin/profile') && (
           <div className="relative z-50 hidden lg:block" ref={searchRef}>
@@ -271,9 +271,9 @@ export default function AdminTopbar({
                   </span>
                 </div>
               )}
-              <input 
+              <input
                 ref={searchInputRef}
-                type="text" 
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -290,10 +290,10 @@ export default function AdminTopbar({
                 className="w-full bg-transparent py-2.5 pr-4 text-[13px] font-sans font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none transition-all duration-300 ease-in-out relative z-10"
               />
             </div>
-            
+
             {/* Clear Button */}
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => {
                   setSearchQuery('');
                   searchInputRef.current?.focus();
@@ -313,7 +313,7 @@ export default function AdminTopbar({
                   <div className="px-3 py-2 text-[10px] font-bold text-gray-400 dark:text-[#A3B19B] uppercase tracking-[0.1em]">
                     Quick Results
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       handleNavigation(`/admin/bookings?search=${encodeURIComponent(searchQuery.trim())}`);
                       setIsSearchFocused(false);
@@ -346,7 +346,7 @@ export default function AdminTopbar({
                   <div className="px-3 py-2 text-[10px] font-bold text-gray-400 dark:text-[#A3B19B] uppercase tracking-[0.1em] flex justify-between items-center">
                     <span>Recent Searches</span>
                     {recentSearches.length > 0 && (
-                      <button 
+                      <button
                         onClick={() => setRecentSearches([])}
                         className="text-[10px] text-gray-400 dark:text-[#A3B19B] hover:text-red-500 dark:hover:text-red-400 transition-colors uppercase tracking-wider"
                       >
@@ -357,7 +357,7 @@ export default function AdminTopbar({
                   {recentSearches.length > 0 ? (
                     recentSearches.map((search, idx) => (
                       <div key={idx} className={`relative flex items-center w-full group ${idx > 0 ? 'mt-1' : ''}`}>
-                        <button 
+                        <button
                           onMouseEnter={() => setHoveredSearch(search)}
                           onMouseLeave={() => setHoveredSearch(null)}
                           className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-gray-600 dark:text-[#A3B19B] hover:text-gray-900 dark:hover:text-[#F4F4F0]"
@@ -365,7 +365,7 @@ export default function AdminTopbar({
                           <i className="fi fi-rr-time-past text-gray-400 dark:text-[#A3B19B] text-xs group-hover:text-[#D6B53B] transition-colors"></i>
                           <span className="text-[13px] font-medium tracking-wide pr-8 truncate">{search}</span>
                         </button>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setRecentSearches(prev => prev.filter(s => s !== search));
@@ -400,12 +400,12 @@ export default function AdminTopbar({
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
             </svg>
-            
+
             {/* Red Dot Indicator (Only shows if unreadCount > 0) */}
             {unreadCount > 0 && (
               <>
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#0C100B] rounded-full z-10"></span>
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-400 rounded-full animate-ping opacity-75"></span>
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#0C100B] rounded-full z-10"></span>
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-400 rounded-full animate-ping opacity-75"></span>
               </>
             )}
           </button>
@@ -416,7 +416,7 @@ export default function AdminTopbar({
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-white/5 bg-white dark:bg-[#141A13]">
                 <h3 className="text-[15px] font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans">Notifications</h3>
                 {unreadCount > 0 && (
-                  <button 
+                  <button
                     onClick={markAllAsRead}
                     className="text-[10px] font-semibold text-[#D6B53B] hover:text-[#BEA542] dark:hover:text-[#E8D579] transition-colors tracking-[0.1em] uppercase"
                   >
@@ -424,12 +424,12 @@ export default function AdminTopbar({
                   </button>
                 )}
               </div>
-              
+
               <div className="max-h-[340px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-white dark:bg-[#141A13]">
                 {notifications.length > 0 ? (
                   notifications.map((notification) => (
-                    <div 
-                      key={notification.id} 
+                    <div
+                      key={notification.id}
                       onClick={() => {
                         markAsRead(notification.id);
                         setIsDropdownOpen(false);
@@ -464,7 +464,7 @@ export default function AdminTopbar({
                   </div>
                 )}
               </div>
-              
+
             </div>
           )}
         </div>
@@ -484,7 +484,7 @@ export default function AdminTopbar({
             />
           </button>
 
-          <button 
+          <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className={`p-1 rounded-full transition-colors focus:outline-none ${isProfileOpen ? 'bg-gray-100 dark:bg-white/10' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
             title="Open Profile Menu"
@@ -497,7 +497,7 @@ export default function AdminTopbar({
           {/* Profile Dropdown Panel */}
           {isProfileOpen && (
             <div className="absolute top-full -right-2 mt-3 w-64 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-gray-100/50 dark:border-white/5 overflow-hidden origin-top-right z-50 transition-colors duration-500">
-              
+
               {/* User Header */}
               <button
                 onClick={() => handleNavigation('/admin/profile')}
@@ -515,14 +515,14 @@ export default function AdminTopbar({
                   <span className="max-w-[150px] truncate text-[10px] text-gray-400 group-hover:text-gray-500 transition-colors">{currentUser.email}</span>
                 </div>
               </button>
-              
+
               {/* Menu Items */}
               <div className="p-2">
-                <button 
+                <button
                   onClick={() => handleNavigation('/admin/profile')}
                   className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3.5 group"
                 >
-                  <div 
+                  <div
                     className="w-[16px] h-[16px] flex-shrink-0 transition-colors bg-current text-gray-400 dark:text-[#A3B19B] group-hover:text-[#D6B53B]"
                     style={{
                       maskImage: `url('/profile-user.png'), url('/profile-user.png')`,
@@ -537,11 +537,11 @@ export default function AdminTopbar({
                   />
                   <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] group-hover:text-black dark:group-hover:text-white transition-colors">My Profile</span>
                 </button>
-                <button 
+                <button
                   onClick={() => handleNavigation('/admin/settings')}
                   className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3.5 group mt-0.5"
                 >
-                  <div 
+                  <div
                     className="w-[16px] h-[16px] flex-shrink-0 transition-colors bg-current text-gray-400 dark:text-[#A3B19B] group-hover:text-[#D6B53B]"
                     style={{
                       maskImage: `url('/profile-settings.png'), url('/profile-settings.png')`,
@@ -560,7 +560,7 @@ export default function AdminTopbar({
 
               {/* Logout Footer */}
               <div className="p-2 border-t border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-[#1A2218]/50">
-                <button 
+                <button
                   onClick={() => signOut({ callbackUrl: '/admin' })}
                   className="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors flex items-center gap-3.5 group"
                 >

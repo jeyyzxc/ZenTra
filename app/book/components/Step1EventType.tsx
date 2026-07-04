@@ -60,72 +60,102 @@ export default function Step1EventType({ data, updateData, nextStep }: Props) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[280px] w-full items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#D4A017]/30 border-t-[#D4A017]" />
+      <div className="flex min-h-[400px] w-full items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-[#D6B53B]/20 border-t-[#D6B53B] shadow-[0_0_15px_rgba(214,181,59,0.2)]" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-red-50 px-6 py-5 text-center text-red-700">
-        <p className="font-serif text-xl">{error}</p>
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-red-200/50 bg-red-50/80 px-8 py-6 text-center shadow-lg backdrop-blur-md">
+        <p className="font-serif text-xl text-red-800">{error}</p>
       </div>
     );
   }
 
   if (eventCategories.length === 0) {
     return (
-      <div className="mx-auto max-w-xl rounded-3xl border border-[#D2CB96]/40 bg-white/70 px-6 py-5 text-center text-[#3A4B3C]">
-        <p className="font-serif text-xl">No event categories are available for booking right now.</p>
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-[#D6B53B]/30 bg-white/60 px-8 py-6 text-center shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+        <p className="font-serif text-xl text-[#2F3E32]">No event categories are available for booking right now.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 w-full max-w-4xl mx-auto px-4">
-      {eventCategories.map((event) => {
-        const isSelected = data.eventCategoryId === event.id;
+    <div className="mx-auto w-full max-w-full px-4 pb-8">
+      {/* Decorative background glow behind the grid */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(253,235,158,0.15),transparent_60%)] blur-3xl" />
 
-        return (
-          <div
-            key={event.id}
-            onClick={() => {
-              updateData({
-                eventType: event.name,
-                eventCategoryId: event.id,
-                eventCategorySlug: event.slug,
-              });
-              setTimeout(nextStep, 300);
-            }}
-            className={`relative rounded-3xl overflow-hidden aspect-[4/3] cursor-pointer transition-all duration-300 transform ${
-              isSelected ? 'scale-105 shadow-2xl ring-4 ring-[#4CAF50] ring-offset-4 ring-offset-[#EAE5C3]' : 'hover:scale-105 shadow-md hover:shadow-xl'
-            }`}
-          >
+      <div className="flex flex-wrap justify-center gap-6 lg:gap-8">
+        {eventCategories.map((event) => {
+          const isSelected = data.eventCategoryId === event.id;
+
+          return (
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700"
-              style={{ backgroundImage: `url("${event.coverImageUrl || 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop'}")` }}
-            />
-            <div className={`absolute inset-0 transition-colors duration-300 ${isSelected ? 'bg-black/20' : 'bg-black/45 hover:bg-black/35'}`} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-              <h3 className="text-white text-3xl md:text-4xl font-sahitya text-center drop-shadow-md">
-                {event.name}
-              </h3>
-              <p className="mt-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white backdrop-blur">
-                {event.activePackageCount} offers
-              </p>
-            </div>
+              key={event.id}
+              onClick={() => {
+                updateData({
+                  eventType: event.name,
+                  eventCategoryId: event.id,
+                  eventCategorySlug: event.slug,
+                });
+                // Slightly longer timeout to allow the luxurious animation to register
+                setTimeout(nextStep, 350);
+              }}
+              className={`group relative overflow-hidden rounded-[2rem] h-[200px] w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.5rem)] cursor-pointer transition-all duration-300 ease-out border-2 ${
+                isSelected
+                  ? 'border-[#FDEB9E] bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] scale-[1.02]'
+                  : 'border-transparent bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-white hover:shadow-[0_0_30px_rgba(255,255,255,0.8),0_0_50px_rgba(214,181,59,0.7),inset_0_0_15px_rgba(255,255,255,0.5)] hover:ring-4 hover:ring-[#FDEB9E]/50 hover:scale-[1.05] hover:z-50 hover:brightness-105'
+              }`}
+            >
+              {/* Background Image with Slow Zoom on Hover */}
+              <div
+                className={`absolute inset-0 bg-cover bg-center transition-transform duration-[1.5s] ease-out ${
+                  isSelected ? 'scale-105' : 'scale-100'
+                }`}
+                style={{
+                  backgroundImage: `url("${event.coverImageUrl || 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop'}")`,
+                }}
+              />
 
-            {isSelected && (
-              <div className="absolute top-4 right-4 bg-[#4CAF50] w-10 h-10 rounded-full flex items-center justify-center shadow-lg transform transition-transform scale-in">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+              {/* Elegant Gradient Overlay */}
+              <div
+                className={`absolute inset-0 transition-opacity duration-700 ${
+                  isSelected
+                    ? 'bg-gradient-to-t from-black/95 via-black/60 to-black/30 opacity-100'
+                    : 'bg-gradient-to-t from-black via-black/70 to-black/40 opacity-100 group-hover:opacity-100 group-hover:from-black/90 group-hover:via-black/60'
+                }`}
+              />
+
+              {/* Content Container */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-8 text-center">
+                <div className="flex flex-col items-center transform transition-transform duration-500 ease-out">
+                  <h3 className="font-serif italic text-[1.75rem] md:text-[2.25rem] leading-tight font-light tracking-wider text-[#FDFCEE] drop-shadow-[0_4px_10px_rgba(0,0,0,0.7)] mb-5 transition-all duration-500 group-hover:text-white group-hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] group-hover:-translate-y-1">
+                    {event.name}
+                  </h3>
+
+                  {/* Badges Container */}
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <span className="font-sans rounded-full border border-white/20 bg-black/20 px-5 py-2 text-[10px] sm:text-[11px] font-light uppercase tracking-[0.2em] text-[#EAE6D1] backdrop-blur-md transition-all duration-500 group-hover:border-white/40 group-hover:bg-white/10 group-hover:text-white">
+                      {event.activePackageCount} Packages
+                    </span>
+
+                    {isSelected && (
+                      <span className="rounded-full border border-[#FDEB9E]/50 bg-[#FDEB9E] px-4 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-[#1a1f18] shadow-[0_0_15px_rgba(253,235,158,0.5)] animate-[fadeIn_0.3s_ease-out]">
+                        Selected
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
+
+              {/* Subtle inner ring for glass effect */}
+              <div className="pointer-events-none absolute inset-0 rounded-[2rem] border border-white/10" />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
