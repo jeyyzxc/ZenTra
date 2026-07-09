@@ -117,6 +117,28 @@ function line(x1: number, y1: number, x2: number, y2: number, stroke: PdfColor, 
   return `${color(stroke, 'RG')}\n${num(lineWidth)} w\n${num(x1)} ${num(y1)} m ${num(x2)} ${num(y2)} l S`;
 }
 
+function circlePath(cx: number, cy: number, radius: number) {
+  const c = radius * 0.5522847498;
+
+  return [
+    `${num(cx)} ${num(cy + radius)} m`,
+    `${num(cx + c)} ${num(cy + radius)} ${num(cx + radius)} ${num(cy + c)} ${num(cx + radius)} ${num(cy)} c`,
+    `${num(cx + radius)} ${num(cy - c)} ${num(cx + c)} ${num(cy - radius)} ${num(cx)} ${num(cy - radius)} c`,
+    `${num(cx - c)} ${num(cy - radius)} ${num(cx - radius)} ${num(cy - c)} ${num(cx - radius)} ${num(cy)} c`,
+    `${num(cx - radius)} ${num(cy + c)} ${num(cx - c)} ${num(cy + radius)} ${num(cx)} ${num(cy + radius)} c`,
+    'h',
+  ].join('\n');
+}
+
+function circle(cx: number, cy: number, radius: number, fill: PdfColor, stroke?: PdfColor, lineWidth = 0.6) {
+  const strokeCommands = stroke
+    ? `${color(stroke, 'RG')}\n${num(lineWidth)} w\n`
+    : '';
+  const operation = stroke ? 'B' : 'f';
+
+  return `${color(fill)}\n${strokeCommands}${circlePath(cx, cy, radius)} ${operation}`;
+}
+
 function escapePdfText(value: string) {
   return value
     .replace(/[^\x20-\x7e]/g, '?')
@@ -440,15 +462,21 @@ function renderHeader<T>(input: ZionPdfInput<T>, pageNumber: number) {
   const logo = getLogoImage();
 
   if (logo) {
+    const centerX = 541;
+    const centerY = 723;
+    const logoSize = 56;
+
     commands.push(
-      rect(505, 687, 72, 72, COLORS.white),
-      strokeRect(505, 687, 72, 72, COLORS.gold, 0.8),
-      `q\n72 0 0 72 505 687 cm\n/Logo Do\nQ`,
+      circle(centerX + 2, centerY - 2, 39, COLORS.charcoalSoft),
+      circle(centerX, centerY, 39, COLORS.white, COLORS.gold, 1.2),
+      circle(centerX, centerY, 33, COLORS.white, COLORS.line, 0.35),
+      `q\n${logoSize} 0 0 ${logoSize} ${centerX - logoSize / 2} ${centerY - logoSize / 2} cm\n/Logo Do\nQ`,
     );
   } else {
     commands.push(
+      circle(541, 723, 39, COLORS.white, COLORS.gold, 1.2),
       textCommand({
-        x: 512,
+        x: 521,
         y: 724,
         text: 'ZION',
         font: 'F2',

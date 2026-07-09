@@ -17,6 +17,10 @@ describe('CSV exports', () => {
     ]);
 
     assert.equal(csv, [
+      '"ZION EVENTS PLACE EXPORT","",""',
+      '"[ CIRCULAR ZION LOGO MEDALLION ]","",""',
+      '"Charcoal #1a1f18 | Gold #D6B53B | Cream #FDF5CC","",""',
+      '"","",""',
       '"Client","Notes","Balance"',
       '"\'=SUM(A1:A2)","He said ""hello""","\'-500"',
       '"Maria Cruz","Line one\nLine two","1200"',
@@ -70,6 +74,9 @@ describe('XLSX exports', () => {
     assert.equal(bytes.subarray(0, 2).toString('utf8'), 'PK');
     assert.match(text, /<sheet name="Summary"/);
     assert.match(text, /<sheet name="Transactions"/);
+    assert.match(text, /xl\/media\/zionlogo\.(?:png|jpg)/);
+    assert.match(text, /Zion circular medallion/);
+    assert.match(text, /<drawing r:id="rId1"\/>/);
     assert.match(text, /<pane ySplit="1" topLeftCell="A2"/);
     assert.match(text, /<autoFilter ref="A1:D2"\/>/);
     assert.match(text, /<c r="B2" s="4"><v>1234.5<\/v><\/c>/);
@@ -102,6 +109,7 @@ describe('PDF exports', () => {
 
     assert.equal(text.slice(0, 8), '%PDF-1.4');
     assert.match(text, /ZION EVENTS PLACE/);
+    assert.match(text, /\/Logo Do/);
     assert.match(text, /Page 2 of/);
     assert.doesNotMatch(text, /\bundefined\b|\bnull\b/);
   });
