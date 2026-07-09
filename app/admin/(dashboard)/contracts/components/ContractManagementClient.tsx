@@ -21,6 +21,7 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react';
+import ExportFormatMenu, { type ExportFormat, type ExportScope } from '@/components/admin/ExportFormatMenu';
 import type {
   ContractBookingEventDto,
   ContractDto,
@@ -83,7 +84,7 @@ function formatMoney(value: number | null | undefined) {
 function titleCase(value: string | null | undefined) {
   return (value ?? 'not set')
     .replaceAll('_', ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 function timeInputValue(value: string | null | undefined) {
@@ -467,6 +468,24 @@ export default function ContractManagementClient({
     );
   };
 
+  const exportContracts = (format: ExportFormat, scope: ExportScope) => {
+    if (format === 'print') {
+      window.print();
+      return;
+    }
+
+    const params = buildQuery();
+    params.set('format', format);
+    params.set('scope', scope);
+    params.set('timeZone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+    if (scope === 'selected' && selectedContract) {
+      params.set('ids', selectedContract.id);
+    }
+
+    window.location.href = `/api/contracts/export?${params.toString()}`;
+  };
+
   const saveTemplateVersion = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!templateDraft || !isSuperAdmin) return;
@@ -560,10 +579,33 @@ export default function ContractManagementClient({
             Generate, preview, edit, send, download, and track client contracts based on approved booking events.
           </p>
         </div>
-        <button type="button" onClick={() => void loadData()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6B53B]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#8E7722] shadow-sm hover:bg-[#FDF5CC] dark:bg-white/5 dark:text-[#D6B53B]">
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportFormatMenu
+            onExport={exportContracts}
+            scopeOptions={[
+              {
+                scope: 'filtered',
+                label: 'Filtered',
+                description: `${activeContracts.length} visible contract registry record(s)`,
+              },
+              {
+                scope: 'selected',
+                label: 'Selected',
+                description: selectedContract ? selectedContract.contractNumber : 'Select a contract to export one record',
+                disabled: !selectedContract,
+              },
+              {
+                scope: 'all',
+                label: 'All Authorized',
+                description: 'All contract records you are allowed to export',
+              },
+            ]}
+          />
+          <button type="button" onClick={() => void loadData()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6B53B]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#8E7722] shadow-sm hover:bg-[#FDF5CC] dark:bg-white/5 dark:text-[#D6B53B]">
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

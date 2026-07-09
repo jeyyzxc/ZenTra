@@ -93,7 +93,6 @@ type Summary = {
 
 type AdminOption = {
   id: string;
-  username: string;
   label: string;
   role: string;
 };

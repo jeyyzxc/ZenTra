@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Plus, RefreshCw } from 'lucide-react';
+import ExportFormatMenu, { type ExportFormat, type ExportScope } from '@/components/admin/ExportFormatMenu';
 import BookingCreateModal from './BookingCreateModal';
 import BookingDetail from './BookingDetail';
 import BookingFilters from './BookingFilters';
@@ -189,6 +190,24 @@ export default function BookingsClient({
     void loadBookingDetail(booking.id);
   };
 
+  const exportBookings = (format: ExportFormat, scope: ExportScope) => {
+    if (format === 'print') {
+      window.print();
+      return;
+    }
+
+    const params = buildQuery();
+    params.set('format', format);
+    params.set('scope', scope);
+    params.set('timeZone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+    if (scope === 'selected' && selectedId) {
+      params.set('ids', selectedId);
+    }
+
+    window.location.href = `/api/bookings/export?${params.toString()}`;
+  };
+
   const reloadSelected = async () => {
     await loadBookings(true);
     if (selectedId) await loadBookingDetail(selectedId);
@@ -212,6 +231,27 @@ export default function BookingsClient({
             <CalendarDays className="h-4 w-4 text-[#D6B53B]" />
             {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Syncing...'}
           </div>
+          <ExportFormatMenu
+            onExport={exportBookings}
+            scopeOptions={[
+              {
+                scope: 'filtered',
+                label: 'Filtered',
+                description: `${pagination.totalRecords} matching booking record(s)`,
+              },
+              {
+                scope: 'selected',
+                label: 'Selected',
+                description: selectedBooking ? selectedBooking.bookingReference : 'Open a booking to export one record',
+                disabled: !selectedId,
+              },
+              {
+                scope: 'all',
+                label: 'All Authorized',
+                description: 'All booking records you are allowed to export',
+              },
+            ]}
+          />
           <button
             type="button"
             onClick={() => void loadBookings()}

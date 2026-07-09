@@ -13,12 +13,12 @@ const menuItems = [
   { name: 'Contract Management', path: '/admin/contracts', flaticonClass: 'fi fi-rr-file-signature' },
   { name: 'Payment & History', path: '/admin/payments', flaticonClass: 'fi fi-rr-wallet' },
   { name: 'Calendar', path: '/admin/calendar', imageIcon: '/calendar.png' },
-  { name: 'Services and Packages', path: '/admin/services', imageIcon: '/services.png' },
+  { name: 'Services and Packages', path: '/admin/services', imageIcon: '/services.png', superadminOnly: true },
+  { name: 'Inquiries', path: '/admin/inquiries', imageIcon: '/inquiries.png' },
   { name: 'Testimonies', path: '/admin/testimonies', flaticonClass: 'fi fi-rr-comment-quote' },
   { name: 'Support Center', path: '/admin/support', imageIcon: '/support.png' },
   { name: 'Reports & Analytics', path: '/admin/reports', imageIcon: '/reports.png' },
   { name: 'System Logs', path: '/admin/audit', imageIcon: '/audit.png' },
-  { name: 'Inquiries', path: '/admin/inquiries', imageIcon: '/inquiries.png' },
   { name: 'Team', path: '/admin/team', flaticonClass: 'fi fi-rr-users', superadminOnly: true },
 ];
 

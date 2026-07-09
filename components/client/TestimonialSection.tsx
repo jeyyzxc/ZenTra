@@ -17,13 +17,30 @@ function Stars({ value }: { value: number }) {
 
 export default function TestimonialSection() {
   const [testimonies, setTestimonies] = useState<PublicTestimony[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void fetch('/api/client/testimonies/featured?limit=6', { cache: 'no-store' })
+    void fetch('/api/client/settings', { cache: 'no-store' })
       .then((response) => response.json())
+      .then((payload: {
+        settings?: {
+          client?: {
+            maintenanceMode?: boolean;
+            publicTestimoniesVisible?: boolean;
+          };
+        };
+      }) => {
+        const clientSettings = payload.settings?.client;
+        const visible = !clientSettings?.maintenanceMode && clientSettings?.publicTestimoniesVisible !== false;
+        if (active) setIsVisible(visible);
+        return visible
+          ? fetch('/api/client/testimonies/featured?limit=6', { cache: 'no-store' })
+          : null;
+      })
+      .then((response) => response?.json() ?? { testimonies: [] })
       .then((payload: { testimonies?: PublicTestimony[] }) => {
         if (active) setTestimonies(payload.testimonies ?? []);
       })
@@ -49,6 +66,10 @@ export default function TestimonialSection() {
   }, [isPaused, move, testimonies.length]);
 
   const testimony = testimonies[activeIndex];
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <section className="w-full px-4 py-12 md:px-12">

@@ -36,10 +36,28 @@ function requiredText(value: unknown, label: string) {
   return trimmed;
 }
 
-function enumValue<T extends string>(value: unknown, options: readonly T[], fallback: T) {
-  return typeof value === 'string' && options.includes(value.toUpperCase() as T)
-    ? value.toUpperCase() as T
-    : fallback;
+function enumValue<T extends string>(value: unknown, options: readonly T[], label: string) {
+  const rawValue = requiredText(value, label).toUpperCase();
+
+  if (!options.includes(rawValue as T)) {
+    throw new DashboardServiceError(`${label} is invalid.`);
+  }
+
+  return rawValue as T;
+}
+
+function emailLogStatus(value: unknown) {
+  const rawValue = requiredText(value, 'status').toUpperCase();
+
+  if (rawValue === 'SKIPPED') {
+    return EmailStatus.NOT_SENT;
+  }
+
+  if (!PRODUCTION_EMAIL_STATUSES.includes(rawValue as EmailStatus)) {
+    throw new DashboardServiceError('status is invalid.');
+  }
+
+  return rawValue as EmailStatus;
 }
 
 export async function POST(request: Request) {
@@ -48,20 +66,18 @@ export async function POST(request: Request) {
     requireN8nWorkflowHeaders(request);
     const body = await request.json() as Record<string, unknown>;
     const now = new Date();
-    const status = enumValue(body.status, PRODUCTION_EMAIL_STATUSES, EmailStatus.QUEUED);
+    const status = emailLogStatus(body.status);
     const isSent = status === EmailStatus.SENT || status === EmailStatus.DELIVERED;
     const isFailed = status === EmailStatus.FAILED || status === EmailStatus.BOUNCED;
     const emailLog = await prisma.emailLog.create({
       data: {
         recipientEmail: requiredText(body.recipientEmail, 'recipientEmail').toLowerCase(),
         recipientName: text(body.recipientName),
-        emailType: enumValue(body.emailType, Object.values(EmailType), EmailType.GENERAL),
-        relatedModule: text(body.relatedModule)
-          ? enumValue(body.relatedModule, Object.values(RelatedModule), RelatedModule.ADMIN_NOTIFICATION)
-          : null,
+        emailType: enumValue(body.emailType, Object.values(EmailType), 'emailType'),
+        relatedModule: enumValue(body.relatedModule, Object.values(RelatedModule), 'relatedModule'),
         relatedRecordId: text(body.relatedRecordId),
         subject: requiredText(body.subject, 'subject'),
-        triggerSource: enumValue(body.triggerSource, PRODUCTION_TRIGGER_SOURCES, TriggerSource.N8N_WORKFLOW),
+        triggerSource: enumValue(body.triggerSource, PRODUCTION_TRIGGER_SOURCES, 'triggerSource'),
         workflowName: text(body.workflowName),
         workflowExecutionId: text(body.workflowExecutionId) ?? text(body.n8nExecutionId),
         providerMessageId: text(body.providerMessageId),

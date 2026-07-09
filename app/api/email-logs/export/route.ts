@@ -1,4 +1,6 @@
+import { AuditAction, AuditStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import { requireAdmin } from '@/lib/authorization';
 import {
   type EmailLogExportScope,
@@ -57,6 +59,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const requestContext = getRequestContext(request);
   const searchParams = new URL(request.url).searchParams;
   const format = searchParams.get('format')?.trim().toLowerCase() || 'csv';
   const timeZone = searchParams.get('timeZone')?.trim() || undefined;
@@ -71,6 +74,24 @@ export async function GET(request: Request) {
     const output = responseForExport(format, exportData.logs, scope, timeZone);
     const filename = getEmailLogExportFilename(output.extension);
 
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Audit',
+      description: `Exported ${exportData.logs.length} email log record(s) as ${format.toUpperCase()}.`,
+      status: AuditStatus.SUCCESS,
+      ...requestContext,
+      metadata: {
+        requestPath: new URL(request.url).pathname,
+        format,
+        timeZone,
+        filters: exportData.filters,
+        totalRecords: exportData.totalRecords,
+        exportedRecords: exportData.logs.length,
+        limitApplied: exportData.limitApplied,
+      },
+    });
+
     return new Response(output.body, {
       headers: {
         'Content-Type': output.contentType,
@@ -82,6 +103,20 @@ export async function GET(request: Request) {
     if (error instanceof EmailLogQueryError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Audit',
+      description: `Failed to export email logs as ${format.toUpperCase()}.`,
+      status: AuditStatus.FAILED,
+      ...requestContext,
+      metadata: {
+        requestPath: new URL(request.url).pathname,
+        format,
+        ...errorMetadata(error),
+      },
+    });
 
     return NextResponse.json({ error: 'Unable to export email logs.' }, { status: 500 });
   }

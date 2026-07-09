@@ -11,6 +11,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'zion-theme';
+const DEFAULT_THEME_STORAGE_KEY = 'zion-default-theme';
 const themeSubscribers = new Set<() => void>();
 
 function getStoredTheme(): Theme {
@@ -18,7 +19,14 @@ function getStoredTheme(): Theme {
     return 'light';
   }
 
-  return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  const defaultTheme = window.localStorage.getItem(DEFAULT_THEME_STORAGE_KEY);
+
+  if (storedTheme === 'dark' || storedTheme === 'light') {
+    return storedTheme;
+  }
+
+  return defaultTheme === 'dark' ? 'dark' : 'light';
 }
 
 function getServerTheme(): Theme {
@@ -64,6 +72,43 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyDocumentTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDefaultTheme() {
+      try {
+        const response = await fetch('/api/client/settings', { cache: 'no-store' });
+        const payload = await response.json() as {
+          settings?: {
+            appearance?: {
+              defaultTheme?: Theme;
+            };
+          };
+        };
+        const defaultTheme = payload.settings?.appearance?.defaultTheme;
+
+        if (!active || (defaultTheme !== 'dark' && defaultTheme !== 'light')) {
+          return;
+        }
+
+        window.localStorage.setItem(DEFAULT_THEME_STORAGE_KEY, defaultTheme);
+
+        if (!window.localStorage.getItem(THEME_STORAGE_KEY)) {
+          applyDocumentTheme(defaultTheme);
+          notifyThemeSubscribers();
+        }
+      } catch {
+        // Keep the local theme fallback if public settings are unavailable.
+      }
+    }
+
+    void loadDefaultTheme();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleTheme = useCallback((newTheme: Theme) => {
     window.localStorage.setItem(THEME_STORAGE_KEY, newTheme);

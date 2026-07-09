@@ -1,4 +1,5 @@
 import type { EmailLogDto } from '@/lib/email-log-query';
+import { createZionBrandedTablePdf, type ZionPdfColumn } from '@/lib/zion-pdf-export';
 
 export type EmailLogExportScope = 'all' | 'admin';
 
@@ -327,103 +328,42 @@ export function createEmailLogXlsx(
   ]);
 }
 
-function escapePdfText(value: string) {
-  return value
-    .replace(/[^\x20-\x7e]/g, '?')
-    .replaceAll('\\', '\\\\')
-    .replaceAll('(', '\\(')
-    .replaceAll(')', '\\)');
-}
-
-function truncate(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, Math.max(0, length - 3))}...` : value;
-}
-
-function splitIntoPages(lines: string[], linesPerPage: number) {
-  const pages: string[][] = [];
-
-  for (let index = 0; index < lines.length; index += linesPerPage) {
-    pages.push(lines.slice(index, index + linesPerPage));
-  }
-
-  return pages.length ? pages : [[]];
-}
-
 export function createEmailLogPdf(
   logs: EmailLogDto[],
   timeZone?: string,
   scope: EmailLogExportScope = 'all',
 ) {
-  const columns = getColumns(scope);
   const rows = toRows(logs, timeZone);
-  const lines = [
-    'ZenTra Email Logs Report',
-    `Generated: ${formatTimestamp(new Date().toISOString(), timeZone)}`,
-    `Records: ${rows.length}`,
-    '',
-    columns.join(' | '),
-    ...rows.map((row) => columns
-      .map((column) => (
-        column === 'Subject' || column === 'Error Message' || column === 'Payload Summary'
-          ? truncate(row[column].replace(/\s+/g, ' '), 70)
-          : row[column]
-      ))
-      .join(' | ')),
+  const columns: Array<ZionPdfColumn<EmailLogExportRow>> = [
+    { header: 'Created', width: 76, maxLines: 2, value: (row) => row.Created },
+    { header: 'Recipient', width: 116, maxLines: 3, value: (row) => row['Recipient Email'] },
+    { header: 'Type', width: 78, maxLines: 3, value: (row) => row['Email Type'] },
+    { header: 'Source', width: 72, maxLines: 2, value: (row) => row['Trigger Source'] },
+    { header: 'Status', width: 54, align: 'center', maxLines: 1, value: (row) => row.Status },
+    {
+      header: 'Details',
+      width: 160,
+      maxLines: 4,
+      value: (row) => [
+        row.Subject,
+        row.Workflow ? `Workflow: ${row.Workflow}` : '',
+        row['Related Module'] ? `Related: ${row['Related Module']} ${row['Related Record ID']}` : '',
+        row['Error Message'] ? `Error: ${row['Error Message']}` : '',
+        scope === 'all' && row['Payload Summary'] ? `Payload: ${row['Payload Summary']}` : '',
+      ].filter(Boolean).join(' | '),
+    },
   ];
 
-  const pages = splitIntoPages(lines, 44);
-  const objects: string[] = [];
-  const pageObjectIds: number[] = [];
-  const encoder = new TextEncoder();
-
-  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-
-  pages.forEach((pageLines, index) => {
-    const pageObjectId = 4 + index * 2;
-    const contentObjectId = pageObjectId + 1;
-    pageObjectIds.push(pageObjectId);
-
-    const content = [
-      'BT',
-      '/F1 8 Tf',
-      '32 760 Td',
-      '11 TL',
-      ...pageLines.map((line) => `(${escapePdfText(line)}) Tj T*`),
-      'ET',
-    ].join('\n');
-    const contentLength = encoder.encode(content).length;
-
-    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
-    objects[contentObjectId] = `<< /Length ${contentLength} >>\nstream\n${content}\nendstream`;
+  return createZionBrandedTablePdf({
+    title: 'Email Delivery Logs',
+    subtitle: 'A branded and confidential delivery export from System Logs.',
+    badge: scope === 'all' ? 'All Email Activity' : 'Admin Email Activity',
+    generatedAt: formatTimestamp(new Date().toISOString(), timeZone),
+    recordCount: rows.length,
+    rows,
+    columns,
+    emptyMessage: 'No email log records matched the selected filters.',
   });
-
-  objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`;
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-
-  for (let id = 1; id < objects.length; id += 1) {
-    if (!objects[id]) {
-      continue;
-    }
-
-    offsets[id] = encoder.encode(pdf).length;
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefOffset = encoder.encode(pdf).length;
-  pdf += `xref\n0 ${objects.length}\n`;
-  pdf += '0000000000 65535 f \n';
-
-  for (let id = 1; id < objects.length; id += 1) {
-    const offset = offsets[id] ?? 0;
-    pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-  return encoder.encode(pdf);
 }
 
 export function getEmailLogExportFilename(extension: string) {

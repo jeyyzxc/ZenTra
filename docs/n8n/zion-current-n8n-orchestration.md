@@ -2,6 +2,8 @@
 
 Last verified from the current codebase: 2026-07-03
 
+Setup note, 2026-07-05: use `docs/n8n/zion-new-booking-orchestration-final.md` and `docs/n8n/zion-new-booking-orchestration.workflow.json` for new setup and import. This file remains an architecture and historical handoff reference.
+
 This document describes the current n8n orchestration architecture and the active step-by-step flow implemented in the Zion Events Place system. It is written as a handoff/reference document, not as a future plan.
 
 Primary source files:

@@ -1,4 +1,5 @@
 import type { AuditLogDto } from '@/lib/audit-query';
+import { createZionBrandedTablePdf, type ZionPdfColumn } from '@/lib/zion-pdf-export';
 
 export type AuditExportScope = 'all' | 'own';
 
@@ -41,6 +42,13 @@ function formatTimestamp(timestamp: string, timeZone: string | undefined) {
   } catch {
     return new Date(timestamp).toISOString();
   }
+}
+
+function formatPdfEnum(value: string) {
+  return value
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function toRows(
@@ -294,103 +302,47 @@ export function createAuditXlsx(
   ]);
 }
 
-function escapePdfText(value: string) {
-  return value
-    .replace(/[^\x20-\x7e]/g, '?')
-    .replaceAll('\\', '\\\\')
-    .replaceAll('(', '\\(')
-    .replaceAll(')', '\\)');
-}
-
-function truncate(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, Math.max(0, length - 3))}...` : value;
-}
-
-function splitIntoPages(lines: string[], linesPerPage: number) {
-  const pages: string[][] = [];
-
-  for (let index = 0; index < lines.length; index += linesPerPage) {
-    pages.push(lines.slice(index, index + linesPerPage));
-  }
-
-  return pages.length ? pages : [[]];
-}
-
 export function createAuditPdf(
   logs: AuditLogDto[],
   timeZone?: string,
   scope: AuditExportScope = 'all',
 ) {
-  const columns = getExportColumns(scope);
   const rows = toRows(logs, timeZone);
-  const lines = [
-    scope === 'own' ? 'ZenTra My Activity Log Report' : 'ZenTra Audit Logs Report',
-    `Generated: ${formatTimestamp(new Date().toISOString(), timeZone)}`,
-    `Records: ${rows.length}`,
-    '',
-    columns.join(' | '),
-    ...rows.map((row) => columns
-      .map((column) => (
-        column === 'Description'
-          ? truncate(row[column].replace(/\s+/g, ' '), scope === 'own' ? 92 : 70)
-          : row[column]
-      ))
-      .join(' | ')),
-  ];
+  const columns: Array<ZionPdfColumn<AuditExportRow>> = scope === 'own'
+    ? [
+        { header: 'Time', width: 84, maxLines: 2, value: (row) => row.Timestamp },
+        { header: 'Action', width: 80, maxLines: 2, value: (row) => formatPdfEnum(row.Action) },
+        { header: 'Module', width: 70, maxLines: 2, value: (row) => row.Module },
+        { header: 'Status', width: 54, align: 'center', maxLines: 1, value: (row) => formatPdfEnum(row.Status) },
+        { header: 'Details', width: 268, maxLines: 4, value: (row) => row.Description },
+      ]
+    : [
+        { header: 'Time', width: 72, maxLines: 2, value: (row) => row.Timestamp },
+        { header: 'User', width: 74, maxLines: 2, value: (row) => row.User },
+        { header: 'Role', width: 62, maxLines: 2, value: (row) => formatPdfEnum(row.Role) },
+        { header: 'Action', width: 62, maxLines: 2, value: (row) => formatPdfEnum(row.Action) },
+        { header: 'Module', width: 56, maxLines: 2, value: (row) => row.Module },
+        { header: 'Status', width: 48, align: 'center', maxLines: 1, value: (row) => formatPdfEnum(row.Status) },
+        {
+          header: 'Details',
+          width: 182,
+          maxLines: 4,
+          value: (row) => [row.Description, row['IP Address'] ? `IP: ${row['IP Address']}` : '']
+            .filter(Boolean)
+            .join(' | '),
+        },
+      ];
 
-  const pages = splitIntoPages(lines, 46);
-  const objects: string[] = [];
-  const pageObjectIds: number[] = [];
-  const encoder = new TextEncoder();
-
-  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-
-  pages.forEach((pageLines, index) => {
-    const pageObjectId = 4 + index * 2;
-    const contentObjectId = pageObjectId + 1;
-    pageObjectIds.push(pageObjectId);
-
-    const content = [
-      'BT',
-      '/F1 9 Tf',
-      '40 760 Td',
-      '12 TL',
-      ...pageLines.map((line) => `(${escapePdfText(line)}) Tj T*`),
-      'ET',
-    ].join('\n');
-    const contentLength = encoder.encode(content).length;
-
-    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
-    objects[contentObjectId] = `<< /Length ${contentLength} >>\nstream\n${content}\nendstream`;
+  return createZionBrandedTablePdf({
+    title: scope === 'own' ? 'My Activity Log' : 'System Audit Logs',
+    subtitle: 'A branded and confidential activity export from System Logs.',
+    badge: scope === 'own' ? 'Personal Activity' : 'Audit Trail',
+    generatedAt: formatTimestamp(new Date().toISOString(), timeZone),
+    recordCount: rows.length,
+    rows,
+    columns,
+    emptyMessage: 'No audit log records matched the selected filters.',
   });
-
-  objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`;
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-
-  for (let id = 1; id < objects.length; id += 1) {
-    if (!objects[id]) {
-      continue;
-    }
-
-    offsets[id] = encoder.encode(pdf).length;
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefOffset = encoder.encode(pdf).length;
-  pdf += `xref\n0 ${objects.length}\n`;
-  pdf += '0000000000 65535 f \n';
-
-  for (let id = 1; id < objects.length; id += 1) {
-    const offset = offsets[id] ?? 0;
-    pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-  return encoder.encode(pdf);
 }
 
 export function getAuditExportFilename(

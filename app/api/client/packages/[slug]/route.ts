@@ -2,6 +2,7 @@ import {
   getPublicPackageBySlug,
   handleServicesError,
 } from '@/lib/services-packages';
+import { requireClientFeature, settingsErrorResponse } from '@/lib/system-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +11,14 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
+    await requireClientFeature('packages');
     const { slug } = await params;
     return Response.json({ data: await getPublicPackageBySlug(decodeURIComponent(slug)) });
   } catch (error) {
+    if (error instanceof Error && error.name === 'ClientFeatureDisabledError') {
+      return settingsErrorResponse(error, 'Unable to load package.');
+    }
+
     return handleServicesError(error);
   }
 }

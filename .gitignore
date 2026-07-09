@@ -36,6 +36,12 @@ yarn-error.log*
 # local tool/runtime artifacts
 .codex-logs/
 outputs/
+/tmp/
+
+# runtime uploads; keep committed fixtures/placeholders only
+/public/uploads/**
+!/public/uploads/**/
+!/public/uploads/**/.gitkeep
 
 # env files (can opt-in for committing if needed)
 .env*

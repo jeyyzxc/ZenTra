@@ -1,5 +1,3 @@
-import 'server-only';
-
 export type BookingCategorizationInput = {
   bookingId: string;
   bookingReference: string;
@@ -36,14 +34,14 @@ const CATEGORY_RULES = [
     label: 'Wedding',
     taskTemplateKey: 'wedding_standard',
     reasonCode: 'EVENT_WEDDING',
-    terms: ['wedding', 'kasal', 'bridal', 'bride', 'groom', 'nuptial'],
+    terms: ['wedding', 'marriage', 'reception', 'kasal', 'bridal', 'bride', 'groom', 'nuptial'],
   },
   {
     key: 'birthday_debut',
     label: 'Birthday / Debut',
     taskTemplateKey: 'birthday_debut_standard',
     reasonCode: 'EVENT_BIRTHDAY_DEBUT',
-    terms: ['birthday', 'debut', '18th birthday', '7th birthday', 'party'],
+    terms: ['birthday', 'debut', '18th birthday', '18th', '7th birthday'],
   },
   {
     key: 'christening',
@@ -57,7 +55,7 @@ const CATEGORY_RULES = [
     label: 'Corporate / Group Event',
     taskTemplateKey: 'corporate_group_standard',
     reasonCode: 'EVENT_CORPORATE_GROUP',
-    terms: ['corporate', 'company', 'christmas party', 'reunion', 'team building', 'seminar'],
+    terms: ['corporate', 'company', 'company party', 'christmas party', 'reunion', 'group event', 'team building', 'seminar'],
   },
   {
     key: 'general_event',
@@ -149,19 +147,28 @@ function classifyPackageTier(packageName: string, snapshot: Record<string, unkno
     snapshotText(snapshot, 'packageTier', 'tier', 'packageCategory'),
   ].map(normalize).join(' ');
 
-  if (haystack.includes('premium') || haystack.includes('deluxe') || haystack.includes('gold')) {
+  if (
+    haystack.includes('premium') ||
+    haystack.includes('gold') ||
+    haystack.includes('full') ||
+    haystack.includes('complete')
+  ) {
     return 'premium';
   }
 
-  if (haystack.includes('standard') || haystack.includes('classic') || haystack.includes('silver')) {
+  if (
+    haystack.includes('standard') ||
+    haystack.includes('regular') ||
+    haystack.includes('basic')
+  ) {
     return 'standard';
   }
 
-  if (haystack.includes('basic') || haystack.includes('starter') || haystack.includes('bronze')) {
-    return 'basic';
+  if (haystack.includes('reservation only') || haystack.includes('venue only')) {
+    return 'reservation_only';
   }
 
-  return 'standard';
+  return 'custom_or_unknown';
 }
 
 function pushUnique(values: string[], value: string) {

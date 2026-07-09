@@ -1,14 +1,147 @@
-import type { NextAuthOptions } from 'next-auth';
+import type { NextAuthOptions, Session } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { AuditAction, AuditStatus, Role } from '@prisma/client';
-import { createAuditLog, getRequestContextFromHeaders } from '@/lib/audit';
+import {
+  AccountTokenType,
+  AuditAction,
+  AuditStatus,
+  Role,
+  SessionAccessScope,
+  UserStatus,
+} from '@prisma/client';
+import { createAuditLog, getRequestContextFromHeaders, systemAuditActor } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { requireServerEnv } from '@/lib/env';
+import { getSystemSettings } from '@/lib/system-settings';
+import {
+  createPasswordChangeOnlySession,
+  hashAccessSecret,
+  normalizeTemporaryCode,
+  revokeExpiredPasswordChangeSession,
+  TEMP_ACCESS_MAX_ATTEMPTS,
+} from '@/lib/team-access';
 
 const ADMIN_ROLES = [Role.SUPERADMIN, Role.ADMIN] as const;
 const DEFAULT_SESSION_AGE = 8 * 60 * 60;
 const REMEMBERED_SESSION_AGE = 30 * 24 * 60 * 60;
+
+async function getSessionAgeSeconds(rememberMe: boolean) {
+  if (rememberMe) {
+    return REMEMBERED_SESSION_AGE;
+  }
+
+  try {
+    const { settings } = await getSystemSettings();
+    return settings.admin.security.sessionTimeoutMinutes * 60;
+  } catch {
+    return DEFAULT_SESSION_AGE;
+  }
+}
+
+function isBlockedStatus(status: UserStatus) {
+  return status === UserStatus.DISABLED || status === UserStatus.LOCKED;
+}
+
+async function consumeTemporaryAccessCode(userId: string, code: string) {
+  const now = new Date();
+  const latestToken = await prisma.accountToken.findFirst({
+    where: {
+      userId,
+      tokenType: AccountTokenType.TEMP_LOGIN,
+      usedAt: null,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  if (!latestToken) {
+    return null;
+  }
+
+  if (
+    latestToken.lockedAt ||
+    latestToken.attemptCount >= TEMP_ACCESS_MAX_ATTEMPTS
+  ) {
+    return null;
+  }
+
+  if (latestToken.expiresAt.getTime() <= now.getTime()) {
+    await prisma.$transaction([
+      prisma.accountToken.update({
+        where: { id: latestToken.id },
+        data: { usedAt: now },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: UserStatus.PASSWORD_RESET_REQUIRED,
+          mustChangePassword: true,
+        },
+      }),
+    ]);
+    await createAuditLog({
+      ...systemAuditActor(),
+      action: AuditAction.TEMP_ACCESS_EXPIRED,
+      module: 'Authentication',
+      description: 'Temporary access code expired before it was used.',
+      status: AuditStatus.WARNING,
+      metadata: {
+        targetUserId: userId,
+        tokenId: latestToken.id,
+      },
+    });
+    return null;
+  }
+
+  if (latestToken.tokenHash !== hashAccessSecret(normalizeTemporaryCode(code))) {
+    const nextAttemptCount = latestToken.attemptCount + 1;
+    await prisma.accountToken.update({
+      where: { id: latestToken.id },
+      data: {
+        attemptCount: nextAttemptCount,
+        lockedAt: nextAttemptCount >= TEMP_ACCESS_MAX_ATTEMPTS ? now : null,
+      },
+    });
+    return null;
+  }
+
+  await prisma.$transaction([
+    prisma.accountToken.update({
+      where: { id: latestToken.id },
+      data: {
+        usedAt: now,
+        attemptCount: latestToken.attemptCount + 1,
+      },
+    }),
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.TEMP_ACCESS,
+        mustChangePassword: true,
+      },
+    }),
+  ]);
+
+  return createPasswordChangeOnlySession(userId);
+}
+
+function invalidateSession(session: Session) {
+  if (session.user) {
+    session.user.id = '';
+    session.user.username = '';
+    session.user.name = '';
+    session.user.email = '';
+    session.user.role = Role.CLIENT;
+    session.user.accessScope = SessionAccessScope.FULL_ACCESS;
+    session.user.mustChangePassword = false;
+    session.user.accountSessionId = undefined;
+    session.user.status = UserStatus.DISABLED;
+  }
+
+  session.expires = new Date(0).toISOString();
+  return session;
+}
 
 export const authOptions: NextAuthOptions = {
   secret: requireServerEnv('NEXTAUTH_SECRET'),
@@ -81,13 +214,41 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (!(await bcrypt.compare(password, user.password))) {
-          await logFailedLogin('Admin login failed because the password was incorrect.', {
-            reason: 'invalid_password',
+        if (isBlockedStatus(user.status)) {
+          await logFailedLogin('Admin login failed because the account is not active.', {
+            reason: 'account_blocked',
             email,
+            status: user.status,
             userId: user.id,
           });
           return null;
+        }
+
+        const passwordMatches = user.passwordHash
+          ? await bcrypt.compare(password, user.passwordHash)
+          : false;
+
+        let accessScope: SessionAccessScope = SessionAccessScope.FULL_ACCESS;
+        let accountSessionId: string | undefined;
+        let scopedSessionExpiresAt: number | undefined;
+        let mustChangePassword = user.mustChangePassword;
+
+        if (!passwordMatches) {
+          const temporarySession = await consumeTemporaryAccessCode(user.id, password);
+
+          if (!temporarySession) {
+            await logFailedLogin('Admin login failed because the password or access code was incorrect.', {
+              reason: 'invalid_password_or_temp_code',
+              email,
+              userId: user.id,
+            });
+            return null;
+          }
+
+          accessScope = SessionAccessScope.PASSWORD_CHANGE_ONLY;
+          accountSessionId = temporarySession.session.id;
+          scopedSessionExpiresAt = temporarySession.session.expiresAt.getTime();
+          mustChangePassword = true;
         }
 
         await createAuditLog({
@@ -96,11 +257,14 @@ export const authOptions: NextAuthOptions = {
           userRole: user.role,
           action: AuditAction.LOGIN,
           module: 'Authentication',
-          description: `${user.username} signed in to the admin panel.`,
+          description: accessScope === SessionAccessScope.PASSWORD_CHANGE_ONLY
+            ? `${user.username} signed in with temporary access and must create a new password.`
+            : `${user.username} signed in to the admin panel.`,
           status: AuditStatus.SUCCESS,
           ...requestContext,
           metadata: {
             rememberMe: credentials.rememberMe === 'true',
+            accessScope,
           },
         });
 
@@ -111,6 +275,11 @@ export const authOptions: NextAuthOptions = {
           username: user.username,
           role: user.role,
           rememberMe: credentials.rememberMe === 'true',
+          accessScope,
+          accountSessionId,
+          mustChangePassword,
+          sessionExpiresAt: scopedSessionExpiresAt,
+          passwordVersionAt: user.lastPasswordChangedAt?.getTime() ?? Date.now(),
         };
       },
     }),
@@ -119,17 +288,24 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         const rememberMe = Boolean(user.rememberMe);
+        const sessionAge = await getSessionAgeSeconds(rememberMe);
+        const scopedSessionExpiresAt =
+          typeof user.sessionExpiresAt === 'number' ? user.sessionExpiresAt : undefined;
         token.sub = user.id;
         token.username = user.username;
         token.role = user.role;
         token.rememberMe = rememberMe;
-        token.sessionExpiresAt =
-          Date.now() +
-          (rememberMe ? REMEMBERED_SESSION_AGE : DEFAULT_SESSION_AGE) * 1000;
+        token.accessScope = user.accessScope ?? SessionAccessScope.FULL_ACCESS;
+        token.accountSessionId = user.accountSessionId;
+        token.mustChangePassword = Boolean(user.mustChangePassword);
+        token.passwordVersionAt = user.passwordVersionAt;
+        token.sessionExpiresAt = scopedSessionExpiresAt ?? Date.now() + sessionAge * 1000;
       } else if (!token.sessionExpiresAt) {
         const issuedAt = typeof token.iat === 'number' ? token.iat * 1000 : Date.now();
         token.rememberMe = false;
-        token.sessionExpiresAt = issuedAt + DEFAULT_SESSION_AGE * 1000;
+        token.accessScope = SessionAccessScope.FULL_ACCESS;
+        token.mustChangePassword = false;
+        token.sessionExpiresAt = issuedAt + (await getSessionAgeSeconds(false)) * 1000;
       }
 
       return token;
@@ -145,13 +321,7 @@ export const authOptions: NextAuthOptions = {
           : 0;
 
       if (!sessionExpiresAt || Date.now() >= sessionExpiresAt) {
-        session.user.id = '';
-        session.user.username = '';
-        session.user.name = '';
-        session.user.email = '';
-        session.user.role = Role.CLIENT;
-        session.expires = new Date(0).toISOString();
-        return session;
+        return invalidateSession(session);
       }
 
       const user = await prisma.user.findUnique({
@@ -161,16 +331,70 @@ export const authOptions: NextAuthOptions = {
           username: true,
           email: true,
           role: true,
+          status: true,
+          mustChangePassword: true,
+          lastPasswordChangedAt: true,
         },
       });
 
-      if (!user || !ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number])) {
-        session.user.id = '';
-        session.user.username = '';
-        session.user.name = '';
-        session.user.email = '';
-        session.user.role = Role.CLIENT;
-        return session;
+      if (
+        !user ||
+        !ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number]) ||
+        isBlockedStatus(user.status)
+      ) {
+        return invalidateSession(session);
+      }
+
+      const passwordVersionAt = typeof token.passwordVersionAt === 'number'
+        ? token.passwordVersionAt
+        : typeof token.iat === 'number'
+          ? token.iat * 1000
+          : 0;
+      const passwordChangedAt = user.lastPasswordChangedAt?.getTime() ?? 0;
+
+      if (passwordChangedAt > 0 && passwordVersionAt + 1000 < passwordChangedAt) {
+        return invalidateSession(session);
+      }
+
+      const accessScope = token.accessScope === SessionAccessScope.PASSWORD_CHANGE_ONLY
+        ? SessionAccessScope.PASSWORD_CHANGE_ONLY
+        : SessionAccessScope.FULL_ACCESS;
+      const accountSessionId = typeof token.accountSessionId === 'string'
+        ? token.accountSessionId
+        : undefined;
+
+      if (accessScope === SessionAccessScope.PASSWORD_CHANGE_ONLY) {
+        if (!accountSessionId) {
+          return invalidateSession(session);
+        }
+
+        const scopedSession = await prisma.accountSession.findUnique({
+          where: { id: accountSessionId },
+          select: {
+            userId: true,
+            accessScope: true,
+            expiresAt: true,
+            revokedAt: true,
+          },
+        });
+
+        const scopedSessionExpired =
+          scopedSession?.userId === user.id &&
+          scopedSession?.expiresAt.getTime() <= Date.now();
+
+        if (scopedSessionExpired) {
+          await revokeExpiredPasswordChangeSession(accountSessionId, user.id);
+        }
+
+        if (
+          !scopedSession ||
+          scopedSession.userId !== user.id ||
+          scopedSession.accessScope !== SessionAccessScope.PASSWORD_CHANGE_ONLY ||
+          scopedSession.revokedAt ||
+          scopedSessionExpired
+        ) {
+          return invalidateSession(session);
+        }
       }
 
       session.user.id = user.id;
@@ -178,6 +402,10 @@ export const authOptions: NextAuthOptions = {
       session.user.name = user.username;
       session.user.email = user.email;
       session.user.role = user.role;
+      session.user.status = user.status;
+      session.user.mustChangePassword = user.mustChangePassword;
+      session.user.accessScope = accessScope;
+      session.user.accountSessionId = accountSessionId;
       session.expires = new Date(sessionExpiresAt).toISOString();
       return session;
     },

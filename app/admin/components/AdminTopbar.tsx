@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import type { Role } from '@prisma/client';
@@ -80,16 +80,17 @@ export default function AdminTopbar({
 }: {
   isCollapsed: boolean;
   currentUser: {
-    username: string;
     email: string;
     profileImage: string | null;
     role: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
+    fullName: string | null;
   };
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Super Admin' : 'Administrator';
-  const userInitial = currentUser.username.charAt(0).toUpperCase();
+  const roleLabel = currentUser.role === 'SUPERADMIN' ? 'Super Administrator' : 'Administrator';
+  const displayName = currentUser.fullName?.trim() || currentUser.email.split('@')[0] || 'Administrator';
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   // Notification State
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -118,9 +119,13 @@ export default function AdminTopbar({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const loadNotifications = async () => {
+  // Notifications State
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
     try {
-      const response = await fetch('/api/dashboard/notifications?limit=8', { cache: 'no-store' });
+      const url = showAllNotifications ? '/api/dashboard/notifications' : '/api/dashboard/notifications?limit=8';
+      const response = await fetch(url, { cache: 'no-store' });
       const payload = await response.json() as NotificationsResponse;
 
       if (response.ok && payload.success && payload.data) {
@@ -129,7 +134,7 @@ export default function AdminTopbar({
     } catch {
       setNotifications([]);
     }
-  };
+  }, [showAllNotifications]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -143,7 +148,7 @@ export default function AdminTopbar({
       window.clearTimeout(timeout);
       window.clearInterval(interval);
     };
-  }, []);
+  }, [loadNotifications]);
 
   const handleNavigation = (path: string) => {
     setIsProfileOpen(false);
@@ -425,9 +430,10 @@ export default function AdminTopbar({
                 )}
               </div>
 
-              <div className="max-h-[340px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-white dark:bg-[#141A13]">
+              <div className="max-h-[340px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full bg-white dark:bg-[#141A13] relative">
                 {notifications.length > 0 ? (
-                  notifications.map((notification) => (
+                  <>
+                    {notifications.map((notification) => (
                     <div
                       key={notification.id}
                       onClick={() => {
@@ -455,7 +461,21 @@ export default function AdminTopbar({
                         <div className="w-2 h-2 rounded-full bg-[#D6B53B] flex-shrink-0 mt-2 shadow-[0_0_8px_rgba(214,181,59,0.5)]"></div>
                       )}
                     </div>
-                  ))
+                    ))}
+                    {!showAllNotifications && notifications.length >= 8 && (
+                      <div className="px-5 py-3 border-t border-gray-50 dark:border-white/5 flex justify-center sticky bottom-0 bg-white/95 dark:bg-[#141A13]/95 backdrop-blur-sm z-10">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAllNotifications(true);
+                          }}
+                          className="text-[12px] font-semibold text-[#D6B53B] hover:text-[#BEA542] dark:hover:text-[#E8D579] transition-colors"
+                        >
+                          See previous notifications
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="py-10 flex flex-col items-center justify-center text-center">
                     <i className="fi fi-rr-bell-slash text-3xl text-gray-200 dark:text-white/10 mb-3 leading-[0]"></i>
@@ -479,7 +499,7 @@ export default function AdminTopbar({
             <UserAvatar
               className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[#D6B53B] font-bold text-[#1a1f18] shadow-sm transition-all duration-300 border-transparent hover:border-[#8E7722] hover:shadow-[0_0_12px_rgba(214,181,59,0.4)] ${pathname === '/admin/profile' ? 'border-[#8E7722] shadow-[0_0_12px_rgba(214,181,59,0.4)]' : ''}`}
               initial={userInitial}
-              name={currentUser.username}
+              name={displayName}
               profileImage={currentUser.profileImage}
             />
           </button>
@@ -506,12 +526,12 @@ export default function AdminTopbar({
                 <UserAvatar
                   className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#D6B53B]/20 bg-[#D6B53B] font-bold text-[#1a1f18]"
                   initial={userInitial}
-                  name={currentUser.username}
+                  name={displayName}
                   profileImage={currentUser.profileImage}
                 />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate group-hover:text-[#D6B53B] transition-colors">{currentUser.username}</h3>
-                  <span className="text-[10px] font-semibold text-[#D6B53B] uppercase tracking-[0.1em]">{roleLabel}</span>
+                  <h3 className="font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans text-[15px] truncate group-hover:text-[#D6B53B] transition-colors">{displayName}</h3>
+                  <span className="text-[10px] font-semibold text-[#D6B53B] tracking-[0.1em]">{roleLabel}</span>
                   <span className="max-w-[150px] truncate text-[10px] text-gray-400 group-hover:text-gray-500 transition-colors">{currentUser.email}</span>
                 </div>
               </button>

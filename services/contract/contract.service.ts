@@ -56,6 +56,8 @@ const PRODUCTION_CONTRACT_WORKFLOW_STATUSES: readonly ContractWorkflowStatus[] =
   (status) => status !== ContractWorkflowStatus.DEMO_MODE,
 );
 
+const CONTRACT_EXPORT_LIMIT = 10000;
+
 type BookingWithLatestContract = Booking & {
   contracts: Array<Contract & {
     versions: Array<{ versionNumber: number }>;
@@ -1366,6 +1368,45 @@ export class ContractService {
   static async getBookingEvents(actor: CurrentAdmin, searchParams = new URLSearchParams()) {
     const data = await this.getPageData(actor, searchParams);
     return data.bookingEvents;
+  }
+
+  static async getRegistryForExport(
+    actor: CurrentAdmin,
+    searchParams = new URLSearchParams(),
+    ids?: string[],
+  ) {
+    await ensureDefaultTemplate(actor);
+    const baseWhere = buildContractWhere(actor, searchParams);
+    const where = ids?.length
+      ? {
+          AND: [
+            baseWhere,
+            { id: { in: ids } },
+          ],
+        } satisfies Prisma.ContractWhereInput
+      : baseWhere;
+    const [summary, totalRecords, contracts] = await Promise.all([
+      this.getSummary(actor),
+      prisma.contract.count({ where }),
+      getContractRows(where, CONTRACT_EXPORT_LIMIT),
+    ]);
+    const serializedContracts = await serializeContracts(contracts as ContractWithRelations[]);
+
+    return {
+      summary,
+      contracts: serializedContracts,
+      failedDelivery: serializedContracts.filter((contract) => (
+        contract.contractStatus.includes('failed') ||
+        ['failed', 'bounced', 'pending'].includes(contract.emailStatus) ||
+        ['failed', 'retrying', 'manual_fallback'].includes(contract.workflowStatus)
+      )),
+      signedContracts: serializedContracts.filter((contract) => (
+        contract.contractStatus === 'signed' || contract.signatureStatus === 'signed'
+      )),
+      filters: Object.fromEntries(searchParams.entries()),
+      totalRecords,
+      limitApplied: totalRecords > serializedContracts.length,
+    };
   }
 
   static async getTemplates(actor: CurrentAdmin) {

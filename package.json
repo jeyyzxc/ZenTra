@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "test:booking-orchestration": "node --import tsx --test services/booking-orchestration/booking-categorization.service.test.ts",
+    "test:exports": "node --import tsx --test lib/export/export-utils.test.ts",
     "lint": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",

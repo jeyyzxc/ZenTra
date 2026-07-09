@@ -4,7 +4,7 @@ import { AuditAction, AuditStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
-import { requireAdmin } from '@/lib/authorization';
+import { adminDisplayName, requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -135,6 +135,7 @@ async function removeAvatarFile(profileImage: string | null | undefined) {
 
 function revalidateProfileSurfaces() {
   revalidatePath('/admin/profile');
+  revalidatePath('/admin/team');
   revalidatePath('/admin', 'layout');
 }
 
@@ -185,7 +186,7 @@ export async function POST(request: Request) {
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} updated their profile picture.`,
+      description: `${adminDisplayName(actor)} updated their profile picture.`,
       status: AuditStatus.SUCCESS,
       ...getRequestContext(request),
       previousValues: previous.profileImage ? { profileImage: previous.profileImage } : null,
@@ -205,7 +206,7 @@ export async function POST(request: Request) {
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} failed to update their profile picture.`,
+      description: `${adminDisplayName(actor)} failed to update their profile picture.`,
       status: AuditStatus.FAILED,
       ...getRequestContext(request),
       metadata: {
@@ -260,7 +261,7 @@ export async function DELETE(request: Request) {
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} removed their profile picture.`,
+      description: `${adminDisplayName(actor)} removed their profile picture.`,
       status: AuditStatus.SUCCESS,
       ...getRequestContext(request),
       previousValues: { profileImage: previous.profileImage },
@@ -276,7 +277,7 @@ export async function DELETE(request: Request) {
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} failed to remove their profile picture.`,
+      description: `${adminDisplayName(actor)} failed to remove their profile picture.`,
       status: AuditStatus.FAILED,
       ...getRequestContext(request),
       metadata: {

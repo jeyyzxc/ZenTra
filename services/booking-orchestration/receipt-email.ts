@@ -225,7 +225,7 @@ export function buildBookingReceiptEmail(
   const downPaymentRequired = formatMoney(booking.down_payment);
   const remainingBalance = formatMoney(booking.remaining_balance);
   const receiptLink = cleanText(booking.receipt_link);
-  const subject = `Booking Request Received - ${bookingReference}`;
+  const subject = `Booking Request Received \u2013 ${bookingReference}`;
   const supportLines = contactLines(options);
   const supportText = supportLines.length > 0 ? `\n${supportLines.join('\n')}` : '';
 
@@ -252,7 +252,7 @@ Important: This email confirms that your booking request was received. It does n
 
 What happens next?
 1. Our team reviews your submitted booking details.
-2. We check event date and package availability.
+2. We check event schedule and package availability.
 3. We contact you for confirmation and next requirements.
 
 ${receiptLink ? `View Booking Receipt:\n${receiptLink}` : `Please keep your booking reference for tracking: ${bookingReference}`}
@@ -379,7 +379,7 @@ Zion Events Place`;
                 <h2 style="margin:0 0 12px 0; font-size:18px; line-height:26px; color:#111827;">What happens next?</h2>
                 <ol style="margin:0; padding-left:20px; color:#4B5563; font-size:14px; line-height:24px;">
                   <li>Our team reviews your submitted booking details.</li>
-                  <li>We check event date and package availability.</li>
+                  <li>We check event schedule and package availability.</li>
                   <li>We contact you for confirmation and next requirements.</li>
                 </ol>
               </td>

@@ -54,6 +54,7 @@ export default function SmartGuide() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedFaq[]>([]);
+  const [isEnabled, setIsEnabled] = useState(true);
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', sender: 'zeni', text: localizedData.en.greeting },
   ]);
@@ -70,6 +71,29 @@ export default function SmartGuide() {
   useEffect(() => {
     async function loadSuggestions() {
       try {
+        const settingsPayload = await readJson<{
+          settings?: {
+            client?: {
+              maintenanceMode?: boolean;
+              assistantEnabled?: boolean;
+              faqVisible?: boolean;
+            };
+          };
+        }>(
+          await fetch('/api/client/settings', { cache: 'no-store' }),
+          'Unable to load assistant settings.',
+        );
+        const clientSettings = settingsPayload.settings?.client;
+        const assistantEnabled = !clientSettings?.maintenanceMode &&
+          clientSettings?.assistantEnabled !== false &&
+          clientSettings?.faqVisible !== false;
+
+        setIsEnabled(assistantEnabled);
+
+        if (!assistantEnabled) {
+          return;
+        }
+
         const payload = await readJson<{ faqs: SuggestedFaq[] }>(
           await fetch('/api/client/faqs/popular?limit=4', { cache: 'no-store' }),
           'Unable to load suggested questions.',
@@ -148,7 +172,7 @@ export default function SmartGuide() {
     }
   };
 
-  return (
+  return isEnabled ? (
     <>
       <div
         ref={chatWindowRef}
@@ -330,5 +354,5 @@ export default function SmartGuide() {
         )}
       </div>
     </>
-  );
+  ) : null;
 }

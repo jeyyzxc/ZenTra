@@ -85,6 +85,10 @@ export default function ClientAvailabilityCalendar({
     month: '',
     bookedDates: [] as string[],
   });
+  const [availabilityDisabled, setAvailabilityDisabled] = useState({
+    disabled: false,
+    message: '',
+  });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -103,11 +107,47 @@ export default function ClientAvailabilityCalendar({
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
-      fetch(`/api/client/calendar-availability?month=${encodeURIComponent(currentMonthKey)}`, {
+      fetch('/api/client/settings', {
         cache: 'no-store',
         signal: controller.signal,
       })
         .then(async (response) => {
+          const payload = await response.json() as {
+            settings?: {
+              client?: {
+                maintenanceMode?: boolean;
+                bookingRequestsEnabled?: boolean;
+                disabledMessage?: string;
+              };
+            };
+          };
+          const clientSettings = payload.settings?.client;
+          const enabled = !clientSettings?.maintenanceMode && clientSettings?.bookingRequestsEnabled !== false;
+
+          if (!enabled) {
+            setAvailabilityDisabled({
+              disabled: true,
+              message: clientSettings?.disabledMessage || 'Online booking availability is temporarily unavailable.',
+            });
+            setAvailability({
+              month: currentMonthKey,
+              bookedDates: [],
+            });
+            return null;
+          }
+
+          setAvailabilityDisabled({ disabled: false, message: '' });
+
+          return fetch(`/api/client/calendar-availability?month=${encodeURIComponent(currentMonthKey)}`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+        })
+        .then(async (response) => {
+          if (!response) {
+            return;
+          }
+
           const payload = await response.json() as {
             data?: {
               month: string;
@@ -172,6 +212,18 @@ export default function ClientAvailabilityCalendar({
 
     onSelectDate?.(displayDate(dateObj));
   };
+
+  if (availabilityDisabled.disabled) {
+    return (
+      <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-6 px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>
+        <section className="relative w-full overflow-hidden rounded-[2rem] border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/90 to-white/70 p-8 text-center shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl lg:max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8E7722]">Calendar Availability</p>
+          <h3 className="mt-3 font-serif text-3xl font-medium text-[#2F3E32]">Booking Calendar Is Paused</h3>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#3A4B3C]/70">{availabilityDisabled.message}</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-6 px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>

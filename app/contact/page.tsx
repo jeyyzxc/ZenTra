@@ -1,33 +1,34 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Share2 } from 'lucide-react';
 
 import SubpageHero from '@/components/client/SubpageHero';
 import SupportFaqPreview from '@/components/client/SupportFaqPreview';
+import SocialLinks from '@/components/layout/SocialLinks';
 import InquiryForm from './InquiryForm';
 
 export default function ContactPage() {
   return (
     <main className="flex flex-col min-h-screen bg-transparent relative">
-      <SubpageHero 
-        title="Get in Touch" 
-        subtitle="Seamless events start here. Reach out to secure your date or inquire about our exclusive packages." 
-        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop" 
+      <SubpageHero
+        title="Get in Touch"
+        subtitle="Seamless events start here. Reach out to secure your date or inquire about our exclusive packages."
+        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
       />
-      
+
       <div className="w-full relative z-10 bg-transparent pt-12 pb-20">
         <div className="max-w-6xl mx-auto px-6">
           <SupportFaqPreview />
-          
+
           {/* Top Section: Info Cards and Form */}
           <div className="grid grid-cols-1 lg:grid-cols-[55%_1fr] gap-8 lg:gap-12 mb-16 items-start">
-            
+
             {/* Left Column: Cards */}
             <div className="flex flex-col gap-6">
-              
+
               {/* Location Card */}
               <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.1s both' }}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
-                
+
                 <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-4 relative z-10">
                   <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
                     <MapPin className="w-5 h-5" aria-hidden="true" />
@@ -83,7 +84,7 @@ export default function ContactPage() {
                   <div className="flex items-center gap-4 group/item cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4AF37] group-hover/item:text-white transition-all text-[#D4AF37] shadow-sm">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V8L12 13L20 8V18ZM12 11L4 6H20L12 11Z"/>
+                        <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V8L12 13L20 8V18ZM12 11L4 6H20L12 11Z" />
                       </svg>
                     </div>
                     <a href="mailto:teamzioneventsplace@gmail.com" className="font-serif text-[neutral-900]/90 hover:text-[#D4AF37] transition-colors break-all text-base font-medium">
@@ -93,7 +94,7 @@ export default function ContactPage() {
                   <div className="flex items-center gap-4 group/item cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/20 flex items-center justify-center group-hover/item:scale-110 group-hover/item:bg-[#D4AF37] group-hover/item:text-white transition-all text-[#D4AF37] shadow-sm">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                         <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
                       </svg>
                     </div>
                     <a href="tel:09194442327" className="font-serif text-[neutral-900]/90 hover:text-[#D4AF37] transition-colors text-base font-medium">
@@ -107,29 +108,16 @@ export default function ContactPage() {
               <div className="group bg-white/60 backdrop-blur-sm rounded-3xl p-7 shadow-sm hover:shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.4s both' }}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl -mr-10 -mt-10 transition-transform duration-700 group-hover:scale-150"></div>
 
-                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-5 relative z-10">
+                <h3 className="flex items-center gap-4 text-xl font-serif text-[neutral-900] mb-0 relative z-10">
                   <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-[#D4AF37]/30 group-hover:bg-[#D4AF37]/10 transition-colors duration-500 text-[#D4AF37]">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3"></circle>
-                      <circle cx="6" cy="12" r="3"></circle>
-                      <circle cx="18" cy="19" r="3"></circle>
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                    </svg>
+                    <Share2 className="w-5 h-5" aria-hidden="true" />
                   </div>
                   Social Media
                 </h3>
-                <div className="flex gap-5 items-center pl-16 relative z-10">
-                  <a href="https://www.facebook.com/ZionEventsPlace" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
-                    <img src="/communication.png" alt="Facebook" className="w-6 h-6 object-contain" />
-                  </a>
-                  <a href="https://www.instagram.com/zioneventsplace?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
-                    <img src="/instagram.png" alt="Instagram" className="w-6 h-6 object-contain" />
-                  </a>
-                  <a href="https://www.tiktok.com/@zioneventsvenue?_r=1&_t=ZS-97KTDZ4I1Ka" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white border border-[#D4AF37]/20 shadow-sm flex items-center justify-center hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(212,160,23,0.15)] hover:border-[#D4AF37]/50 transition-all duration-300">
-                    <img src="/tik-tok.png" alt="TikTok" className="w-6 h-6 object-contain" />
-                  </a>
-                </div>
+                <p className="relative z-10 pl-0 sm:pl-16 mb-4 -mt-2 font-serif text-sm leading-relaxed text-neutral-900/65">
+                  Follow us for our latest celebrations, venue styling, and event highlights.
+                </p>
+                <SocialLinks variant="contact" className="relative z-10 pl-0 sm:pl-16" />
               </div>
 
             </div>
@@ -140,7 +128,7 @@ export default function ContactPage() {
                 Message Us
               </span>
               <h2 className="text-4xl md:text-5xl font-serif text-[neutral-900] mb-8">How can we help?</h2>
-              
+
               <div className="w-full bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 md:p-8 shadow-[0_20px_40px_rgba(212,160,23,0.1)] border border-[#D4AF37]/20 relative overflow-hidden group/form">
                 {/* Decorative background element */}
                 <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-3xl transition-transform duration-1000 group-hover/form:scale-150"></div>
@@ -153,16 +141,16 @@ export default function ContactPage() {
 
           {/* Bottom Section: Map & Direction */}
           <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-stretch mt-8">
-            
+
             {/* Map */}
             <div className="w-full min-h-[300px] lg:min-h-[400px] rounded-[24px] overflow-hidden shadow-sm border-4 border-white relative z-20">
-              <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3864.83416!2d121.0367932!3d14.3530466!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d72b190b476f%3A0x73af84eaa4dfacb7!2sZion%20Events%20Place!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph" 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0 }} 
-                allowFullScreen={true} 
-                loading="lazy" 
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3864.83416!2d121.0367932!3d14.3530466!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d72b190b476f%3A0x73af84eaa4dfacb7!2sZion%20Events%20Place!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="w-full h-full object-cover"
               ></iframe>

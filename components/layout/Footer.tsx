@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import SocialLinks from './SocialLinks';
 
 export default function Footer() {
   return (
@@ -65,27 +66,12 @@ export default function Footer() {
           </div>
 
           {/* Right: Socials */}
-          <div className="flex flex-col gap-3 items-start text-left md:col-span-2 justify-self-end">
-            <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-3 items-start text-left md:col-span-2 md:items-end md:text-right md:justify-self-end">
+            <div className="flex flex-col gap-1 md:items-end">
               <h4 className="font-serif text-neutral-600 text-sm md:text-base font-bold uppercase drop-shadow-sm">FOLLOW US</h4>
               <p className="text-neutral-900 text-sm md:text-base font-serif opacity-90">Join our community.</p>
             </div>
-            <div className="flex gap-4 mt-1">
-              {/* Facebook */}
-              <Link href="https://www.facebook.com/ZionEventsPlace" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
-                <img src="/communication.png" alt="Facebook" className="w-9 h-9 object-contain transition-transform" />
-              </Link>
-
-              {/* Instagram */}
-              <Link href="https://www.instagram.com/zioneventsplace?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
-                <img src="/instagram.png" alt="Instagram" className="w-9 h-9 object-contain transition-transform" />
-              </Link>
-
-              {/* TikTok */}
-              <Link href="https://www.tiktok.com/@zioneventsvenue?_r=1&_t=ZS-97KTDZ4I1Ka" target="_blank" rel="noopener noreferrer" className="hover:-translate-y-1 transform duration-300">
-                <img src="/tik-tok.png" alt="TikTok" className="w-9 h-9 object-contain transition-transform" />
-              </Link>
-            </div>
+            <SocialLinks variant="footer" className="mt-1 md:justify-end" />
           </div>
         </div>
       </div>
@@ -102,5 +88,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-  

@@ -1,10 +1,11 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
-import { AuditAction, AuditStatus, Role } from '@prisma/client';
+import { AuditAction, AuditStatus, Role, UserStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { auditActor, createAuditLog, errorMetadata } from '@/lib/audit';
-import { requireAdmin } from '@/lib/authorization';
+import { adminDisplayName, requireAdmin } from '@/lib/authorization';
+import { normalizeAdminAddressInput } from '@/lib/admin-address-options';
 import { assertStrongPassword } from '@/lib/password-policy';
 import { prisma } from '@/lib/prisma';
 import type {
@@ -15,10 +16,17 @@ import type {
 
 const PROFILE_SELECT = {
   id: true,
-  username: true,
   email: true,
   fullName: true,
   contactNumber: true,
+  addressRegionCode: true,
+  addressRegion: true,
+  addressProvinceCode: true,
+  addressProvince: true,
+  addressCityCode: true,
+  addressCity: true,
+  addressBarangayCode: true,
+  addressBarangay: true,
   profileImage: true,
   role: true,
   createdAt: true,
@@ -27,10 +35,17 @@ const PROFILE_SELECT = {
 
 function toAdminProfile(profile: {
   id: string;
-  username: string;
   email: string;
   fullName: string | null;
   contactNumber: string | null;
+  addressRegionCode: string | null;
+  addressRegion: string | null;
+  addressProvinceCode: string | null;
+  addressProvince: string | null;
+  addressCityCode: string | null;
+  addressCity: string | null;
+  addressBarangayCode: string | null;
+  addressBarangay: string | null;
   profileImage: string | null;
   role: Role;
   createdAt: Date;
@@ -48,7 +63,7 @@ function toAdminProfile(profile: {
   };
 }
 
-function normalizeProfileInput(data: UpdateProfileInput) {
+async function normalizeProfileInput(data: UpdateProfileInput) {
   const fullName = data.fullName.trim();
   const rawContactNumber = data.contactNumber.trim();
   let contactNumber = '';
@@ -78,9 +93,21 @@ function normalizeProfileInput(data: UpdateProfileInput) {
     contactNumber = `+63${localDigits}`;
   }
 
+  const address = await normalizeAdminAddressInput({
+    addressRegionCode: data.addressRegionCode,
+    addressRegion: data.addressRegion,
+    addressProvinceCode: data.addressProvinceCode,
+    addressProvince: data.addressProvince,
+    addressCityCode: data.addressCityCode,
+    addressCity: data.addressCity,
+    addressBarangayCode: data.addressBarangayCode,
+    addressBarangay: data.addressBarangay,
+  });
+
   return {
     fullName,
     contactNumber: contactNumber || null,
+    ...address,
   };
 }
 
@@ -102,7 +129,7 @@ export async function updateOwnProfile(data: UpdateProfileInput): Promise<AdminP
   const actor = await requireAdmin();
 
   try {
-    const normalized = normalizeProfileInput(data);
+    const normalized = await normalizeProfileInput(data);
     const previous = await prisma.user.findUnique({
       where: { id: actor.id },
       select: PROFILE_SELECT,
@@ -122,15 +149,31 @@ export async function updateOwnProfile(data: UpdateProfileInput): Promise<AdminP
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} updated their profile details.`,
+      description: `${adminDisplayName(actor)} updated their profile details.`,
       status: AuditStatus.SUCCESS,
       previousValues: {
         fullName: previous.fullName,
         contactNumber: previous.contactNumber,
+        addressRegionCode: previous.addressRegionCode,
+        addressRegion: previous.addressRegion,
+        addressProvinceCode: previous.addressProvinceCode,
+        addressProvince: previous.addressProvince,
+        addressCityCode: previous.addressCityCode,
+        addressCity: previous.addressCity,
+        addressBarangayCode: previous.addressBarangayCode,
+        addressBarangay: previous.addressBarangay,
       },
       newValues: {
         fullName: profile.fullName,
         contactNumber: profile.contactNumber,
+        addressRegionCode: profile.addressRegionCode,
+        addressRegion: profile.addressRegion,
+        addressProvinceCode: profile.addressProvinceCode,
+        addressProvince: profile.addressProvince,
+        addressCityCode: profile.addressCityCode,
+        addressCity: profile.addressCity,
+        addressBarangayCode: profile.addressBarangayCode,
+        addressBarangay: profile.addressBarangay,
       },
       metadata: {
         targetUserId: actor.id,
@@ -138,6 +181,7 @@ export async function updateOwnProfile(data: UpdateProfileInput): Promise<AdminP
     });
 
     revalidatePath('/admin/profile');
+    revalidatePath('/admin/team');
     revalidatePath('/admin', 'layout');
     return toAdminProfile(profile);
   } catch (error) {
@@ -145,12 +189,20 @@ export async function updateOwnProfile(data: UpdateProfileInput): Promise<AdminP
       ...auditActor(actor),
       action: AuditAction.PROFILE_UPDATE,
       module: 'Profile',
-      description: `${actor.username} failed to update their profile details.`,
+      description: `${adminDisplayName(actor)} failed to update their profile details.`,
       status: AuditStatus.FAILED,
       metadata: {
         targetUserId: actor.id,
         fullName: data.fullName,
         contactNumber: data.contactNumber,
+        addressRegionCode: data.addressRegionCode,
+        addressRegion: data.addressRegion,
+        addressProvinceCode: data.addressProvinceCode,
+        addressProvince: data.addressProvince,
+        addressCityCode: data.addressCityCode,
+        addressCity: data.addressCity,
+        addressBarangayCode: data.addressBarangayCode,
+        addressBarangay: data.addressBarangay,
         ...errorMetadata(error),
       },
     });
@@ -177,29 +229,32 @@ export async function changeOwnPassword(
 
     const user = await prisma.user.findUnique({
       where: { id: actor.id },
-      select: { password: true },
+      select: { passwordHash: true },
     });
 
-    if (!user || !(await bcrypt.compare(data.currentPassword, user.password))) {
+    if (!user?.passwordHash || !(await bcrypt.compare(data.currentPassword, user.passwordHash))) {
       throw new Error('Current password is incorrect.');
     }
 
-    if (await bcrypt.compare(data.newPassword, user.password)) {
+    if (await bcrypt.compare(data.newPassword, user.passwordHash)) {
       throw new Error('New password must be different from your current password.');
     }
 
     await prisma.user.update({
       where: { id: actor.id },
       data: {
-        password: await bcrypt.hash(data.newPassword, 12),
+        passwordHash: await bcrypt.hash(data.newPassword, 12),
+        status: UserStatus.ACTIVE,
+        mustChangePassword: false,
+        lastPasswordChangedAt: new Date(),
       },
     });
 
     await createAuditLog({
       ...auditActor(actor),
-      action: AuditAction.PASSWORD_CHANGE,
+      action: AuditAction.PASSWORD_CHANGED,
       module: 'Profile',
-      description: `${actor.username} changed their admin password.`,
+      description: `${adminDisplayName(actor)} changed their admin password.`,
       status: AuditStatus.SUCCESS,
       metadata: {
         targetUserId: actor.id,
@@ -211,9 +266,9 @@ export async function changeOwnPassword(
   } catch (error) {
     await createAuditLog({
       ...auditActor(actor),
-      action: AuditAction.PASSWORD_CHANGE,
+      action: AuditAction.PASSWORD_CHANGED,
       module: 'Profile',
-      description: `${actor.username} failed to change their admin password.`,
+      description: `${adminDisplayName(actor)} failed to change their admin password.`,
       status: AuditStatus.FAILED,
       metadata: {
         targetUserId: actor.id,

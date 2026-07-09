@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import BackgroundSlideshow from '@/components/shared/BackgroundSlideshow';
 
@@ -13,6 +13,7 @@ export default function AdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -29,16 +30,67 @@ export default function AdminLoginForm() {
       });
 
       if (!result?.ok) {
-        setError('Invalid email or password.');
+        setError('Invalid email, password, or temporary code.');
         return;
       }
 
-      router.replace('/admin/dashboard');
+      const session = await getSession();
+      const requiresPasswordChange =
+        session?.user?.accessScope === 'PASSWORD_CHANGE_ONLY' ||
+        session?.user?.mustChangePassword;
+
+      router.replace(requiresPasswordChange ? '/change-password' : '/admin/dashboard');
       router.refresh();
     } catch {
       setError('Unable to sign in right now. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    setError('');
+
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      setError('Please enter your admin email address first.');
+      return;
+    }
+
+    setIsSendingReset(true);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      const payload = await response.json() as {
+        message?: string;
+        error?: string;
+        deliveryWarning?: string | null;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Unable to send a temporary password code.');
+      }
+
+      const params = new URLSearchParams({
+        email: normalizedEmail,
+        sent: '1',
+      });
+
+      if (payload.deliveryWarning) {
+        params.set('warning', '1');
+      }
+
+      router.push(`/forgot-password?${params.toString()}`);
+    } catch (error) {
+      setError(error instanceof Error
+        ? error.message
+        : 'Unable to send a temporary password code.');
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -78,13 +130,13 @@ export default function AdminLoginForm() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="peer w-full border-b-2 border-gray-400 bg-transparent px-0 py-2.5 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-colors focus:border-[#D6B53B] focus:outline-none"
+              className="peer w-full border-b-2 border-gray-300 bg-transparent px-0 py-2.5 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-all duration-300 ease-out focus:border-[#D6B53B] focus:outline-none"
               placeholder="Email Address"
               required
             />
             <label
               htmlFor="email"
-              className="absolute -top-3.5 left-0 cursor-text font-sans text-[11px] font-semibold uppercase tracking-wide text-[#D6B53B] transition-all duration-300 peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:text-gray-600 peer-focus:-top-3.5 peer-focus:text-[11px] peer-focus:uppercase peer-focus:text-[#D6B53B]"
+              className="absolute left-0 -top-4 cursor-text font-sans text-xs font-medium text-[#D6B53B] transition-all duration-300 ease-out peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#D6B53B]"
             >
               Email Address
             </label>
@@ -97,13 +149,13 @@ export default function AdminLoginForm() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="peer w-full border-b-2 border-gray-400 bg-transparent px-0 py-2.5 pr-10 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-colors focus:border-[#D6B53B] focus:outline-none"
+              className="peer w-full border-b-2 border-gray-300 bg-transparent px-0 py-2.5 pr-10 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-all duration-300 ease-out focus:border-[#D6B53B] focus:outline-none"
               placeholder="Password"
               required
             />
             <label
               htmlFor="password"
-              className="absolute -top-3.5 left-0 cursor-text font-sans text-[11px] font-semibold uppercase tracking-wide text-[#D6B53B] transition-all duration-300 peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:text-gray-600 peer-focus:-top-3.5 peer-focus:text-[11px] peer-focus:uppercase peer-focus:text-[#D6B53B]"
+              className="absolute left-0 -top-4 cursor-text font-sans text-xs font-medium text-[#D6B53B] transition-all duration-300 ease-out peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-500 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#D6B53B]"
             >
               Password
             </label>
@@ -128,18 +180,43 @@ export default function AdminLoginForm() {
           </div>
 
           <div className="-mt-2 flex items-center justify-between font-sans text-xs font-semibold text-gray-500">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 accent-[#D6B53B]"
-              />
-              <span>Remember Me</span>
+            <label className="group flex cursor-pointer items-center gap-2.5">
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="peer relative h-4 w-4 cursor-pointer appearance-none rounded-[5px] border border-gray-400 bg-transparent transition-all duration-300 hover:border-[#D6B53B] hover:shadow-[0_0_8px_rgba(214,181,59,0.3)] checked:border-[#D6B53B] checked:bg-[#D6B53B] checked:shadow-[0_0_8px_rgba(214,181,59,0.4)] focus:outline-none"
+                />
+                <svg
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity duration-300 peer-checked:opacity-100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span className="transition-colors duration-300 group-hover:text-gray-700">Remember Me</span>
             </label>
-            <span className="text-[#BEA542]">
-              {rememberMe ? 'Stay signed in for 30 days' : 'Authorized personnel only'}
-            </span>
+            <div className="flex items-center justify-end transition-all duration-300 text-[#BEA542]">
+              {rememberMe ? (
+                <span>Authorized personnel only</span>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={handleForgotPassword}
+                  disabled={isSubmitting || isSendingReset}
+                  className="font-semibold text-gray-500 transition-colors hover:text-[#D6B53B]"
+                >
+                  {isSendingReset ? 'Sending Code...' : 'Forgot Password?'}
+                </button>
+              )}
+            </div>
           </div>
 
           {error && (

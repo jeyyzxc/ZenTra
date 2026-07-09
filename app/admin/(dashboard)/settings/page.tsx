@@ -1,381 +1,489 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useTheme } from '../../../context/ThemeContext';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '../../../context/ThemeContext';
+import {
+  DATE_FORMAT_OPTIONS,
+  DEFAULT_SYSTEM_SETTINGS,
+  LANGUAGE_OPTIONS,
+  SESSION_TIMEOUT_OPTIONS,
+  TIMEZONE_OPTIONS,
+  type SystemSettings,
+  type ThemePreference,
+} from '@/lib/system-settings-types';
 
-export default function SettingsPage() {
-  const { theme, toggleTheme } = useTheme();
-  const router = useRouter();
+type Notice = { type: 'success' | 'error'; message: string } | null;
+type NotificationKey = keyof SystemSettings['admin']['notifications'];
+type ClientKey = keyof Omit<SystemSettings['client'], 'disabledMessage'>;
 
-  // Notification States
-  const [notifications, setNotifications] = useState({
-    newBooking: true,
-    bookingConfirmations: true,
-    bookingCancellations: true,
-    customerInquiries: false,
-    paymentUpdates: true,
-    weeklySummary: true,
-    marketingEmails: false,
-  });
+const notificationRows: Array<{ key: NotificationKey; label: string }> = [
+  { key: 'newBookingRequests', label: 'New Booking Requests' },
+  { key: 'bookingConfirmations', label: 'Booking Confirmations' },
+  { key: 'bookingCancellations', label: 'Booking Cancellations' },
+  { key: 'customerInquiries', label: 'Customer Inquiries' },
+  { key: 'paymentUpdates', label: 'Payment Updates' },
+  { key: 'contractUpdates', label: 'Contract Updates' },
+  { key: 'testimonyUpdates', label: 'Testimony Updates' },
+  { key: 'supportUpdates', label: 'Support Center Updates' },
+  { key: 'systemAlerts', label: 'System Alerts' },
+];
 
-  // Security States
-  const [security, setSecurity] = useState({
-    twoFactorAuth: false,
-    deleteRecords: true,
-    cancelBookings: true,
-    modifyData: false
-  });
+const clientRows: Array<{ key: ClientKey; label: string; detail: string }> = [
+  { key: 'maintenanceMode', label: 'Maintenance Mode', detail: 'Temporarily pauses public client features.' },
+  { key: 'bookingRequestsEnabled', label: 'Online Booking Requests', detail: 'Controls the booking flow and calendar availability endpoint.' },
+  { key: 'inquirySubmissionsEnabled', label: 'Inquiry Submissions', detail: 'Controls Contact Us and homepage inquiry forms.' },
+  { key: 'packagesVisible', label: 'Public Packages', detail: 'Controls package pages and public package APIs.' },
+  { key: 'faqVisible', label: 'Client FAQ', detail: 'Controls FAQ pages, previews, and FAQ APIs.' },
+  { key: 'assistantEnabled', label: 'Smart Assistant', detail: 'Controls the public Zeni chat assistant.' },
+  { key: 'publicTestimoniesVisible', label: 'Public Testimonies', detail: 'Controls the testimonies page and featured stories.' },
+  { key: 'testimonySubmissionsEnabled', label: 'Testimony Submissions', detail: 'Controls the client testimony submission form.' },
+];
 
-  // Preferences
-  const [sessionTimeout, setSessionTimeout] = useState('30 Minutes');
-  const [language, setLanguage] = useState('English (US)');
-  const [dateFormat, setDateFormat] = useState('MM/DD/YYYY');
-  const [timezone, setTimezone] = useState('(GMT+08:00) Manila, Taipei');
+const panelClass = 'overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-500 dark:border-white/5 dark:bg-[#141A13]';
+const labelClass = 'block text-[10.5px] font-bold uppercase tracking-[0.1em] text-gray-500 dark:text-[#A3B19B]';
+const selectClass = 'w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] font-semibold tracking-wide text-gray-800 shadow-sm outline-none transition-all duration-300 focus:border-[#D6B53B] focus:ring-2 focus:ring-[#D6B53B]/30 dark:border-white/10 dark:bg-white/5 dark:text-[#F4F4F0]';
 
-  // UI States
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveNotification, setSaveNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-
-  const handleSaveSettings = () => {
-    setIsSaving(true);
-    setSaveNotification(null);
-
-    setTimeout(() => {
-      setIsSaving(false);
-      setSaveNotification({ type: 'success', message: 'All settings have been successfully saved.' });
-      setTimeout(() => setSaveNotification(null), 5000);
-    }, 1000);
-  };
-
-  // Ultra-smooth Reusable Toggle Component with Micro-Interactions
-  const Toggle = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <div
+function Toggle({
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
       onClick={onChange}
-      className={`w-10 h-5 rounded-full relative cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] border shadow-inner flex-shrink-0 active:scale-90 ${checked ? 'bg-[#D6B53B] border-[#D6B53B]' : 'bg-gray-200 dark:bg-white/10 border-gray-300 dark:border-white/20 hover:bg-gray-300 dark:hover:bg-white/20'}`}
+      className={`relative h-5 w-10 flex-shrink-0 rounded-full border shadow-inner transition-all duration-300 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked
+          ? 'border-[#D6B53B] bg-[#D6B53B]'
+          : 'border-gray-300 bg-gray-200 hover:bg-gray-300 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/20'
+      }`}
     >
-      <div className={`w-4 h-4 bg-white rounded-full absolute top-[1px] shadow-md transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${checked ? 'translate-x-[22px] scale-105' : 'translate-x-[2px]'}`}></div>
-      {/* Subtle glow effect when active */}
-      {checked && <div className="absolute inset-0 rounded-full shadow-[0_0_12px_rgba(214,181,59,0.5)] opacity-50 animate-pulse"></div>}
+      <span
+        className={`absolute top-[1px] h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-300 ${
+          checked ? 'translate-x-[22px]' : 'translate-x-[2px]'
+        }`}
+      />
+    </button>
+  );
+}
+
+function SectionHeader({ icon, title }: { icon: string; title: string }) {
+  return (
+    <div className="border-b border-gray-50 bg-gray-50/30 px-6 py-4 dark:border-white/5 dark:bg-white/[0.02]">
+      <h2 className="flex items-center gap-2.5 font-sans text-[14.5px] font-semibold tracking-tight text-gray-800 dark:text-[#F4F4F0]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FDF5CC]/50 text-[#D6B53B] shadow-sm dark:bg-[#D6B53B]/10">
+          <i className={`fi ${icon} relative top-[1px] text-[14px] leading-[0]`} />
+        </span>
+        {title}
+      </h2>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  const { toggleTheme } = useTheme();
+  const router = useRouter();
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SYSTEM_SETTINGS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/admin/settings', { cache: 'no-store' });
+        const payload = await response.json() as {
+          settings?: SystemSettings;
+          updatedAt?: string | null;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.settings) {
+          throw new Error(payload.error || 'Unable to load settings.');
+        }
+
+        if (!active) {
+          return;
+        }
+
+        setSettings(payload.settings);
+        setUpdatedAt(payload.updatedAt ?? null);
+        toggleTheme(payload.settings.appearance.defaultTheme);
+      } catch (error) {
+        if (active) {
+          setNotice({
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Unable to load settings.',
+          });
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, [toggleTheme]);
+
+  const setAppearanceTheme = (value: ThemePreference) => {
+    toggleTheme(value);
+    setSettings((current) => ({
+      ...current,
+      appearance: { ...current.appearance, defaultTheme: value },
+    }));
+  };
+
+  const setNotification = (key: NotificationKey, value: boolean) => {
+    setSettings((current) => ({
+      ...current,
+      admin: {
+        ...current.admin,
+        notifications: {
+          ...current.admin.notifications,
+          [key]: value,
+        },
+      },
+    }));
+  };
+
+  const setClient = (key: ClientKey, value: boolean) => {
+    setSettings((current) => ({
+      ...current,
+      client: {
+        ...current.client,
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateLocalization = (field: keyof SystemSettings['admin']['localization'], value: string) => {
+    setSettings((current) => ({
+      ...current,
+      admin: {
+        ...current.admin,
+        localization: {
+          ...current.admin.localization,
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const saveSettings = async () => {
+    setIsSaving(true);
+    setNotice(null);
+
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const payload = await response.json() as {
+        settings?: SystemSettings;
+        updatedAt?: string | null;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.settings) {
+        throw new Error(payload.error || 'Unable to save settings.');
+      }
+
+      setSettings(payload.settings);
+      setUpdatedAt(payload.updatedAt ?? new Date().toISOString());
+      setNotice({ type: 'success', message: 'Settings saved and applied across admin and client panels.' });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Unable to save settings.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const exportHref = useMemo(() => {
+    const params = new URLSearchParams({
+      format: 'csv',
+      timeZone: settings.admin.localization.timezone,
+    });
+    return `/api/audit/export?${params.toString()}`;
+  }, [settings.admin.localization.timezone]);
 
   return (
-    <div className="px-6 pb-8 pt-4 w-full opacity-100 translate-y-0 transition-all duration-1000 ease-[cubic-bezier(0.2,0.8,0.2,1)] transform">
-
-      {/* Back Button */}
-      <div className="mb-5 flex -ml-3 sm:-ml-5">
-        <button 
-          onClick={() => router.back()} 
-          className="group flex items-center gap-3 text-gray-500 hover:text-[#D6B53B] dark:text-[#A3B19B] dark:hover:text-[#D6B53B] transition-all duration-500 focus:outline-none"
+    <div className="w-full px-6 pb-8 pt-4">
+      <div className="-ml-3 mb-5 flex sm:-ml-5">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="group flex items-center gap-3 text-gray-500 transition-all duration-500 hover:text-[#D6B53B] focus:outline-none dark:text-[#A3B19B] dark:hover:text-[#D6B53B]"
           aria-label="Go back"
         >
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-[#141A13] border border-gray-200 dark:border-white/10 shadow-sm group-hover:shadow-[0_0_12px_rgba(214,181,59,0.4)] group-hover:border-[#D6B53B]/50 transition-all duration-500">
-            <i className="fi fi-rr-arrow-left text-[14px] leading-[0] mt-[2px] transition-transform duration-500 group-hover:-translate-x-0.5"></i>
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 ease-out">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-all duration-500 group-hover:border-[#D6B53B]/50 group-hover:shadow-[0_0_12px_rgba(214,181,59,0.4)] dark:border-white/10 dark:bg-[#141A13]">
+            <i className="fi fi-rr-arrow-left mt-[2px] text-[14px] leading-[0] transition-transform duration-500 group-hover:-translate-x-0.5" />
+          </span>
+          <span className="-translate-x-2 text-[10px] font-bold uppercase tracking-[0.15em] opacity-0 transition-all duration-500 ease-out group-hover:translate-x-0 group-hover:opacity-100">
             Go Back
           </span>
         </button>
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-sahitya text-3xl font-bold uppercase tracking-[0.08em] text-[#1a1f18] dark:text-[#F4F4F0] leading-none m-0">Settings</h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500 dark:text-[#A3B19B]">Manage system preferences, localization, and advanced security configurations.</p>
+          <h1 className="m-0 font-sahitya text-3xl font-bold uppercase leading-none tracking-[0.08em] text-[#1a1f18] dark:text-[#F4F4F0]">
+            Settings
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-gray-500 dark:text-[#A3B19B]">
+            Manage operational preferences, public client access, localization, and system communications.
+          </p>
+          {updatedAt && (
+            <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8E7722]">
+              Last saved {new Date(updatedAt).toLocaleString()}
+            </p>
+          )}
         </div>
+
         <button
-          onClick={handleSaveSettings}
-          disabled={isSaving}
-          className="px-8 py-3 bg-[#1a1f18] dark:bg-[#D6B53B] text-white dark:text-[#0C100B] text-[11.5px] font-semibold tracking-[0.15em] uppercase rounded-xl hover:bg-[#D6B53B] dark:hover:bg-white transition-all duration-500 ease-out shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 transform active:scale-95 whitespace-nowrap overflow-hidden relative group"
+          type="button"
+          onClick={saveSettings}
+          disabled={isSaving || isLoading}
+          className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#1a1f18] px-8 py-3 text-[11.5px] font-semibold uppercase tracking-[0.15em] text-white shadow-md transition-all duration-500 ease-out hover:bg-[#D6B53B] hover:shadow-lg active:scale-95 disabled:opacity-70 dark:bg-[#D6B53B] dark:text-[#0C100B] dark:hover:bg-white"
         >
-          {/* Button highlight effect */}
-          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
+          <span className="absolute inset-0 h-full w-full -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite] dark:via-white/50" />
           {isSaving ? (
             <>
-              <i className="fi fi-rr-spinner animate-spin text-[13px]"></i>
+              <i className="fi fi-rr-spinner animate-spin text-[13px]" />
               Saving...
             </>
           ) : (
             <>
-              <i className="fi fi-rr-disk text-[13px] leading-[0] relative top-[1px]"></i>
-              <span className="leading-none relative top-[1px]">Save Changes</span>
+              <i className="fi fi-rr-disk relative top-[1px] text-[13px] leading-[0]" />
+              <span className="relative top-[1px] leading-none">Save Changes</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Notification Banner */}
-      <div className={`overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${saveNotification ? 'max-h-24 opacity-100 mb-6 scale-100' : 'max-h-0 opacity-0 mb-0 scale-95'}`}>
-        {saveNotification && (
-          <div className={`p-3.5 rounded-xl flex items-start gap-3 border shadow-sm backdrop-blur-sm ${saveNotification.type === 'success' ? 'bg-green-50/90 dark:bg-green-900/20 border-green-200 dark:border-green-500/30 text-green-800 dark:text-green-400' : 'bg-red-50/90 dark:bg-red-900/20 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-400'}`}>
-            <i className={`fi ${saveNotification.type === 'success' ? 'fi-rr-check-circle text-green-600 dark:text-green-400' : 'fi-rr-cross-circle text-red-600 dark:text-red-400'} text-[16px] leading-[0] mt-0.5`}></i>
-            <p className="text-[13px] font-medium tracking-wide leading-relaxed">{saveNotification.message}</p>
-          </div>
-        )}
-      </div>
+      {notice && (
+        <div className={`mb-6 flex items-start gap-3 rounded-xl border p-3.5 text-[13px] font-medium tracking-wide shadow-sm ${
+          notice.type === 'success'
+            ? 'border-green-200 bg-green-50/90 text-green-800 dark:border-green-500/30 dark:bg-green-900/20 dark:text-green-400'
+            : 'border-red-200 bg-red-50/90 text-red-800 dark:border-red-500/30 dark:bg-red-900/20 dark:text-red-400'
+        }`}>
+          <i className={`fi ${notice.type === 'success' ? 'fi-rr-check-circle' : 'fi-rr-cross-circle'} mt-0.5 text-[16px] leading-[0]`} />
+          <p>{notice.message}</p>
+        </div>
+      )}
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-
-        {/* Left Column */}
-        <div className="xl:col-span-7 space-y-6">
-
-          {/* Appearance Section */}
-          <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group">
-            <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
-              <h2 className="text-[14.5px] font-semibold text-gray-800 dark:text-[#F4F4F0] font-sans tracking-tight flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#FDF5CC]/50 dark:bg-[#D6B53B]/10 flex items-center justify-center text-[#D6B53B] shadow-sm">
-                  <i className="fi fi-rr-palette text-[14px] leading-[0] relative top-[1px]"></i>
-                </div>
-                Appearance & Theme
-              </h2>
-            </div>
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-              {/* Light Mode Toggle */}
-              <div
-                onClick={() => toggleTheme('light')}
-                className={`border rounded-xl p-5 cursor-pointer relative overflow-hidden bg-white dark:bg-[#0C100B] shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none ${theme === 'light' ? 'border-[#D6B53B] ring-1 ring-[#D6B53B]/20' : 'border-gray-200 dark:border-white/10 opacity-80 hover:opacity-100'}`}
-              >
-                <div className={`absolute top-4 right-4 text-[#D6B53B] transform transition-transform duration-500 ${theme === 'light' ? 'scale-110 opacity-100' : 'scale-0 opacity-0'}`}>
-                  <i className="fi fi-rr-check-circle text-xl drop-shadow-sm leading-[0]"></i>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FDF5CC] to-white dark:from-[#D6B53B]/20 dark:to-transparent border border-[#D6B53B]/20 rounded-full flex items-center justify-center text-[#D6B53B] mb-4 shadow-sm">
-                  <i className="fi fi-rr-brightness text-2xl leading-[0]"></i>
-                </div>
-                <h3 className={`font-semibold tracking-tight text-[15px] mb-1.5 ${theme === 'light' ? 'text-gray-900' : 'text-gray-500 dark:text-[#A3B19B]'}`}>Light Mode</h3>
-                <p className="text-[12.5px] text-gray-500 dark:text-[#A3B19B]/80 font-medium tracking-wide">Default bright interface.</p>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="h-72 animate-pulse rounded-xl bg-white/70 dark:bg-white/5 xl:col-span-6" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+          <div className="space-y-6 xl:col-span-7">
+            <section className={panelClass}>
+              <SectionHeader icon="fi-rr-palette" title="Appearance & Theme" />
+              <div className="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+                {(['light', 'dark'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setAppearanceTheme(option)}
+                    className={`relative rounded-xl border p-5 text-left shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-md ${
+                      settings.appearance.defaultTheme === option
+                        ? 'border-[#D6B53B] ring-1 ring-[#D6B53B]/20'
+                        : 'border-gray-200 opacity-80 hover:opacity-100 dark:border-white/10'
+                    } ${option === 'light' ? 'bg-white dark:bg-[#0C100B]' : 'bg-gray-50 dark:bg-[#0C100B]'}`}
+                  >
+                    <i className={`fi ${option === 'light' ? 'fi-rr-brightness' : 'fi-rr-moon'} mb-4 flex h-12 w-12 items-center justify-center rounded-full border text-2xl leading-[0] ${
+                      option === 'light'
+                        ? 'border-[#D6B53B]/20 bg-[#FDF5CC] text-[#D6B53B]'
+                        : 'border-gray-300 bg-gray-100 text-gray-600 dark:border-white/10 dark:bg-white/10 dark:text-white'
+                    }`} />
+                    <h3 className="mb-1.5 text-[15px] font-semibold tracking-tight text-gray-900 dark:text-[#F4F4F0]">
+                      {option === 'light' ? 'Light Mode' : 'Evening Gala'}
+                    </h3>
+                    <p className="text-[12.5px] font-medium tracking-wide text-gray-500 dark:text-[#A3B19B]/80">
+                      {option === 'light' ? 'Default bright interface.' : 'Rich, dark interface.'}
+                    </p>
+                    {settings.appearance.defaultTheme === option && (
+                      <i className="fi fi-rr-check-circle absolute right-4 top-4 text-xl leading-[0] text-[#D6B53B]" />
+                    )}
+                  </button>
+                ))}
               </div>
+            </section>
 
-              {/* Dark Mode Toggle */}
-              <div
-                onClick={() => toggleTheme('dark')}
-                className={`border rounded-xl p-5 cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-[#0C100B] shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none ${theme === 'dark' ? 'border-[#D6B53B] ring-1 ring-[#D6B53B]/20' : 'border-gray-200 dark:border-white/10 opacity-80 hover:opacity-100'}`}
-              >
-                <div className={`absolute top-4 right-4 text-[#D6B53B] transform transition-transform duration-500 ${theme === 'dark' ? 'scale-110 opacity-100' : 'scale-0 opacity-0'}`}>
-                  <i className="fi fi-rr-check-circle text-xl drop-shadow-sm leading-[0]"></i>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-100 dark:from-white/10 dark:to-transparent border border-gray-300 dark:border-white/10 rounded-full flex items-center justify-center text-gray-600 dark:text-white mb-4 shadow-sm">
-                  <i className="fi fi-rr-moon text-2xl leading-[0]"></i>
-                </div>
-                <h3 className={`font-semibold tracking-tight text-[15px] mb-1.5 ${theme === 'dark' ? 'text-gray-900 dark:text-[#F4F4F0]' : 'text-gray-500 dark:text-[#A3B19B]'}`}>Evening Gala</h3>
-                <p className="text-[12.5px] text-gray-500 dark:text-[#A3B19B]/80 font-medium tracking-wide">Rich, dark interface.</p>
-              </div>
-
-            </div>
-          </section>
-
-          {/* Session & Security */}
-          <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group">
-            <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
-              <h2 className="text-[14.5px] font-semibold text-gray-800 dark:text-[#F4F4F0] font-sans tracking-tight flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#FDF5CC]/50 dark:bg-[#D6B53B]/10 flex items-center justify-center text-[#D6B53B] shadow-sm">
-                  <i className="fi fi-rr-shield-check text-[14px] leading-[0] relative top-[1px]"></i>
-                </div>
-                Session & Advanced Security
-              </h2>
-            </div>
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Session Timeout</label>
-                  <div className="relative group/select">
+            <section className={panelClass}>
+              <SectionHeader icon="fi-rr-shield-check" title="Session & Advanced Security" />
+              <div className="grid grid-cols-1 gap-8 p-6 lg:grid-cols-2">
+                <div className="space-y-6">
+                  <label className="space-y-3">
+                    <span className={labelClass}>Session Timeout</span>
                     <select
-                      value={sessionTimeout}
-                      onChange={(e) => setSessionTimeout(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none cursor-pointer shadow-sm"
+                      value={settings.admin.security.sessionTimeoutMinutes}
+                      onChange={(event) => setSettings((current) => ({
+                        ...current,
+                        admin: {
+                          ...current.admin,
+                          security: {
+                            ...current.admin.security,
+                            sessionTimeoutMinutes: Number(event.target.value),
+                          },
+                        },
+                      }))}
+                      className={selectClass}
                     >
-                      <option>15 Minutes</option>
-                      <option>30 Minutes</option>
-                      <option>1 Hour</option>
-                      <option>4 Hours</option>
+                      {SESSION_TIMEOUT_OPTIONS.map((minutes) => (
+                        <option key={minutes} value={minutes}>
+                          {minutes < 60 ? `${minutes} Minutes` : `${minutes / 60} Hour${minutes > 60 ? 's' : ''}`}
+                        </option>
+                      ))}
                     </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 dark:text-[#A3B19B]">
-                      <i className="fi fi-rr-angle-small-down text-base"></i>
+                  </label>
+
+                  <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-5 dark:border-blue-500/20 dark:from-blue-900/10 dark:to-[#141A13]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="mb-1.5 text-[13.5px] font-semibold tracking-wide text-gray-900 dark:text-[#F4F4F0]">
+                          Two-Factor Auth
+                        </h4>
+                        <p className="mb-3 text-[12px] font-medium leading-relaxed tracking-wide text-gray-600 dark:text-[#A3B19B]">
+                          Authenticator enrollment is not available yet, so this stays disabled until a real setup flow exists.
+                        </p>
+                        <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                          Unavailable
+                        </span>
+                      </div>
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border bg-blue-100 text-blue-500 dark:border-blue-500/20 dark:bg-blue-900/30 dark:text-blue-400">
+                        <i className="fi fi-rr-smartphone text-[18px] leading-[0]" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5 border border-blue-100 dark:border-blue-500/20 bg-gradient-to-br from-blue-50/80 dark:from-blue-900/10 to-white dark:to-[#141A13] rounded-xl relative overflow-hidden group/2fa">
-                  <div className="flex items-start justify-between relative z-10 gap-3">
-                    <div className="flex-1">
-                      <h4 className="text-[13.5px] font-semibold text-gray-900 dark:text-[#F4F4F0] tracking-wide mb-1.5 flex items-center gap-2">
-                        Two-Factor Auth
-                        {security.twoFactorAuth && <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-[8.5px] uppercase tracking-widest font-bold rounded-full">Active</span>}
-                      </h4>
-                      <p className="text-[12px] text-gray-600 dark:text-[#A3B19B] font-medium tracking-wide mb-3 leading-relaxed">Add extra security with 2FA.</p>
-                      <button
-                        onClick={() => setSecurity({ ...security, twoFactorAuth: !security.twoFactorAuth })}
-                        className="text-[10.5px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
-                      >
-                        {security.twoFactorAuth ? 'Disable' : 'Set Up'}
-                      </button>
+                <div className="rounded-xl border border-gray-100 bg-white px-5 py-5 dark:border-white/5 dark:bg-[#1A2218]">
+                  <span className={labelClass}>Access Policy</span>
+                  <h4 className="mt-3 text-[14px] font-semibold tracking-wide text-gray-900 dark:text-[#F4F4F0]">
+                    Admin session lifetime is enforced on login.
+                  </h4>
+                  <p className="mt-2 text-[12.5px] font-medium leading-6 text-gray-600 dark:text-[#A3B19B]">
+                    The saved timeout controls how long non-remembered admin sessions remain valid. Destructive-action password prompts will appear here after those action forms support password confirmation.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className={panelClass}>
+              <SectionHeader icon="fi-rr-globe" title="Client Panel Controls" />
+              <div className="space-y-3 p-6">
+                {clientRows.map((item) => (
+                  <div key={item.key} className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-white/5 dark:bg-[#1A2218]">
+                    <div>
+                      <p className="text-[13px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</p>
+                      <p className="mt-1 text-[11.5px] font-medium leading-5 text-gray-500 dark:text-[#A3B19B]">{item.detail}</p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400 border dark:border-blue-500/20 flex-shrink-0">
-                      <i className="fi fi-rr-smartphone text-[18px] leading-[0]"></i>
-                    </div>
+                    <Toggle checked={settings.client[item.key]} onChange={() => setClient(item.key, !settings.client[item.key])} />
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block mb-4">Require Password For</label>
-                <div className="space-y-3">
-                  {[
-                    { id: 'deleteRecords', label: 'Delete Official Records', state: security.deleteRecords },
-                    { id: 'cancelBookings', label: 'Cancel Active Bookings', state: security.cancelBookings },
-                    { id: 'modifyData', label: 'Modify Client Billing Data', state: security.modifyData },
-                  ].map((item) => (
-                    <div key={item.id} className="flex items-center justify-between bg-white dark:bg-[#1A2218] border border-gray-100 dark:border-white/5 px-4 py-3 rounded-xl">
-                      <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                      <Toggle
-                        checked={item.state}
-                        onChange={() => setSecurity({ ...security, [item.id as keyof typeof security]: !item.state })}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </section>
-
-        </div>
-
-        {/* Right Column */}
-        <div className="xl:col-span-5 space-y-6">
-
-          {/* Notification Preferences */}
-          <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group h-auto">
-            <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
-              <h2 className="text-[14.5px] font-semibold text-gray-800 dark:text-[#F4F4F0] font-sans tracking-tight flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#FDF5CC]/50 dark:bg-[#D6B53B]/10 flex items-center justify-center text-[#D6B53B] shadow-sm">
-                  <i className="fi fi-rr-bell text-[14px] leading-[0] relative top-[1px]"></i>
-                </div>
-                Communications
-              </h2>
-            </div>
-            <div className="p-6 space-y-1.5">
-              <h4 className="text-[10px] font-bold text-gray-400 dark:text-[#A3B19B]/70 uppercase tracking-widest mb-3 pl-3">System Alerts</h4>
-              {[
-                { id: 'newBooking', label: 'New Booking Requests', state: notifications.newBooking },
-                { id: 'bookingConfirmations', label: 'Booking Confirmations', state: notifications.bookingConfirmations },
-                { id: 'bookingCancellations', label: 'Booking Cancellations', state: notifications.bookingCancellations },
-                { id: 'paymentUpdates', label: 'Payment Updates', state: notifications.paymentUpdates },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                  <Toggle
-                    checked={item.state}
-                    onChange={() => setNotifications({ ...notifications, [item.id as keyof typeof notifications]: !item.state })}
+                ))}
+                <label className="block pt-3">
+                  <span className={labelClass}>Unavailable Message</span>
+                  <textarea
+                    value={settings.client.disabledMessage}
+                    onChange={(event) => setSettings((current) => ({
+                      ...current,
+                      client: {
+                        ...current.client,
+                        disabledMessage: event.target.value,
+                      },
+                    }))}
+                    maxLength={300}
+                    rows={3}
+                    className="mt-2 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#D6B53B] focus:ring-2 focus:ring-[#D6B53B]/30 dark:border-white/10 dark:bg-white/5 dark:text-[#F4F4F0]"
                   />
-                </div>
-              ))}
+                </label>
+              </div>
+            </section>
+          </div>
 
-              <div className="pt-4 mt-4 border-t border-gray-100 dark:border-white/5"></div>
-              <h4 className="text-[10px] font-bold text-gray-400 dark:text-[#A3B19B]/70 uppercase tracking-widest mb-3 pl-3">Email Subscriptions</h4>
-              {[
-                { id: 'weeklySummary', label: 'Weekly Performance Summary', state: notifications.weeklySummary },
-                { id: 'marketingEmails', label: 'Marketing & Feature Updates', state: notifications.marketingEmails },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
-                  <Toggle
-                    checked={item.state}
-                    onChange={() => setNotifications({ ...notifications, [item.id as keyof typeof notifications]: !item.state })}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Account Preferences */}
-          <section className="bg-white dark:bg-[#141A13] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-all duration-500 group">
-            <div className="px-6 py-4 border-b border-gray-50 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02]">
-              <h2 className="text-[14.5px] font-semibold text-gray-800 dark:text-[#F4F4F0] font-sans tracking-tight flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#FDF5CC]/50 dark:bg-[#D6B53B]/10 flex items-center justify-center text-[#D6B53B] shadow-sm">
-                  <i className="fi fi-rr-settings-sliders text-[14px] leading-[0] relative top-[1px]"></i>
-                </div>
-                Localization & Data
-              </h2>
-            </div>
-            <div className="p-6 space-y-5">
-
-              <div className="space-y-2.5">
-                <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Preferred Language</label>
-                <div className="relative group/select">
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
-                  >
-                    <option>English (US)</option>
-                    <option>Spanish (ES)</option>
-                    <option>Tagalog (PH)</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 dark:text-[#A3B19B]">
-                    <i className="fi fi-rr-angle-small-down text-base"></i>
+          <div className="space-y-6 xl:col-span-5">
+            <section className={panelClass}>
+              <SectionHeader icon="fi-rr-bell" title="Communications" />
+              <div className="space-y-1.5 p-6">
+                <h4 className="mb-3 pl-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#A3B19B]/70">System Alerts</h4>
+                {notificationRows.map((item) => (
+                  <div key={item.key} className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/5">
+                    <span className="text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0]">{item.label}</span>
+                    <Toggle
+                      checked={settings.admin.notifications[item.key]}
+                      onChange={() => setNotification(item.key, !settings.admin.notifications[item.key])}
+                    />
                   </div>
-                </div>
+                ))}
               </div>
+            </section>
 
-              <div className="space-y-2.5">
-                <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Timezone</label>
-                <div className="relative group/select">
-                  <select
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
-                  >
-                    <option>(GMT+08:00) Manila, Taipei</option>
-                    <option>(GMT+09:00) Tokyo, Seoul</option>
-                    <option>(GMT-08:00) Pacific Time (US)</option>
-                    <option>(GMT-05:00) Eastern Time (US)</option>
+            <section className={panelClass}>
+              <SectionHeader icon="fi-rr-settings-sliders" title="Localization & Data" />
+              <div className="space-y-5 p-6">
+                <label className="space-y-2.5">
+                  <span className={labelClass}>Preferred Language</span>
+                  <select value={settings.admin.localization.language} onChange={(event) => updateLocalization('language', event.target.value)} className={selectClass}>
+                    {LANGUAGE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
                   </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 dark:text-[#A3B19B]">
-                    <i className="fi fi-rr-angle-small-down text-base"></i>
-                  </div>
-                </div>
-              </div>
+                </label>
 
-              <div className="space-y-2.5">
-                <label className="text-[10.5px] font-bold text-gray-500 dark:text-[#A3B19B] uppercase tracking-[0.1em] block">Date & Time Format</label>
-                <div className="relative group/select">
-                  <select
-                    value={dateFormat}
-                    onChange={(e) => setDateFormat(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 px-4 text-[13px] font-medium tracking-wide text-gray-800 dark:text-[#F4F4F0] focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/30 focus:border-[#D6B53B] transition-all duration-300 appearance-none shadow-sm"
-                  >
-                    <option>MM/DD/YYYY (12-hour)</option>
-                    <option>DD/MM/YYYY (24-hour)</option>
-                    <option>YYYY-MM-DD (ISO)</option>
+                <label className="space-y-2.5">
+                  <span className={labelClass}>Timezone</span>
+                  <select value={settings.admin.localization.timezone} onChange={(event) => updateLocalization('timezone', event.target.value)} className={selectClass}>
+                    {TIMEZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 dark:text-[#A3B19B]">
-                    <i className="fi fi-rr-angle-small-down text-base"></i>
+                </label>
+
+                <label className="space-y-2.5">
+                  <span className={labelClass}>Date & Time Format</span>
+                  <select value={settings.admin.localization.dateFormat} onChange={(event) => updateLocalization('dateFormat', event.target.value)} className={selectClass}>
+                    {DATE_FORMAT_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-white/5">
+                  <div>
+                    <h4 className="mb-0.5 text-[13.5px] font-semibold tracking-wide text-gray-800 dark:text-[#F4F4F0]">Export Data</h4>
+                    <p className="text-[11.5px] font-medium tracking-wide text-gray-500 dark:text-[#A3B19B]">Download activity logs.</p>
                   </div>
+                  <a
+                    href={exportHref}
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-[10.5px] font-semibold uppercase tracking-widest text-gray-600 shadow-sm transition-all duration-300 hover:border-[#1a1f18] hover:bg-[#1a1f18] hover:text-white active:scale-95 dark:border-white/20 dark:text-[#A3B19B] dark:hover:border-white dark:hover:bg-white dark:hover:text-[#0C100B]"
+                  >
+                    <i className="fi fi-rr-download leading-[0]" />
+                    Export CSV
+                  </a>
                 </div>
               </div>
-
-              <div className="pt-4 mt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-[13.5px] font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-wide mb-0.5">Export Data</h4>
-                  <p className="text-[11.5px] text-gray-500 dark:text-[#A3B19B] tracking-wide font-medium">Download activity logs.</p>
-                </div>
-                <button className="px-4 py-2 border border-gray-200 dark:border-white/20 text-gray-600 dark:text-[#A3B19B] rounded-lg text-[10.5px] font-semibold tracking-widest uppercase hover:bg-[#1a1f18] dark:hover:bg-white hover:border-[#1a1f18] dark:hover:border-white hover:text-white dark:hover:text-[#0C100B] transition-all duration-300 shadow-sm flex items-center gap-1.5 active:scale-95">
-                  <i className="fi fi-rr-download leading-[0]"></i>
-                  Export CSV
-                </button>
-              </div>
-
-            </div>
-          </section>
-
+            </section>
+          </div>
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

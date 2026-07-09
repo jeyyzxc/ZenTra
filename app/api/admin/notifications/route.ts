@@ -1,6 +1,7 @@
 import { NotificationType, Prisma, Role } from '@prisma/client';
 import { requireAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
+import { getEnabledNotificationTypes } from '@/lib/system-settings';
 import { testimonyErrorResponse } from '@/lib/testimony-service';
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +20,19 @@ export async function GET(request: Request) {
           ],
         };
 
+    const enabledTypes = await getEnabledNotificationTypes();
+    if (enabledTypes.length === 0) {
+      return Response.json({ notifications: [] });
+    }
+
     if (type && Object.values(NotificationType).includes(type as NotificationType)) {
+      if (!enabledTypes.includes(type as NotificationType)) {
+        return Response.json({ notifications: [] });
+      }
+
       where.type = type as NotificationType;
+    } else {
+      where.type = { in: enabledTypes };
     }
 
     const notifications = await prisma.notification.findMany({

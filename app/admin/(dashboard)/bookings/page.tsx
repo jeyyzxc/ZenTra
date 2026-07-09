@@ -22,15 +22,15 @@ export default async function BookingManagement() {
         role: { in: [Role.SUPERADMIN, Role.ADMIN] },
       },
       select: {
-        username: true,
+        email: true,
         fullName: true,
       },
-      orderBy: { username: 'asc' },
+      orderBy: [{ fullName: 'asc' }, { email: 'asc' }],
     }),
   ]);
   const coordinatorOptions = Array.from(new Set([
     ...filterOptions.coordinators,
-    ...admins.map((admin) => admin.fullName || `@${admin.username}`),
+    ...admins.map((admin) => admin.fullName || admin.email),
   ]));
   const eventTypeOptions = Array.from(new Set([
     'Wedding',

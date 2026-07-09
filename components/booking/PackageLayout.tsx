@@ -1,6 +1,8 @@
 import React from 'react';
 
+import ClientFeatureUnavailable from '@/components/client/ClientFeatureUnavailable';
 import SubpageHero from '@/components/client/SubpageHero';
+import { getClientFeatureAvailability } from '@/lib/system-settings';
 import PackageFlipbook from './PackageFlipbook';
 
 export interface ContentBlock {
@@ -18,7 +20,7 @@ interface PackageLayoutProps {
   galleryImages: string[];
 }
 
-export default function PackageLayout({
+export default async function PackageLayout({
   title,
   subtitle,
   heroImage,
@@ -26,10 +28,18 @@ export default function PackageLayout({
   packageText,
   galleryImages
 }: PackageLayoutProps) {
+  const packageAvailability = await getClientFeatureAvailability('packages');
+
   return (
     <main className="flex flex-col min-h-screen bg-transparent relative">
       <SubpageHero title={title} subtitle={subtitle} imageSrc={heroImage} />
 
+      {!packageAvailability.enabled ? (
+        <ClientFeatureUnavailable
+          title="Packages Are Paused"
+          message={packageAvailability.message}
+        />
+      ) : (
       <div className="w-full relative z-10 bg-transparent pb-0">
 
         {/* Content Blocks (Alternating Layout) */}
@@ -119,6 +129,7 @@ export default function PackageLayout({
         </div>
 
       </div>
+      )}
     </main>
   );
 }

@@ -63,6 +63,16 @@ function optionalDate(value: unknown, label: string) {
   return parseBookingDate(value, label);
 }
 
+function requiredDate(value: unknown, label: string) {
+  const parsed = optionalDate(value, label);
+
+  if (!parsed) {
+    throw new InquiryError(`${label} is required.`);
+  }
+
+  return parsed;
+}
+
 function parseEnum<T extends string>(
   value: unknown,
   values: readonly T[],
@@ -156,7 +166,7 @@ async function activity(
 }
 
 function adminLabel(actor: CurrentAdmin) {
-  return `@${actor.username}`;
+  return actor.fullName?.trim() || actor.email;
 }
 
 function revalidateInquirySurfaces() {
@@ -167,15 +177,27 @@ function revalidateInquirySurfaces() {
 
 export async function submitInquiry(request: Request) {
   const body = await request.json() as Record<string, unknown>;
+  const sourcePage = optionalText(body.sourcePage, 80) ?? 'contact_us';
+  const isHomeInquiry = sourcePage.toLowerCase() === 'home';
   const fullName = requiredText(body.fullName ?? body.name, 'Full name', 180);
   const phoneNumber = requiredText(body.phoneNumber ?? body.phone, 'Phone number', 40);
   const email = requiredText(body.email, 'Email', 255).toLowerCase();
-  const preferredContactTime = optionalText(body.preferredContactTime, 100);
+  const preferredContactTime = isHomeInquiry
+    ? requiredText(body.preferredContactTime, 'Preferred date and time', 100)
+    : optionalText(body.preferredContactTime, 100);
   const message = requiredText(body.message, 'Message', 3000);
-  const eventInterest = optionalText(body.eventInterest, 180);
-  const packageInterest = optionalText(body.packageInterest, 255);
-  const requestedEventDate = optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
-  const sourcePage = optionalText(body.sourcePage, 80) ?? 'contact_us';
+  const eventInterest = isHomeInquiry
+    ? requiredText(body.eventInterest ?? body.eventType, 'Event type', 180)
+    : optionalText(body.eventInterest ?? body.eventType, 180);
+  const packageInterest = isHomeInquiry
+    ? requiredText(body.packageInterest, 'Package interest', 255)
+    : optionalText(body.packageInterest, 255);
+  const guestCount = isHomeInquiry
+    ? requiredText(body.guestCount, 'Guest count', 80)
+    : optionalText(body.guestCount, 80);
+  const requestedEventDate = isHomeInquiry
+    ? requiredDate(body.requestedEventDate ?? body.eventDate, 'Requested event date')
+    : optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new InquiryError('Please enter a valid email address.');
@@ -248,6 +270,7 @@ export async function submitInquiry(request: Request) {
       preferredContactTime,
       eventInterest,
       packageInterest,
+      guestCount,
       requestedEventDate: requestedEventDate?.toISOString() ?? null,
       priority,
       sourcePage,
@@ -333,8 +356,8 @@ export async function getInquiryPage(url: URL) {
     }),
     prisma.user.findMany({
       where: { role: { in: [Role.ADMIN, Role.SUPERADMIN] } },
-      orderBy: [{ fullName: 'asc' }, { username: 'asc' }],
-      select: { id: true, username: true, fullName: true, role: true },
+      orderBy: [{ fullName: 'asc' }, { email: 'asc' }],
+      select: { id: true, email: true, fullName: true, role: true },
     }),
   ]);
 
@@ -351,8 +374,7 @@ export async function getInquiryPage(url: URL) {
       preferredTimes: preferredTimes.flatMap((item) => item.preferredContactTime ? [item.preferredContactTime] : []),
       admins: admins.map((admin) => ({
         id: admin.id,
-        username: admin.username,
-        label: admin.fullName || `@${admin.username}`,
+        label: admin.fullName || admin.email,
         role: admin.role,
       })),
     },
@@ -651,13 +673,13 @@ export async function assignInquiry(
   if (assignedTo) {
     const admin = await prisma.user.findFirst({
       where: {
-        OR: [{ id: assignedTo }, { username: assignedTo.replace(/^@/, '') }, { fullName: assignedTo }],
+        OR: [{ id: assignedTo }, { email: assignedTo }, { fullName: assignedTo }],
         role: { in: [Role.ADMIN, Role.SUPERADMIN] },
       },
-      select: { username: true, fullName: true },
+      select: { email: true, fullName: true },
     });
     if (!admin) throw new InquiryError('Assigned administrator was not found.');
-    const label = admin.fullName || `@${admin.username}`;
+    const label = admin.fullName || admin.email;
     return updateWithActivity({
       inquiryId: id,
       actor,

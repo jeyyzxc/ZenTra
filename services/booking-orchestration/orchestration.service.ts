@@ -2752,6 +2752,12 @@ export function parsePaymentSummaryStatus(value: unknown) {
 }
 
 export function parseAutomationStatus(value: unknown) {
+  const normalizedValue = typeof value === 'string' ? value.toUpperCase() : value;
+
+  if (normalizedValue === 'PARTIAL_FAILED') {
+    return AutomationStatus.FAILED;
+  }
+
   if (!isEnumValue(value, PRODUCTION_AUTOMATION_STATUSES)) {
     throw new BookingRequestError('automationStatus is not supported.');
   }

@@ -9,8 +9,9 @@ import {
   Prisma,
   Role,
 } from '@prisma/client';
-import type { CurrentAdmin } from '@/lib/authorization';
+import { adminFirstName, type CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
+import { getEnabledNotificationTypes } from '@/lib/system-settings';
 import type {
   AdminDashboardData,
   AdminDashboardMetrics,
@@ -427,8 +428,16 @@ async function getTaskSummary(actor: CurrentAdmin): Promise<AdminTaskItem[]> {
 }
 
 async function getNotifications(actor: CurrentAdmin): Promise<NotificationItem[]> {
+  const enabledTypes = await getEnabledNotificationTypes();
+  if (enabledTypes.length === 0) {
+    return [];
+  }
+
+  const where = notificationFilter(actor);
+  where.type = { in: enabledTypes };
+
   const notifications = await prisma.notification.findMany({
-    where: notificationFilter(actor),
+    where,
     orderBy: [{ isRead: 'asc' }, { createdAt: 'desc' }],
     take: 5,
     select: {
@@ -653,7 +662,8 @@ function buildOperationsSummary(
 ): OperationsSummary {
   const now = new Date();
   const hour = now.getHours();
-  const greetingWord = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greetingWord = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+  const firstName = adminFirstName(actor);
   const summaryParts: string[] = [];
 
   if (metrics.upcomingEvents > 0) {
@@ -682,7 +692,7 @@ function buildOperationsSummary(
         : 'Monitor new bookings and workflow results.';
 
   return {
-    greeting: `${greetingWord}, ${actor.username}`,
+    greeting: `${greetingWord}, ${firstName}`,
     currentDate: new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       month: 'long',

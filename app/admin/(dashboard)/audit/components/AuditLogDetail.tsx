@@ -13,7 +13,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 function formatEnum(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 function formatRole(value: string) {

@@ -19,8 +19,9 @@ import {
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { auditActor, createAuditLog, systemAuditActor } from '@/lib/audit';
-import type { CurrentAdmin } from '@/lib/authorization';
+import { adminFirstName, type CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
+import { getEnabledNotificationTypes } from '@/lib/system-settings';
 
 const ACTIVE_EVENT_STATUSES = [
   BookingStatus.CONFIRMED,
@@ -902,7 +903,8 @@ export class DashboardService {
     });
 
     const hour = generatedAt.getHours();
-    const greetingWord = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const greetingWord = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+    const firstName = adminFirstName(actor);
     const summary: DashboardAssistantSummary['summary'] = [];
 
     if (actionItems.length > 0) {
@@ -967,7 +969,7 @@ export class DashboardService {
           : 'No immediate priority is recorded right now.';
 
     return {
-      greeting: `${greetingWord}, ${actor.username}!`,
+      greeting: `${greetingWord}, ${firstName}!`,
       summary,
       priority_action: priorityAction,
       generated_at: generatedAt.toISOString(),
@@ -1668,8 +1670,16 @@ export class DashboardService {
     actor: CurrentAdmin,
     limit = 10,
   ): Promise<DashboardNotification[]> {
+    const enabledTypes = await getEnabledNotificationTypes();
+    if (enabledTypes.length === 0) {
+      return [];
+    }
+
+    const where = notificationFilter(actor);
+    where.type = { in: enabledTypes };
+
     const notifications = await prisma.notification.findMany({
-      where: notificationFilter(actor),
+      where,
       orderBy: [{ isRead: 'asc' }, { createdAt: 'desc' }],
       take: limit,
     });
@@ -2057,7 +2067,10 @@ export class DashboardService {
       !Array.isArray(input.categorization)
       ? input.categorization as Record<string, unknown>
       : {};
-    const bulkTaskTemplateKey = trimText(categorization.taskTemplateKey);
+    const bulkTaskTemplateKey = requiredText(
+      categorization.taskTemplateKey,
+      'categorization.taskTemplateKey',
+    );
 
     if (source !== 'n8n_workflow') {
       throw new DashboardServiceError('source must be n8n_workflow.');
@@ -2086,29 +2099,45 @@ export class DashboardService {
     const shouldActivateTasks = booking.status === BookingStatus.CONFIRMED ||
       booking.status === BookingStatus.IN_PROGRESS;
     const taskTitles = tasks.map((task) => task.title);
+    const taskOrderIndexes = tasks.map((task) => task.orderIndex);
     const existingTasks = await prisma.$queryRaw<Array<{
       title: string;
       orderIndex: number;
       taskTemplateKey: string | null;
+      workflowExecutionId: string | null;
     }>>`
       SELECT
         "title",
         "order_index" AS "orderIndex",
-        "task_template_key" AS "taskTemplateKey"
+        "task_template_key" AS "taskTemplateKey",
+        "workflow_execution_id" AS "workflowExecutionId"
       FROM "dashboard_tasks"
       WHERE "related_record_id" = ${relatedRecordId}
-        AND "workflow_execution_id" = ${workflowExecutionId}
-        AND "title" IN (${Prisma.join(taskTitles)})
+        AND (
+          (
+            "workflow_execution_id" = ${workflowExecutionId}
+            AND "title" IN (${Prisma.join(taskTitles)})
+          )
+          OR (
+            "task_template_key" = ${bulkTaskTemplateKey}
+            AND "order_index" IN (${Prisma.join(taskOrderIndexes)})
+          )
+        )
     `;
 
-    const existingKeys = new Set(existingTasks.map((task) => (
-      `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`
-    )));
+    const existingExecutionKeys = new Set(existingTasks
+      .filter((task) => task.workflowExecutionId === workflowExecutionId)
+      .map((task) => `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`));
+    const existingTemplateOrderKeys = new Set(existingTasks
+      .filter((task) => task.taskTemplateKey === bulkTaskTemplateKey)
+      .map((task) => `${task.taskTemplateKey}|${task.orderIndex}`));
     const tasksToCreate = tasks.filter((task) => {
       const taskTemplateKey = task.taskTemplateKey ?? bulkTaskTemplateKey;
-      const key = `${task.title.toLowerCase()}|${task.orderIndex}|${taskTemplateKey ?? ''}`;
+      const executionKey = `${task.title.toLowerCase()}|${task.orderIndex}|${taskTemplateKey ?? ''}`;
+      const templateOrderKey = `${taskTemplateKey}|${task.orderIndex}`;
 
-      return !existingKeys.has(key);
+      return !existingExecutionKeys.has(executionKey) &&
+        !existingTemplateOrderKeys.has(templateOrderKey);
     });
 
     if (tasksToCreate.length === 0) {
@@ -2309,6 +2338,7 @@ export class DashboardService {
       email: '',
       profileImage: null,
       role: Role.SUPERADMIN,
+      fullName: null,
     });
 
     return actionItems.length;

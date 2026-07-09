@@ -7,6 +7,7 @@ import {
   Bot,
   CalendarClock,
   CreditCard,
+  Download,
   FileSignature,
   Mail,
   MapPin,
@@ -69,7 +70,7 @@ function formatMoney(value: number | null) {
 }
 
 function formatEnum(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 export default function BookingDetail({
@@ -158,14 +159,23 @@ export default function BookingDetail({
           </div>
           <div className="flex items-center gap-2">
             {booking && !isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-[#D6B53B]/30 bg-white px-4 py-2 text-xs font-bold text-[#8E7722] hover:bg-[#FDF5CC] dark:bg-white/5 dark:text-[#D6B53B]"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit Booking
-              </button>
+              <>
+                <a
+                  href={`/api/bookings/${booking.id}/summary?timeZone=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#D6B53B]/30 bg-white px-4 py-2 text-xs font-bold text-[#8E7722] hover:bg-[#FDF5CC] dark:bg-white/5 dark:text-[#D6B53B]"
+                >
+                  <Download className="h-4 w-4" />
+                  Summary PDF
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#D6B53B]/30 bg-white px-4 py-2 text-xs font-bold text-[#8E7722] hover:bg-[#FDF5CC] dark:bg-white/5 dark:text-[#D6B53B]"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit Booking
+                </button>
+              </>
             )}
             <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Close booking detail">
               <X className="h-5 w-5" />

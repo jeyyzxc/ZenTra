@@ -35,7 +35,20 @@ function formatTimeRange(startTime: string | null, endTime: string | null) {
   return startTime ?? endTime ?? 'To be confirmed';
 }
 
-function statusLabel(status: BookingStatus) {
+function formatMoney(value: number | null) {
+  if (value === null || !Number.isFinite(value)) {
+    return 'To be confirmed';
+  }
+
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function statusLabel(status: string) {
   return status
     .toLowerCase()
     .replace(/_/g, ' ')
@@ -77,6 +90,9 @@ export default async function BookingReceiptPage({ params }: ReceiptPageProps) {
       status: true,
       contractStatus: true,
       paymentSummaryStatus: true,
+      paymentTotalAmount: true,
+      paymentAmountPaid: true,
+      paymentRemainingBalance: true,
       createdAt: true,
     },
   });
@@ -142,6 +158,16 @@ export default async function BookingReceiptPage({ params }: ReceiptPageProps) {
               <SummaryItem label="Time" value={formatTimeRange(booking.startTime, booking.endTime)} />
               <SummaryItem label="Guests" value={new Intl.NumberFormat('en-US').format(booking.guestCount)} />
               <SummaryItem label="Package" value={booking.packageSelected ?? 'To be confirmed'} />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-[#E5E7EB] bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#141A13]">
+            <h2 className="text-lg font-bold">Payment Summary</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <SummaryItem label="Payment Status" value={statusLabel(booking.paymentSummaryStatus)} />
+              <SummaryItem label="Total Package Price" value={formatMoney(booking.paymentTotalAmount)} />
+              <SummaryItem label="Amount Paid" value={formatMoney(booking.paymentAmountPaid)} />
+              <SummaryItem label="Remaining Balance" value={formatMoney(booking.paymentRemainingBalance)} />
             </div>
           </div>
 

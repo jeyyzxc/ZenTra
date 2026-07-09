@@ -5,9 +5,32 @@ import React, { useEffect, useState } from 'react';
 import Navbar from './Navbar';
 import { usePathname } from 'next/navigation';
 
+const LOGO_REFRESH_SCROLL_TOP_KEY = 'zion-logo-refresh-scroll-top';
+
 export default function GlobalHeader() {
   const [scrollY, setScrollY] = useState(0);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const shouldScrollTop = window.sessionStorage.getItem(LOGO_REFRESH_SCROLL_TOP_KEY) === 'true';
+
+    if (!shouldScrollTop) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(LOGO_REFRESH_SCROLL_TOP_KEY);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+    const frameId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +58,19 @@ export default function GlobalHeader() {
   const logoTranslateY = -(progress * 40.5); // in vh units
   const logoOpacity = 1 - (progress * 0.12);
 
+  const refreshCurrentPage = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    window.sessionStorage.setItem(LOGO_REFRESH_SCROLL_TOP_KEY, 'true');
+
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    window.location.reload();
+  };
+
   return (
     <div className="fixed inset-0 h-screen pointer-events-none z-[100]">
       {/* Navigation */}
@@ -51,15 +87,9 @@ export default function GlobalHeader() {
         }}
       >
         <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            if (window.scrollY > 0) {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-              window.location.reload();
-            }
-          }}
+          href={pathname || '/'}
+          aria-label="Refresh current Zion Events Place page"
+          onClick={refreshCurrentPage}
           className="relative block w-80 md:w-96 lg:w-[450px] transition-transform duration-300 pointer-events-auto hover:scale-[1.02] cursor-pointer"
           style={{ pointerEvents: 'auto' }}
         >

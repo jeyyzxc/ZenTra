@@ -18,7 +18,7 @@ import EmailLogStatusBadge from './EmailLogStatusBadge';
 const RESENDABLE_STATUSES = new Set(['FAILED', 'BOUNCED', 'PENDING']);
 
 function formatEnum(value: string | null) {
-  return value ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) : '-';
+  return value ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI') : '-';
 }
 
 function formatDate(value: string | null) {

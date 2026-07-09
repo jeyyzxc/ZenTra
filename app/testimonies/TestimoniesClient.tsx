@@ -169,7 +169,13 @@ function TestimonyCard({ testimony }: { testimony: PublicTestimony }) {
   );
 }
 
-export default function TestimoniesClient() {
+export default function TestimoniesClient({
+  allowSubmissions = true,
+  disabledMessage = 'Testimony submissions are temporarily unavailable.',
+}: {
+  allowSubmissions?: boolean;
+  disabledMessage?: string;
+}) {
   const [testimonies, setTestimonies] = useState<PublicTestimony[]>([]);
   const [filterOptions, setFilterOptions] = useState<PublicTestimoniesResponse['filterOptions']>({
     eventTypes: FALLBACK_EVENT_TYPES,
@@ -237,6 +243,11 @@ export default function TestimoniesClient() {
     event.preventDefault();
     setSubmitError('');
 
+    if (!allowSubmissions) {
+      setSubmitError(disabledMessage);
+      return;
+    }
+
     if (!form.overallRating || !form.approachRating || !form.foodRating || !form.serviceRating) {
       setSubmitError('Overall, approach, food, and service ratings are required.');
       return;
@@ -272,13 +283,27 @@ export default function TestimoniesClient() {
           </div>
           <button
             type="button"
-            onClick={() => setIsFormOpen(true)}
+            onClick={() => {
+              if (allowSubmissions) {
+                setIsFormOpen(true);
+              } else {
+                setSuccessMessage('');
+                setSubmitError(disabledMessage);
+              }
+            }}
+            disabled={!allowSubmissions}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1a1f18] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#D6B53B] hover:text-[#1a1f18]"
           >
             <MessageSquareQuote className="h-5 w-5" />
             Share Your Experience
           </button>
         </div>
+
+        {!allowSubmissions && (
+          <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800">
+            {disabledMessage}
+          </div>
+        )}
 
         <div className="mb-8 rounded-[1.75rem] border border-white/80 bg-white/65 p-4 shadow-sm backdrop-blur-md md:p-5">
           <div className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[#3A4B3C]">

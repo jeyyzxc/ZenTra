@@ -46,7 +46,7 @@ function formatDate(value: string) {
 }
 
 function formatEnum(value: string) {
-  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 function formatRole(value: string) {
@@ -166,11 +166,11 @@ export default function AuditLogTable({
                         </div>
                         <div className="min-w-0">
                           <div className="truncate text-sm font-bold text-gray-900 dark:text-white">{log.userName}</div>
-                          <div className="truncate text-xs text-gray-400">{log.userId ?? 'system'}</div>
+                          <div className="truncate text-xs text-gray-500 dark:text-gray-400">{log.userId ?? 'system'}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                       {formatRole(log.userRole)}
                     </td>
                   </>
@@ -180,10 +180,10 @@ export default function AuditLogTable({
                     {formatEnum(log.action)}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-[#8E7722] dark:text-[#D6B53B]">
+                <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                   {log.module}
                 </td>
-                <td className="max-w-[360px] px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                <td className="max-w-[360px] px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
                   <span className="line-clamp-2">{log.description}</span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-4">

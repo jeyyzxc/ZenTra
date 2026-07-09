@@ -143,6 +143,40 @@ body {
   }
 }
 
+@keyframes inquiryToastSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-34px) scale(0.98);
+    filter: blur(6px);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateX(2px) scale(1);
+    filter: blur(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes inquiryToastSlideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(38px) scale(0.98);
+    filter: blur(5px);
+  }
+}
+
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
@@ -156,8 +190,8 @@ body {
 }
 
 .audit-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 1px;
+  height: 1px;
 }
 
 .audit-scrollbar::-webkit-scrollbar-track {
