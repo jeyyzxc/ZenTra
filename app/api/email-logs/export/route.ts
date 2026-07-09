@@ -26,6 +26,8 @@ function responseForExport(
   logs: Awaited<ReturnType<typeof getEmailLogsForExport>>['logs'],
   scope: EmailLogExportScope,
   timeZone?: string,
+  generatedBy?: string,
+  filters?: Record<string, unknown>,
 ) {
   if (format === 'csv') {
     return {
@@ -37,7 +39,7 @@ function responseForExport(
 
   if (format === 'excel') {
     return {
-      body: createEmailLogXlsx(logs, timeZone, scope),
+      body: createEmailLogXlsx(logs, timeZone, scope, generatedBy, filters),
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       extension: 'xlsx',
     };
@@ -71,7 +73,14 @@ export async function GET(request: Request) {
   try {
     const scope: EmailLogExportScope = actor.role === 'SUPERADMIN' ? 'all' : 'admin';
     const exportData = await getEmailLogsForExport(searchParams, actor);
-    const output = responseForExport(format, exportData.logs, scope, timeZone);
+    const output = responseForExport(
+      format,
+      exportData.logs,
+      scope,
+      timeZone,
+      actor.fullName || actor.email,
+      exportData.filters,
+    );
     const filename = getEmailLogExportFilename(output.extension);
 
     await createAuditLog({

@@ -1,83 +1,164 @@
 import type { AuditLogDto } from '@/lib/audit-query';
+import { createCsv } from '@/lib/export/csv';
+import { createXlsx } from '@/lib/export/spreadsheet';
+import type { ExportColumn, ExportSheet } from '@/lib/export/types';
 import { createZionBrandedTablePdf, type ZionPdfColumn } from '@/lib/zion-pdf-export';
 
 export type AuditExportScope = 'all' | 'own';
 
-const SUPERADMIN_EXPORT_COLUMNS = [
-  'Timestamp',
-  'User',
-  'Role',
-  'Action',
-  'Module',
-  'Status',
-  'IP Address',
-  'Description',
-] as const;
+type AuditExportRow = {
+  Timestamp: string;
+  User: string;
+  Role: string;
+  Action: string;
+  Module: string;
+  Status: string;
+  'IP Address': string;
+  Description: string;
+};
 
-const ADMIN_EXPORT_COLUMNS = [
-  'Timestamp',
-  'Action',
-  'Module',
-  'Status',
-  'Description',
-] as const;
+const FILTER_LABELS: Record<string, string> = {
+  search: 'Search',
+  startDate: 'Start Date',
+  endDate: 'End Date',
+  userId: 'User ID',
+  userRole: 'User Role',
+  action: 'Action',
+  module: 'Module',
+  status: 'Status',
+  sortBy: 'Sort By',
+  sortOrder: 'Sort Order',
+};
 
-type AuditExportColumn =
-  | (typeof SUPERADMIN_EXPORT_COLUMNS)[number]
-  | (typeof ADMIN_EXPORT_COLUMNS)[number];
-
-type AuditExportRow = Record<AuditExportColumn, string>;
-
-function getExportColumns(scope: AuditExportScope): readonly AuditExportColumn[] {
-  return scope === 'own' ? ADMIN_EXPORT_COLUMNS : SUPERADMIN_EXPORT_COLUMNS;
+function text(value: string | null | undefined) {
+  return value?.trim() || '';
 }
 
-function formatTimestamp(timestamp: string, timeZone: string | undefined) {
+function toDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTimestamp(timestamp: Date | string | null | undefined, timeZone: string | undefined) {
+  const date = toDate(timestamp);
+
+  if (!date) {
+    return '';
+  }
+
   try {
     return new Intl.DateTimeFormat('en', {
       dateStyle: 'medium',
       timeStyle: 'medium',
       timeZone,
-    }).format(new Date(timestamp));
+    }).format(date);
   } catch {
-    return new Date(timestamp).toISOString();
+    return date.toISOString();
   }
 }
 
-function formatPdfEnum(value: string) {
+function formatEnum(value: string | null | undefined) {
   return value
-    .replaceAll('_', ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : '';
 }
 
-function toRows(
-  logs: AuditLogDto[],
-  timeZone: string | undefined,
-): AuditExportRow[] {
+function formatFilterLabel(key: string) {
+  return FILTER_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function formatFilterValue(key: string, value: unknown, timeZone?: string) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  if ((key === 'startDate' || key === 'endDate') && typeof value === 'string') {
+    return formatTimestamp(value, timeZone);
+  }
+
+  if (typeof value === 'string' && /^[A-Z0-9_]+$/.test(value)) {
+    return formatEnum(value);
+  }
+
+  return String(value);
+}
+
+function appliedFilterRows(filters: Record<string, unknown> | undefined, timeZone?: string) {
+  const rows = Object.entries(filters ?? {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => [formatFilterLabel(key), formatFilterValue(key, value, timeZone)]);
+
+  return rows.length ? rows : [['None', 'No filters applied']];
+}
+
+function filterSummary(filters: Record<string, unknown> | undefined, timeZone?: string) {
+  const rows = appliedFilterRows(filters, timeZone);
+
+  if (rows.length === 1 && rows[0][0] === 'None') {
+    return rows[0][1];
+  }
+
+  return rows.map(([key, value]) => `${key}: ${value}`).join(' | ');
+}
+
+function countBy<T>(records: T[], value: (record: T) => string) {
+  const counts = new Map<string, number>();
+
+  for (const record of records) {
+    const key = value(record) || 'Unspecified';
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries()).sort(([first], [second]) => first.localeCompare(second));
+}
+
+const SUPERADMIN_EXPORT_COLUMNS: Array<ExportColumn<AuditLogDto>> = [
+  { header: 'Timestamp', key: 'timestamp', type: 'datetime', width: 24, value: (log) => toDate(log.timestamp) },
+  { header: 'User', key: 'userName', width: 28, value: (log) => log.userName },
+  { header: 'Role', key: 'userRole', width: 18, value: (log) => formatEnum(log.userRole) },
+  { header: 'Action', key: 'action', width: 22, value: (log) => formatEnum(log.action) },
+  { header: 'Module', key: 'module', width: 22, value: (log) => log.module },
+  { header: 'Status', key: 'status', width: 16, value: (log) => formatEnum(log.status) },
+  { header: 'IP Address', key: 'ipAddress', width: 22, value: (log) => text(log.ipAddress) },
+  { header: 'Description', key: 'description', width: 64, value: (log) => log.description },
+];
+
+const ADMIN_EXPORT_COLUMNS: Array<ExportColumn<AuditLogDto>> = [
+  { header: 'Timestamp', key: 'timestamp', type: 'datetime', width: 24, value: (log) => toDate(log.timestamp) },
+  { header: 'Action', key: 'action', width: 22, value: (log) => formatEnum(log.action) },
+  { header: 'Module', key: 'module', width: 22, value: (log) => log.module },
+  { header: 'Status', key: 'status', width: 16, value: (log) => formatEnum(log.status) },
+  { header: 'Description', key: 'description', width: 64, value: (log) => log.description },
+];
+
+function getExportColumns(scope: AuditExportScope): Array<ExportColumn<AuditLogDto>> {
+  return scope === 'own' ? ADMIN_EXPORT_COLUMNS : SUPERADMIN_EXPORT_COLUMNS;
+}
+
+function toRows(logs: AuditLogDto[], timeZone: string | undefined): AuditExportRow[] {
   return logs.map((log) => ({
     Timestamp: formatTimestamp(log.timestamp, timeZone),
     User: log.userName,
-    Role: log.userRole,
-    Action: log.action,
+    Role: formatEnum(log.userRole),
+    Action: formatEnum(log.action),
     Module: log.module,
-    Status: log.status,
-    'IP Address': log.ipAddress ?? '',
+    Status: formatEnum(log.status),
+    'IP Address': text(log.ipAddress),
     Description: log.description,
   }));
 }
 
-function escapeCsv(value: string) {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+function overviewRows(logs: AuditLogDto[]) {
+  return [
+    ['Action', 'Total Action Types', countBy(logs, (log) => formatEnum(log.action)).length],
+    ['Module', 'Total Modules', countBy(logs, (log) => log.module).length],
+    ['Status', 'Successful Records', logs.filter((log) => log.status === 'SUCCESS').length],
+    ['Status', 'Failed Records', logs.filter((log) => log.status === 'FAILED').length],
+    ...countBy(logs, (log) => formatEnum(log.action)).map(([action, count]) => ['Action', action, count]),
+    ...countBy(logs, (log) => log.module).map(([module, count]) => ['Module', module, count]),
+    ...countBy(logs, (log) => formatEnum(log.status)).map(([status, count]) => ['Status', status, count]),
+  ];
 }
 
 export function createAuditCsv(
@@ -85,221 +166,60 @@ export function createAuditCsv(
   timeZone?: string,
   scope: AuditExportScope = 'all',
 ) {
-  const columns = getExportColumns(scope);
-  const rows = toRows(logs, timeZone);
-  return [
-    columns.map(escapeCsv).join(','),
-    ...rows.map((row) => columns.map((column) => escapeCsv(row[column])).join(',')),
-  ].join('\r\n');
-}
-
-function concatBytes(chunks: Uint8Array[]) {
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const output = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return output;
-}
-
-function uint16(value: number) {
-  const bytes = new Uint8Array(2);
-  new DataView(bytes.buffer).setUint16(0, value, true);
-  return bytes;
-}
-
-function uint32(value: number) {
-  const bytes = new Uint8Array(4);
-  new DataView(bytes.buffer).setUint32(0, value, true);
-  return bytes;
-}
-
-const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
-  let crc = index;
-
-  for (let bit = 0; bit < 8; bit += 1) {
-    crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
-  }
-
-  return crc >>> 0;
-});
-
-function crc32(bytes: Uint8Array) {
-  let crc = 0xffffffff;
-
-  for (const byte of bytes) {
-    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function createZip(files: Array<{ name: string; content: string }>) {
-  const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const file of files) {
-    const nameBytes = encoder.encode(file.name);
-    const contentBytes = encoder.encode(file.content);
-    const checksum = crc32(contentBytes);
-
-    const localHeader = concatBytes([
-      uint32(0x04034b50),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(checksum),
-      uint32(contentBytes.length),
-      uint32(contentBytes.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      nameBytes,
-    ]);
-
-    localParts.push(localHeader, contentBytes);
-
-    const centralHeader = concatBytes([
-      uint32(0x02014b50),
-      uint16(20),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(checksum),
-      uint32(contentBytes.length),
-      uint32(contentBytes.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(0),
-      uint32(offset),
-      nameBytes,
-    ]);
-
-    centralParts.push(centralHeader);
-    offset += localHeader.length + contentBytes.length;
-  }
-
-  const centralDirectory = concatBytes(centralParts);
-  const end = concatBytes([
-    uint32(0x06054b50),
-    uint16(0),
-    uint16(0),
-    uint16(files.length),
-    uint16(files.length),
-    uint32(centralDirectory.length),
-    uint32(offset),
-    uint16(0),
-  ]);
-
-  return concatBytes([...localParts, centralDirectory, end]);
-}
-
-function columnName(index: number) {
-  let name = '';
-  let value = index + 1;
-
-  while (value > 0) {
-    const remainder = (value - 1) % 26;
-    name = String.fromCharCode(65 + remainder) + name;
-    value = Math.floor((value - 1) / 26);
-  }
-
-  return name;
+  void timeZone;
+  return createCsv(getExportColumns(scope), logs);
 }
 
 export function createAuditXlsx(
   logs: AuditLogDto[],
   timeZone?: string,
   scope: AuditExportScope = 'all',
+  generatedBy = 'Zion Admin',
+  filters?: Record<string, unknown>,
 ) {
   const columns = getExportColumns(scope);
-  const rows = [columns, ...toRows(logs, timeZone).map((row) => columns.map((column) => row[column]))];
-  const sheetRows = rows
-    .map((row, rowIndex) => {
-      const cells = row
-        .map((value, columnIndex) => {
-          const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
-          return `<c r="${reference}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
-        })
-        .join('');
+  const summaryRows = [
+    [scope === 'own' ? 'Zion Events Place - My Activity Log Export' : 'Zion Events Place - System Audit Logs Export'],
+    ['Generated At', formatTimestamp(new Date(), timeZone)],
+    ['Generated By', generatedBy],
+    ['Scope', scope === 'own' ? 'Own authorized activity' : 'All authorized audit logs'],
+    ['Records', logs.length],
+    ['Filters', filterSummary(filters, timeZone)],
+  ];
+  const sheets: ExportSheet[] = [
+    { name: 'Summary', rows: summaryRows },
+    {
+      name: scope === 'own' ? 'My Activity Log' : 'Audit Logs',
+      columns: columns.map((column) => ({
+        header: column.header,
+        width: column.width,
+        type: column.type,
+      })),
+      rows: logs.map((log) => columns.map((column) => column.value(log))),
+      freezeHeader: true,
+    },
+    {
+      name: 'Activity Overview',
+      columns: [
+        { header: 'Category', width: 22 },
+        { header: 'Metric', width: 34 },
+        { header: 'Count', type: 'number', width: 14 },
+      ],
+      rows: overviewRows(logs),
+      freezeHeader: true,
+    },
+    {
+      name: 'Applied Filters',
+      columns: [
+        { header: 'Filter', width: 28 },
+        { header: 'Value', width: 54 },
+      ],
+      rows: appliedFilterRows(filters, timeZone),
+      freezeHeader: true,
+    },
+  ];
 
-      return `<row r="${rowIndex + 1}">${cells}</row>`;
-    })
-    .join('');
-
-  const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <cols>
-    <col min="1" max="1" width="24" customWidth="1"/>
-    <col min="2" max="8" width="18" customWidth="1"/>
-  </cols>
-  <sheetData>${sheetRows}</sheetData>
-</worksheet>`;
-
-  return createZip([
-    {
-      name: '[Content_Types].xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`,
-    },
-    {
-      name: '_rels/.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`,
-    },
-    {
-      name: 'xl/workbook.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="${scope === 'own' ? 'My Activity Log' : 'Audit Logs'}" sheetId="1" r:id="rId1"/>
-  </sheets>
-</workbook>`,
-    },
-    {
-      name: 'xl/_rels/workbook.xml.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`,
-    },
-    {
-      name: 'xl/styles.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
-  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
-  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
-  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
-</styleSheet>`,
-    },
-    {
-      name: 'xl/worksheets/sheet1.xml',
-      content: worksheet,
-    },
-  ]);
+  return createXlsx(sheets);
 }
 
 export function createAuditPdf(
@@ -311,18 +231,18 @@ export function createAuditPdf(
   const columns: Array<ZionPdfColumn<AuditExportRow>> = scope === 'own'
     ? [
         { header: 'Time', width: 84, maxLines: 2, value: (row) => row.Timestamp },
-        { header: 'Action', width: 80, maxLines: 2, value: (row) => formatPdfEnum(row.Action) },
+        { header: 'Action', width: 80, maxLines: 2, value: (row) => row.Action },
         { header: 'Module', width: 70, maxLines: 2, value: (row) => row.Module },
-        { header: 'Status', width: 54, align: 'center', maxLines: 1, value: (row) => formatPdfEnum(row.Status) },
+        { header: 'Status', width: 54, align: 'center', maxLines: 1, value: (row) => row.Status },
         { header: 'Details', width: 268, maxLines: 4, value: (row) => row.Description },
       ]
     : [
         { header: 'Time', width: 72, maxLines: 2, value: (row) => row.Timestamp },
         { header: 'User', width: 74, maxLines: 2, value: (row) => row.User },
-        { header: 'Role', width: 62, maxLines: 2, value: (row) => formatPdfEnum(row.Role) },
-        { header: 'Action', width: 62, maxLines: 2, value: (row) => formatPdfEnum(row.Action) },
+        { header: 'Role', width: 62, maxLines: 2, value: (row) => row.Role },
+        { header: 'Action', width: 62, maxLines: 2, value: (row) => row.Action },
         { header: 'Module', width: 56, maxLines: 2, value: (row) => row.Module },
-        { header: 'Status', width: 48, align: 'center', maxLines: 1, value: (row) => formatPdfEnum(row.Status) },
+        { header: 'Status', width: 48, align: 'center', maxLines: 1, value: (row) => row.Status },
         {
           header: 'Details',
           width: 182,
