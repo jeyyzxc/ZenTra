@@ -90,10 +90,11 @@ function responseForExport(
   format: TeamMemberExportFormat,
   records: TeamMemberExportRecord[],
   timeZone?: string,
+  generatedBy?: string,
 ) {
   if (format === 'csv') {
     return {
-      body: createTeamMemberCsv(records, timeZone),
+      body: createTeamMemberCsv(records),
       contentType: 'text/csv; charset=utf-8',
       extension: 'csv',
     };
@@ -101,7 +102,7 @@ function responseForExport(
 
   if (format === 'excel') {
     return {
-      body: createTeamMemberXlsx(records, timeZone),
+      body: createTeamMemberXlsx(records, timeZone, generatedBy),
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       extension: 'xlsx',
     };
@@ -149,7 +150,7 @@ export async function GET(request: Request) {
     const records = normalizeTeamMemberExportRecords(
       users.map((user) => toExportRecord(user, creatorNameById)),
     );
-    const output = responseForExport(format, records, timeZone);
+    const output = responseForExport(format, records, timeZone, actor.fullName || actor.email);
     const filename = getTeamMemberExportFilename(output.extension);
 
     await createAuditLog({
