@@ -110,6 +110,7 @@ describe('PDF exports', () => {
     assert.equal(text.slice(0, 8), '%PDF-1.4');
     assert.match(text, /ZION EVENTS PLACE/);
     assert.match(text, /\/Logo Do/);
+    assert.match(text, /\/SMask/);
     assert.match(text, /Page 2 of/);
     assert.doesNotMatch(text, /\bundefined\b|\bnull\b/);
   });

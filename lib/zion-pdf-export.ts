@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 
 type PdfColor = [number, number, number];
 
@@ -24,7 +25,9 @@ export type ZionPdfInput<T> = {
 };
 
 type LogoImage = {
+  kind: 'jpeg' | 'png';
   data: Buffer;
+  alpha?: Buffer;
   width: number;
   height: number;
 };
@@ -137,6 +140,20 @@ function circle(cx: number, cy: number, radius: number, fill: PdfColor, stroke?:
   const operation = stroke ? 'B' : 'f';
 
   return `${color(fill)}\n${strokeCommands}${circlePath(cx, cy, radius)} ${operation}`;
+}
+
+function strokeCircle(cx: number, cy: number, radius: number, stroke: PdfColor, lineWidth = 0.6) {
+  return `${color(stroke, 'RG')}\n${num(lineWidth)} w\n${circlePath(cx, cy, radius)} S`;
+}
+
+function clippedImage(resourceName: string, cx: number, cy: number, clipRadius: number, size: number) {
+  return [
+    'q',
+    `${circlePath(cx, cy, clipRadius)} W n`,
+    `${num(size)} 0 0 ${num(size)} ${num(cx - size / 2)} ${num(cy - size / 2)} cm`,
+    `/${resourceName} Do`,
+    'Q',
+  ].join('\n');
 }
 
 function escapePdfText(value: string) {
@@ -301,19 +318,146 @@ function getJpegDimensions(data: Buffer) {
   return null;
 }
 
+function paethPredictor(left: number, up: number, upLeft: number) {
+  const estimate = left + up - upLeft;
+  const leftDistance = Math.abs(estimate - left);
+  const upDistance = Math.abs(estimate - up);
+  const upLeftDistance = Math.abs(estimate - upLeft);
+
+  if (leftDistance <= upDistance && leftDistance <= upLeftDistance) return left;
+  if (upDistance <= upLeftDistance) return up;
+  return upLeft;
+}
+
+function unfilterPngScanlines(data: Buffer, width: number, height: number, bytesPerPixel: number) {
+  const stride = width * bytesPerPixel;
+  const output = Buffer.alloc(stride * height);
+  let sourceOffset = 0;
+
+  for (let rowIndex = 0; rowIndex < height; rowIndex += 1) {
+    const filter = data[sourceOffset];
+    sourceOffset += 1;
+    const rowOffset = rowIndex * stride;
+    const previousRowOffset = rowOffset - stride;
+
+    for (let column = 0; column < stride; column += 1) {
+      const raw = data[sourceOffset + column];
+      const left = column >= bytesPerPixel ? output[rowOffset + column - bytesPerPixel] : 0;
+      const up = rowIndex > 0 ? output[previousRowOffset + column] : 0;
+      const upLeft = rowIndex > 0 && column >= bytesPerPixel
+        ? output[previousRowOffset + column - bytesPerPixel]
+        : 0;
+      let value = raw;
+
+      if (filter === 1) value = raw + left;
+      if (filter === 2) value = raw + up;
+      if (filter === 3) value = raw + Math.floor((left + up) / 2);
+      if (filter === 4) value = raw + paethPredictor(left, up, upLeft);
+
+      output[rowOffset + column] = value & 0xff;
+    }
+
+    sourceOffset += stride;
+  }
+
+  return output;
+}
+
+function parsePngLogo(data: Buffer): LogoImage | null {
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+  if (data.length < 33 || !data.subarray(0, 8).equals(signature)) {
+    return null;
+  }
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idatChunks: Buffer[] = [];
+
+  while (offset + 12 <= data.length) {
+    const length = data.readUInt32BE(offset);
+    const type = data.subarray(offset + 4, offset + 8).toString('ascii');
+    const chunk = data.subarray(offset + 8, offset + 8 + length);
+    offset += 12 + length;
+
+    if (type === 'IHDR') {
+      width = chunk.readUInt32BE(0);
+      height = chunk.readUInt32BE(4);
+      bitDepth = chunk[8];
+      colorType = chunk[9];
+    }
+
+    if (type === 'IDAT') {
+      idatChunks.push(Buffer.from(chunk));
+    }
+
+    if (type === 'IEND') {
+      break;
+    }
+  }
+
+  if (!width || !height || bitDepth !== 8 || ![2, 6].includes(colorType) || idatChunks.length === 0) {
+    return null;
+  }
+
+  const bytesPerPixel = colorType === 6 ? 4 : 3;
+  const inflated = zlib.inflateSync(Buffer.concat(idatChunks));
+  const unfiltered = unfilterPngScanlines(inflated, width, height, bytesPerPixel);
+  const pixelCount = width * height;
+  const rgb = Buffer.alloc(pixelCount * 3);
+  const alpha = colorType === 6 ? Buffer.alloc(pixelCount) : undefined;
+
+  for (let index = 0; index < pixelCount; index += 1) {
+    const source = index * bytesPerPixel;
+    const target = index * 3;
+
+    rgb[target] = unfiltered[source];
+    rgb[target + 1] = unfiltered[source + 1];
+    rgb[target + 2] = unfiltered[source + 2];
+
+    if (alpha) {
+      alpha[index] = unfiltered[source + 3];
+    }
+  }
+
+  return {
+    kind: 'png',
+    data: zlib.deflateSync(rgb),
+    alpha: alpha ? zlib.deflateSync(alpha) : undefined,
+    width,
+    height,
+  };
+}
+
 function getLogoImage() {
   if (logoCache !== undefined) {
     return logoCache;
   }
 
-  const logoPath = path.join(process.cwd(), 'public', 'zion', 'zionlogo.jpg');
+  const pngPath = path.join(process.cwd(), 'public', 'zion-logo.png');
 
   try {
-    const data = fs.readFileSync(logoPath);
+    logoCache = parsePngLogo(fs.readFileSync(pngPath));
+
+    if (logoCache) {
+      return logoCache;
+    }
+  } catch {
+    logoCache = null;
+  }
+
+  const jpegPath = path.join(process.cwd(), 'public', 'zion', 'zionlogo.jpg');
+
+  try {
+    const data = fs.readFileSync(jpegPath);
     const dimensions = getJpegDimensions(data);
 
     logoCache = dimensions
       ? {
+          kind: 'jpeg',
           data,
           width: dimensions.width,
           height: dimensions.height,
@@ -464,13 +608,14 @@ function renderHeader<T>(input: ZionPdfInput<T>, pageNumber: number) {
   if (logo) {
     const centerX = 541;
     const centerY = 723;
-    const logoSize = 56;
+    const logoSize = logo.kind === 'png' ? 51 : 49;
 
     commands.push(
-      circle(centerX + 2, centerY - 2, 39, COLORS.charcoalSoft),
-      circle(centerX, centerY, 39, COLORS.white, COLORS.gold, 1.2),
-      circle(centerX, centerY, 33, COLORS.white, COLORS.line, 0.35),
-      `q\n${logoSize} 0 0 ${logoSize} ${centerX - logoSize / 2} ${centerY - logoSize / 2} cm\n/Logo Do\nQ`,
+      circle(centerX + 2.4, centerY - 2.4, 40, COLORS.charcoalSoft),
+      circle(centerX, centerY, 40, COLORS.gold),
+      circle(centerX, centerY, 36.3, COLORS.white),
+      clippedImage('Logo', centerX, centerY, 32, logoSize),
+      strokeCircle(centerX, centerY, 36.3, COLORS.line, 0.35),
     );
   } else {
     commands.push(
@@ -652,12 +797,33 @@ export function createZionBrandedTablePdf<T>(input: ZionPdfInput<T>) {
   let logoObjectId: number | null = null;
 
   if (logo) {
+    let logoMaskObjectId: number | null = null;
+
+    if (logo.kind === 'png' && logo.alpha) {
+      logoMaskObjectId = nextObjectId;
+      nextObjectId += 1;
+      objects.push({
+        id: logoMaskObjectId,
+        content: [
+          encode(`<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${logo.alpha.length} >>\nstream\n`),
+          logo.alpha,
+          encode('\nendstream'),
+        ],
+      });
+    }
+
     logoObjectId = nextObjectId;
     nextObjectId += 1;
     objects.push({
       id: logoObjectId,
       content: [
-        encode(`<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.data.length} >>\nstream\n`),
+        encode([
+          `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height}`,
+          '/ColorSpace /DeviceRGB /BitsPerComponent 8',
+          `/Filter /${logo.kind === 'png' ? 'FlateDecode' : 'DCTDecode'}`,
+          logoMaskObjectId ? `/SMask ${logoMaskObjectId} 0 R` : '',
+          `/Length ${logo.data.length} >>\nstream\n`,
+        ].filter(Boolean).join(' ')),
         logo.data,
         encode('\nendstream'),
       ],

@@ -400,7 +400,7 @@ function drawingXml() {
       </xdr:nvSpPr>
       <xdr:spPr>
         <a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>
-        <a:noFill/>
+        <a:solidFill><a:srgbClr val="FFFDF5"/></a:solidFill>
         <a:ln w="19050">
           <a:solidFill><a:srgbClr val="D6B53B"/></a:solidFill>
         </a:ln>
