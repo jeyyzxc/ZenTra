@@ -1,6 +1,6 @@
 import { AuditAction, AuditStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import type { CurrentAdmin } from '@/lib/authorization';
+import { adminDisplayName, type CurrentAdmin } from '@/lib/authorization';
 
 type HeadersLike =
   | Headers
@@ -203,7 +203,7 @@ export function auditActor(actor: CurrentAdmin): Pick<
 > {
   return {
     userId: actor.id,
-    userName: actor.username,
+    userName: adminDisplayName(actor),
     userRole: actor.role,
   };
 }

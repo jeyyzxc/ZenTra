@@ -48,6 +48,16 @@ const LOCKED_TEMPLATE_SECTIONS = [
   'owner_signature_block',
 ];
 
+const PRODUCTION_EMAIL_STATUSES: readonly EmailStatus[] = Object.values(EmailStatus).filter(
+  (status) => status !== EmailStatus.PENDING_DEMO && status !== EmailStatus.SENT_DEMO,
+);
+
+const PRODUCTION_CONTRACT_WORKFLOW_STATUSES: readonly ContractWorkflowStatus[] = Object.values(ContractWorkflowStatus).filter(
+  (status) => status !== ContractWorkflowStatus.DEMO_MODE,
+);
+
+const CONTRACT_EXPORT_LIMIT = 10000;
+
 type BookingWithLatestContract = Booking & {
   contracts: Array<Contract & {
     versions: Array<{ versionNumber: number }>;
@@ -438,6 +448,28 @@ function formatDate(value: Date | null | undefined) {
     day: 'numeric',
     year: 'numeric',
   }).format(value);
+}
+
+function publicEmailStatus(status: EmailStatus | null | undefined) {
+  if (!status) {
+    return 'not_sent';
+  }
+
+  if (status === EmailStatus.PENDING_DEMO) {
+    return EmailStatus.PENDING.toLowerCase();
+  }
+
+  if (status === EmailStatus.SENT_DEMO) {
+    return EmailStatus.SENT.toLowerCase();
+  }
+
+  return status.toLowerCase();
+}
+
+function publicContractWorkflowStatus(status: ContractWorkflowStatus) {
+  return status === ContractWorkflowStatus.DEMO_MODE
+    ? ContractWorkflowStatus.MANUAL_FALLBACK.toLowerCase()
+    : status.toLowerCase();
 }
 
 function escapeHtml(value: unknown) {
@@ -946,8 +978,8 @@ function serializeContract(
     packageName: contract.packageName,
     templateVersion: contract.templateVersion,
     contractStatus: contract.contractStatus.toLowerCase(),
-    emailStatus: contract.emailStatus?.toLowerCase() ?? 'not_sent',
-    workflowStatus: contract.workflowStatus.toLowerCase(),
+    emailStatus: publicEmailStatus(contract.emailStatus),
+    workflowStatus: publicContractWorkflowStatus(contract.workflowStatus),
     signatureStatus: contract.signatureStatus.toLowerCase(),
     contractAmount: contract.contractAmount,
     totalPaid: contract.totalPaid,
@@ -988,7 +1020,7 @@ function serializeContract(
     },
     latestEmail: latestEmail ? {
       id: latestEmail.id,
-      status: latestEmail.status.toLowerCase(),
+      status: publicEmailStatus(latestEmail.status),
       subject: latestEmail.subject,
       recipientEmail: latestEmail.recipientEmail,
       retryCount: latestEmail.retryCount,
@@ -1029,7 +1061,7 @@ function serializeContract(
     sendAttempts: contract.sendAttempts.map((attempt) => ({
       id: attempt.id,
       recipientEmail: attempt.recipientEmail,
-      status: attempt.status.toLowerCase(),
+      status: publicEmailStatus(attempt.status),
       attemptNumber: attempt.attemptNumber,
       errorMessage: attempt.errorMessage,
       sentAt: attempt.sentAt?.toISOString() ?? null,
@@ -1133,10 +1165,10 @@ function buildContractWhere(actor: CurrentAdmin, searchParams: URLSearchParams):
   }
   if (emailStatus === 'NOT_SENT') {
     conditions.push({ emailStatus: null });
-  } else if (emailStatus && Object.values(EmailStatus).includes(emailStatus as EmailStatus)) {
+  } else if (emailStatus && PRODUCTION_EMAIL_STATUSES.includes(emailStatus as EmailStatus)) {
     conditions.push({ emailStatus: emailStatus as EmailStatus });
   }
-  if (workflowStatus && Object.values(ContractWorkflowStatus).includes(workflowStatus as ContractWorkflowStatus)) {
+  if (workflowStatus && PRODUCTION_CONTRACT_WORKFLOW_STATUSES.includes(workflowStatus as ContractWorkflowStatus)) {
     conditions.push({ workflowStatus: workflowStatus as ContractWorkflowStatus });
   }
   if (signatureStatus && Object.values(ContractSignatureStatus).includes(signatureStatus as ContractSignatureStatus)) {
@@ -1316,8 +1348,8 @@ export class ContractService {
       templates: templates.map(serializeTemplate),
       filters: {
         statuses: ['not_generated', ...Object.values(ContractStatus).map((status) => status.toLowerCase())],
-        emailStatuses: ['not_sent', ...Object.values(EmailStatus).map((status) => status.toLowerCase())],
-        workflowStatuses: Object.values(ContractWorkflowStatus).map((status) => status.toLowerCase()),
+        emailStatuses: ['not_sent', ...PRODUCTION_EMAIL_STATUSES.map((status) => status.toLowerCase())],
+        workflowStatuses: PRODUCTION_CONTRACT_WORKFLOW_STATUSES.map((status) => status.toLowerCase()),
         signatureStatuses: Object.values(ContractSignatureStatus).map((status) => status.toLowerCase()),
         bookingStatuses: Object.values(BookingStatus).map((status) => status.toLowerCase()),
         paymentStatuses: Object.values(PaymentSummaryStatus).map((status) => status.toLowerCase()),
@@ -1336,6 +1368,45 @@ export class ContractService {
   static async getBookingEvents(actor: CurrentAdmin, searchParams = new URLSearchParams()) {
     const data = await this.getPageData(actor, searchParams);
     return data.bookingEvents;
+  }
+
+  static async getRegistryForExport(
+    actor: CurrentAdmin,
+    searchParams = new URLSearchParams(),
+    ids?: string[],
+  ) {
+    await ensureDefaultTemplate(actor);
+    const baseWhere = buildContractWhere(actor, searchParams);
+    const where = ids?.length
+      ? {
+          AND: [
+            baseWhere,
+            { id: { in: ids } },
+          ],
+        } satisfies Prisma.ContractWhereInput
+      : baseWhere;
+    const [summary, totalRecords, contracts] = await Promise.all([
+      this.getSummary(actor),
+      prisma.contract.count({ where }),
+      getContractRows(where, CONTRACT_EXPORT_LIMIT),
+    ]);
+    const serializedContracts = await serializeContracts(contracts as ContractWithRelations[]);
+
+    return {
+      summary,
+      contracts: serializedContracts,
+      failedDelivery: serializedContracts.filter((contract) => (
+        contract.contractStatus.includes('failed') ||
+        ['failed', 'bounced', 'pending'].includes(contract.emailStatus) ||
+        ['failed', 'retrying', 'manual_fallback'].includes(contract.workflowStatus)
+      )),
+      signedContracts: serializedContracts.filter((contract) => (
+        contract.contractStatus === 'signed' || contract.signatureStatus === 'signed'
+      )),
+      filters: Object.fromEntries(searchParams.entries()),
+      totalRecords,
+      limitApplied: totalRecords > serializedContracts.length,
+    };
   }
 
   static async getTemplates(actor: CurrentAdmin) {

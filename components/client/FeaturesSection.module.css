@@ -1,0 +1,215 @@
+.eventCard {
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: #11140f;
+  box-shadow:
+    0 18px 42px rgba(28, 25, 16, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  transform: translate3d(0, 0, 0);
+  transition:
+    border-color 500ms ease,
+    box-shadow 500ms ease,
+    transform 500ms ease;
+}
+
+.eventCard::after {
+  content: "";
+  position: absolute;
+  inset: -40% 45% -40% -60%;
+  z-index: 12;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 18%,
+    rgba(255, 255, 255, 0.24) 48%,
+    transparent 76%
+  );
+  transform: translateX(-120%) rotate(6deg);
+  transition: transform 900ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.eventCard:hover,
+.eventCard:focus-visible {
+  border-color: rgba(214, 181, 59, 0.7);
+  box-shadow:
+    0 24px 58px rgba(28, 25, 16, 0.24),
+    0 0 0 1px rgba(214, 181, 59, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translate3d(0, -4px, 0) scale(1.01);
+}
+
+.eventCard:hover::after,
+.eventCard:focus-visible::after {
+  transform: translateX(210%) rotate(6deg);
+}
+
+.eventCard:focus-visible {
+  outline: 2px solid #d6b53b;
+  outline-offset: 4px;
+}
+
+.cardImage,
+.galleryImage {
+  object-fit: cover;
+  transform: scale(1.035);
+  transition:
+    filter 600ms ease,
+    transform 700ms ease;
+}
+
+.cardImage {
+  filter: saturate(1.02) contrast(1.04) brightness(0.96);
+}
+
+.eventCard:hover .cardImage,
+.eventCard:focus-visible .cardImage {
+  filter: saturate(1.12) contrast(1.08) brightness(1);
+  transform: scale(1.07);
+}
+
+.luxuryVeil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 12, 9, 0.08) 0%, rgba(10, 12, 9, 0.18) 42%, rgba(8, 9, 7, 0.82) 100%),
+    linear-gradient(90deg, rgba(12, 16, 11, 0.44), transparent 42%, rgba(214, 181, 59, 0.12));
+  transition: opacity 500ms ease;
+}
+
+.eventCard:hover .luxuryVeil,
+.eventCard:focus-visible .luxuryVeil {
+  opacity: 0.88;
+}
+
+.cardEdge {
+  position: absolute;
+  inset: 8px;
+  z-index: 8;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(214, 181, 59, 0.08);
+}
+
+.cardAction {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 999px;
+  color: #fffdf8;
+  background: rgba(12, 16, 11, 0.36);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(14px);
+  transform: translate3d(0, 0, 0);
+  transition:
+    background 450ms ease,
+    border-color 450ms ease,
+    color 450ms ease,
+    transform 450ms ease;
+}
+
+.eventCard:hover .cardAction,
+.eventCard:focus-visible .cardAction {
+  color: #1b1a12;
+  border-color: rgba(232, 213, 121, 0.88);
+  background: rgba(232, 213, 121, 0.92);
+  transform: translate3d(2px, -2px, 0);
+}
+
+.galleryRibbon {
+  position: relative;
+  overflow: hidden;
+  padding-block: 0.25rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+
+.galleryTrack {
+  display: flex;
+  width: max-content;
+  animation: featureGalleryRail 54s linear infinite;
+  will-change: transform;
+}
+
+.galleryGroup {
+  display: flex;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.galleryTile {
+  position: relative;
+  width: clamp(9.5rem, 18vw, 16rem);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: #11140f;
+  box-shadow: 0 14px 34px rgba(29, 25, 14, 0.14);
+  transform: translate3d(0, 0, 0);
+}
+
+.galleryTile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 48%, rgba(12, 16, 11, 0.28));
+}
+
+.galleryImage {
+  filter: saturate(1.04) contrast(1.04);
+}
+
+@keyframes featureGalleryRail {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (max-width: 767px) {
+  .cardAction {
+    width: 2rem;
+    height: 2rem;
+    top: 12px;
+    right: 12px;
+  }
+
+  .galleryGroup {
+    gap: 0.625rem;
+    padding-right: 0.625rem;
+  }
+
+  .galleryTile {
+    width: clamp(8.75rem, 42vw, 12rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galleryTrack {
+    animation: none;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .eventCard,
+  .eventCard::after,
+  .cardImage,
+  .galleryImage,
+  .cardAction {
+    transition: none;
+  }
+}

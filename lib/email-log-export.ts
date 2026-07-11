@@ -1,43 +1,59 @@
 import type { EmailLogDto } from '@/lib/email-log-query';
+import { createCsv } from '@/lib/export/csv';
+import { createXlsx } from '@/lib/export/spreadsheet';
+import type { ExportColumn, ExportSheet } from '@/lib/export/types';
+import { createZionBrandedTablePdf, type ZionPdfColumn } from '@/lib/zion-pdf-export';
 
 export type EmailLogExportScope = 'all' | 'admin';
 
-const STANDARD_COLUMNS = [
-  'Created',
-  'Recipient Email',
-  'Recipient Name',
-  'Email Type',
-  'Related Module',
-  'Related Record ID',
-  'Subject',
-  'Trigger Source',
-  'Workflow',
-  'Status',
-  'Retry Count',
-  'Last Attempt',
-  'Sent',
-  'Delivered',
-  'Failed',
-  'Failure Reason',
-  'Error Message',
-] as const;
+type EmailLogExportRow = {
+  Created: string;
+  'Recipient Email': string;
+  'Recipient Name': string;
+  'Email Type': string;
+  'Related Module': string;
+  'Related Record ID': string;
+  Subject: string;
+  'Trigger Source': string;
+  Workflow: string;
+  Status: string;
+  'Retry Count': string;
+  'Last Attempt': string;
+  Sent: string;
+  Delivered: string;
+  Failed: string;
+  'Failure Reason': string;
+  'Error Message': string;
+  'Payload Summary': string;
+};
 
-const SUPERADMIN_ONLY_COLUMNS = ['Payload Summary'] as const;
+const FILTER_LABELS: Record<string, string> = {
+  search: 'Search',
+  startDate: 'Start Date',
+  endDate: 'End Date',
+  emailType: 'Email Type',
+  status: 'Status',
+  triggerSource: 'Trigger Source',
+  workflowName: 'Workflow',
+  relatedModule: 'Related Module',
+  sortBy: 'Sort By',
+  sortOrder: 'Sort Order',
+};
 
-type EmailLogExportColumn =
-  | (typeof STANDARD_COLUMNS)[number]
-  | (typeof SUPERADMIN_ONLY_COLUMNS)[number];
-
-type EmailLogExportRow = Record<EmailLogExportColumn, string>;
-
-function getColumns(scope: EmailLogExportScope): readonly EmailLogExportColumn[] {
-  return scope === 'all'
-    ? [...STANDARD_COLUMNS, ...SUPERADMIN_ONLY_COLUMNS]
-    : STANDARD_COLUMNS;
+function text(value: string | null | undefined) {
+  return value?.trim() || '';
 }
 
-function formatTimestamp(timestamp: string | null, timeZone: string | undefined) {
-  if (!timestamp) {
+function toDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTimestamp(timestamp: Date | string | null | undefined, timeZone: string | undefined) {
+  const date = toDate(timestamp);
+
+  if (!date) {
     return '';
   }
 
@@ -46,13 +62,13 @@ function formatTimestamp(timestamp: string | null, timeZone: string | undefined)
       dateStyle: 'medium',
       timeStyle: 'medium',
       timeZone,
-    }).format(new Date(timestamp));
+    }).format(date);
   } catch {
-    return new Date(timestamp).toISOString();
+    return date.toISOString();
   }
 }
 
-function formatEnum(value: string | null) {
+function formatEnum(value: string | null | undefined) {
   return value ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) : '';
 }
 
@@ -68,17 +84,96 @@ function stringifyPayload(value: unknown) {
   }
 }
 
+function formatFilterLabel(key: string) {
+  return FILTER_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function formatFilterValue(key: string, value: unknown, timeZone?: string) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  if ((key === 'startDate' || key === 'endDate') && typeof value === 'string') {
+    return formatTimestamp(value, timeZone);
+  }
+
+  if (typeof value === 'string' && /^[A-Z0-9_]+$/.test(value)) {
+    return formatEnum(value);
+  }
+
+  return String(value);
+}
+
+function appliedFilterRows(filters: Record<string, unknown> | undefined, timeZone?: string) {
+  const rows = Object.entries(filters ?? {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => [formatFilterLabel(key), formatFilterValue(key, value, timeZone)]);
+
+  return rows.length ? rows : [['None', 'No filters applied']];
+}
+
+function filterSummary(filters: Record<string, unknown> | undefined, timeZone?: string) {
+  const rows = appliedFilterRows(filters, timeZone);
+
+  if (rows.length === 1 && rows[0][0] === 'None') {
+    return rows[0][1];
+  }
+
+  return rows.map(([key, value]) => `${key}: ${value}`).join(' | ');
+}
+
+function countBy<T>(records: T[], value: (record: T) => string) {
+  const counts = new Map<string, number>();
+
+  for (const record of records) {
+    const key = value(record) || 'Unspecified';
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries()).sort(([first], [second]) => first.localeCompare(second));
+}
+
+const STANDARD_COLUMNS: Array<ExportColumn<EmailLogDto>> = [
+  { header: 'Created', key: 'createdAt', type: 'datetime', width: 24, value: (log) => toDate(log.createdAt) },
+  { header: 'Recipient Email', key: 'recipientEmail', width: 32, value: (log) => log.recipientEmail },
+  { header: 'Recipient Name', key: 'recipientName', width: 28, value: (log) => text(log.recipientName) },
+  { header: 'Email Type', key: 'emailType', width: 24, value: (log) => formatEnum(log.emailType) },
+  { header: 'Related Module', key: 'relatedModule', width: 24, value: (log) => formatEnum(log.relatedModule) },
+  { header: 'Related Record ID', key: 'relatedRecordId', width: 30, value: (log) => text(log.relatedRecordId) },
+  { header: 'Subject', key: 'subject', width: 46, value: (log) => log.subject },
+  { header: 'Trigger Source', key: 'triggerSource', width: 24, value: (log) => formatEnum(log.triggerSource) },
+  { header: 'Workflow', key: 'workflowName', width: 28, value: (log) => text(log.workflowName) },
+  { header: 'Status', key: 'status', width: 18, value: (log) => formatEnum(log.status) },
+  { header: 'Retry Count', key: 'retryCount', type: 'number', width: 14, value: (log) => log.retryCount },
+  { header: 'Last Attempt', key: 'lastAttemptAt', type: 'datetime', width: 24, value: (log) => toDate(log.lastAttemptAt) },
+  { header: 'Sent', key: 'sentAt', type: 'datetime', width: 24, value: (log) => toDate(log.sentAt) },
+  { header: 'Delivered', key: 'deliveredAt', type: 'datetime', width: 24, value: (log) => toDate(log.deliveredAt) },
+  { header: 'Failed', key: 'failedAt', type: 'datetime', width: 24, value: (log) => toDate(log.failedAt) },
+  { header: 'Failure Reason', key: 'failureReason', width: 28, value: (log) => formatEnum(log.failureReason) },
+  { header: 'Error Message', key: 'errorMessage', width: 54, value: (log) => text(log.errorMessage) },
+];
+
+const SUPERADMIN_ONLY_COLUMNS: Array<ExportColumn<EmailLogDto>> = [
+  { header: 'Payload Summary', key: 'payloadSummary', width: 64, value: (log) => stringifyPayload(log.payloadSummary) },
+];
+
+function getColumns(scope: EmailLogExportScope): Array<ExportColumn<EmailLogDto>> {
+  return scope === 'all'
+    ? [...STANDARD_COLUMNS, ...SUPERADMIN_ONLY_COLUMNS]
+    : STANDARD_COLUMNS;
+}
+
 function toRows(logs: EmailLogDto[], timeZone?: string): EmailLogExportRow[] {
   return logs.map((log) => ({
     Created: formatTimestamp(log.createdAt, timeZone),
     'Recipient Email': log.recipientEmail,
-    'Recipient Name': log.recipientName ?? '',
+    'Recipient Name': text(log.recipientName),
     'Email Type': formatEnum(log.emailType),
     'Related Module': formatEnum(log.relatedModule),
-    'Related Record ID': log.relatedRecordId ?? '',
+    'Related Record ID': text(log.relatedRecordId),
     Subject: log.subject,
     'Trigger Source': formatEnum(log.triggerSource),
-    Workflow: log.workflowName ?? '',
+    Workflow: text(log.workflowName),
     Status: formatEnum(log.status),
     'Retry Count': String(log.retryCount),
     'Last Attempt': formatTimestamp(log.lastAttemptAt, timeZone),
@@ -86,22 +181,24 @@ function toRows(logs: EmailLogDto[], timeZone?: string): EmailLogExportRow[] {
     Delivered: formatTimestamp(log.deliveredAt, timeZone),
     Failed: formatTimestamp(log.failedAt, timeZone),
     'Failure Reason': formatEnum(log.failureReason),
-    'Error Message': log.errorMessage ?? '',
+    'Error Message': text(log.errorMessage),
     'Payload Summary': stringifyPayload(log.payloadSummary),
   }));
 }
 
-function escapeCsv(value: string) {
-  return `"${value.replaceAll('"', '""')}"`;
-}
+function overviewRows(logs: EmailLogDto[]) {
+  const totalRetries = logs.reduce((sum, log) => sum + log.retryCount, 0);
+  const failedRecords = logs.filter((log) => log.status === 'FAILED' || Boolean(log.failedAt)).length;
 
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+  return [
+    ['Delivery', 'Total Email Types', countBy(logs, (log) => formatEnum(log.emailType)).length],
+    ['Delivery', 'Total Trigger Sources', countBy(logs, (log) => formatEnum(log.triggerSource)).length],
+    ['Delivery', 'Failed Records', failedRecords],
+    ['Delivery', 'Total Retry Attempts', totalRetries],
+    ...countBy(logs, (log) => formatEnum(log.status)).map(([status, count]) => ['Status', status, count]),
+    ...countBy(logs, (log) => formatEnum(log.emailType)).map(([emailType, count]) => ['Email Type', emailType, count]),
+    ...countBy(logs, (log) => formatEnum(log.triggerSource)).map(([source, count]) => ['Trigger Source', source, count]),
+  ];
 }
 
 export function createEmailLogCsv(
@@ -109,244 +206,60 @@ export function createEmailLogCsv(
   timeZone?: string,
   scope: EmailLogExportScope = 'all',
 ) {
-  const columns = getColumns(scope);
-  const rows = toRows(logs, timeZone);
-
-  return [
-    columns.map(escapeCsv).join(','),
-    ...rows.map((row) => columns.map((column) => escapeCsv(row[column])).join(',')),
-  ].join('\r\n');
-}
-
-function concatBytes(chunks: Uint8Array[]) {
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const output = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return output;
-}
-
-function uint16(value: number) {
-  const bytes = new Uint8Array(2);
-  new DataView(bytes.buffer).setUint16(0, value, true);
-  return bytes;
-}
-
-function uint32(value: number) {
-  const bytes = new Uint8Array(4);
-  new DataView(bytes.buffer).setUint32(0, value, true);
-  return bytes;
-}
-
-const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
-  let crc = index;
-
-  for (let bit = 0; bit < 8; bit += 1) {
-    crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
-  }
-
-  return crc >>> 0;
-});
-
-function crc32(bytes: Uint8Array) {
-  let crc = 0xffffffff;
-
-  for (const byte of bytes) {
-    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function createZip(files: Array<{ name: string; content: string }>) {
-  const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const file of files) {
-    const nameBytes = encoder.encode(file.name);
-    const contentBytes = encoder.encode(file.content);
-    const checksum = crc32(contentBytes);
-
-    const localHeader = concatBytes([
-      uint32(0x04034b50),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(checksum),
-      uint32(contentBytes.length),
-      uint32(contentBytes.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      nameBytes,
-    ]);
-
-    localParts.push(localHeader, contentBytes);
-
-    const centralHeader = concatBytes([
-      uint32(0x02014b50),
-      uint16(20),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(checksum),
-      uint32(contentBytes.length),
-      uint32(contentBytes.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(0),
-      uint32(offset),
-      nameBytes,
-    ]);
-
-    centralParts.push(centralHeader);
-    offset += localHeader.length + contentBytes.length;
-  }
-
-  const centralDirectory = concatBytes(centralParts);
-  const end = concatBytes([
-    uint32(0x06054b50),
-    uint16(0),
-    uint16(0),
-    uint16(files.length),
-    uint16(files.length),
-    uint32(centralDirectory.length),
-    uint32(offset),
-    uint16(0),
-  ]);
-
-  return concatBytes([...localParts, centralDirectory, end]);
-}
-
-function columnName(index: number) {
-  let name = '';
-  let value = index + 1;
-
-  while (value > 0) {
-    const remainder = (value - 1) % 26;
-    name = String.fromCharCode(65 + remainder) + name;
-    value = Math.floor((value - 1) / 26);
-  }
-
-  return name;
+  void timeZone;
+  return createCsv(getColumns(scope), logs);
 }
 
 export function createEmailLogXlsx(
   logs: EmailLogDto[],
   timeZone?: string,
   scope: EmailLogExportScope = 'all',
+  generatedBy = 'Zion Admin',
+  filters?: Record<string, unknown>,
 ) {
   const columns = getColumns(scope);
-  const rows = [columns, ...toRows(logs, timeZone).map((row) => columns.map((column) => row[column]))];
-  const sheetRows = rows
-    .map((row, rowIndex) => {
-      const cells = row
-        .map((value, columnIndex) => {
-          const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
-          return `<c r="${reference}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
-        })
-        .join('');
-
-      return `<row r="${rowIndex + 1}">${cells}</row>`;
-    })
-    .join('');
-
-  const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <cols>
-    <col min="1" max="1" width="24" customWidth="1"/>
-    <col min="2" max="${columns.length}" width="22" customWidth="1"/>
-  </cols>
-  <sheetData>${sheetRows}</sheetData>
-</worksheet>`;
-
-  return createZip([
+  const summaryRows = [
+    ['Zion Events Place - Email Logs Export'],
+    ['Generated At', formatTimestamp(new Date(), timeZone)],
+    ['Generated By', generatedBy],
+    ['Scope', scope === 'all' ? 'All authorized email activity' : 'Admin authorized email activity'],
+    ['Records', logs.length],
+    ['Filters', filterSummary(filters, timeZone)],
+  ];
+  const sheets: ExportSheet[] = [
+    { name: 'Summary', rows: summaryRows },
     {
-      name: '[Content_Types].xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`,
+      name: 'Email Logs',
+      columns: columns.map((column) => ({
+        header: column.header,
+        width: column.width,
+        type: column.type,
+      })),
+      rows: logs.map((log) => columns.map((column) => column.value(log))),
+      freezeHeader: true,
     },
     {
-      name: '_rels/.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`,
+      name: 'Delivery Overview',
+      columns: [
+        { header: 'Category', width: 22 },
+        { header: 'Metric', width: 36 },
+        { header: 'Count', type: 'number', width: 14 },
+      ],
+      rows: overviewRows(logs),
+      freezeHeader: true,
     },
     {
-      name: 'xl/workbook.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="Email Logs" sheetId="1" r:id="rId1"/>
-  </sheets>
-</workbook>`,
+      name: 'Applied Filters',
+      columns: [
+        { header: 'Filter', width: 28 },
+        { header: 'Value', width: 54 },
+      ],
+      rows: appliedFilterRows(filters, timeZone),
+      freezeHeader: true,
     },
-    {
-      name: 'xl/_rels/workbook.xml.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`,
-    },
-    {
-      name: 'xl/styles.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
-  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
-  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
-  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
-</styleSheet>`,
-    },
-    {
-      name: 'xl/worksheets/sheet1.xml',
-      content: worksheet,
-    },
-  ]);
-}
+  ];
 
-function escapePdfText(value: string) {
-  return value
-    .replace(/[^\x20-\x7e]/g, '?')
-    .replaceAll('\\', '\\\\')
-    .replaceAll('(', '\\(')
-    .replaceAll(')', '\\)');
-}
-
-function truncate(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, Math.max(0, length - 3))}...` : value;
-}
-
-function splitIntoPages(lines: string[], linesPerPage: number) {
-  const pages: string[][] = [];
-
-  for (let index = 0; index < lines.length; index += linesPerPage) {
-    pages.push(lines.slice(index, index + linesPerPage));
-  }
-
-  return pages.length ? pages : [[]];
+  return createXlsx(sheets);
 }
 
 export function createEmailLogPdf(
@@ -354,76 +267,37 @@ export function createEmailLogPdf(
   timeZone?: string,
   scope: EmailLogExportScope = 'all',
 ) {
-  const columns = getColumns(scope);
   const rows = toRows(logs, timeZone);
-  const lines = [
-    'ZenTra Email Logs Report',
-    `Generated: ${formatTimestamp(new Date().toISOString(), timeZone)}`,
-    `Records: ${rows.length}`,
-    '',
-    columns.join(' | '),
-    ...rows.map((row) => columns
-      .map((column) => (
-        column === 'Subject' || column === 'Error Message' || column === 'Payload Summary'
-          ? truncate(row[column].replace(/\s+/g, ' '), 70)
-          : row[column]
-      ))
-      .join(' | ')),
+  const columns: Array<ZionPdfColumn<EmailLogExportRow>> = [
+    { header: 'Created', width: 76, maxLines: 2, value: (row) => row.Created },
+    { header: 'Recipient', width: 116, maxLines: 3, value: (row) => row['Recipient Email'] },
+    { header: 'Type', width: 78, maxLines: 3, value: (row) => row['Email Type'] },
+    { header: 'Source', width: 72, maxLines: 2, value: (row) => row['Trigger Source'] },
+    { header: 'Status', width: 54, align: 'center', maxLines: 1, value: (row) => row.Status },
+    {
+      header: 'Details',
+      width: 160,
+      maxLines: 4,
+      value: (row) => [
+        row.Subject,
+        row.Workflow ? `Workflow: ${row.Workflow}` : '',
+        row['Related Module'] ? `Related: ${row['Related Module']} ${row['Related Record ID']}` : '',
+        row['Error Message'] ? `Error: ${row['Error Message']}` : '',
+        scope === 'all' && row['Payload Summary'] ? `Payload: ${row['Payload Summary']}` : '',
+      ].filter(Boolean).join(' | '),
+    },
   ];
 
-  const pages = splitIntoPages(lines, 44);
-  const objects: string[] = [];
-  const pageObjectIds: number[] = [];
-  const encoder = new TextEncoder();
-
-  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-
-  pages.forEach((pageLines, index) => {
-    const pageObjectId = 4 + index * 2;
-    const contentObjectId = pageObjectId + 1;
-    pageObjectIds.push(pageObjectId);
-
-    const content = [
-      'BT',
-      '/F1 8 Tf',
-      '32 760 Td',
-      '11 TL',
-      ...pageLines.map((line) => `(${escapePdfText(line)}) Tj T*`),
-      'ET',
-    ].join('\n');
-    const contentLength = encoder.encode(content).length;
-
-    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
-    objects[contentObjectId] = `<< /Length ${contentLength} >>\nstream\n${content}\nendstream`;
+  return createZionBrandedTablePdf({
+    title: 'Email Delivery Logs',
+    subtitle: 'A branded and confidential delivery export from System Logs.',
+    badge: scope === 'all' ? 'All Email Activity' : 'Admin Email Activity',
+    generatedAt: formatTimestamp(new Date().toISOString(), timeZone),
+    recordCount: rows.length,
+    rows,
+    columns,
+    emptyMessage: 'No email log records matched the selected filters.',
   });
-
-  objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`;
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-
-  for (let id = 1; id < objects.length; id += 1) {
-    if (!objects[id]) {
-      continue;
-    }
-
-    offsets[id] = encoder.encode(pdf).length;
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefOffset = encoder.encode(pdf).length;
-  pdf += `xref\n0 ${objects.length}\n`;
-  pdf += '0000000000 65535 f \n';
-
-  for (let id = 1; id < objects.length; id += 1) {
-    const offset = offsets[id] ?? 0;
-    pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-  return encoder.encode(pdf);
 }
 
 export function getEmailLogExportFilename(extension: string) {

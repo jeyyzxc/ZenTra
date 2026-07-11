@@ -1,17 +1,21 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  AtSign,
+  Building2,
   CalendarDays,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Eye,
   EyeOff,
+  Home,
   LockKeyhole,
   Loader2,
   Mail,
+  Map,
+  MapPin,
   Phone,
   Save,
   ShieldCheck,
@@ -19,6 +23,14 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+  composeAdminAddress,
+  fetchPsgcBarangays,
+  fetchPsgcCitiesMunicipalities,
+  fetchPsgcProvinces,
+  fetchPsgcRegions,
+  type AddressDirectoryOption,
+} from '@/lib/admin-address-options';
 import { changeOwnPassword, updateOwnProfile } from './actions';
 import type { AdminProfile } from './types';
 
@@ -67,7 +79,7 @@ function PasswordInput({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-[#A3B19B]">
+      <label htmlFor={id} className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-[#A3B19B]">
         {label}
       </label>
       <div className="relative">
@@ -79,7 +91,7 @@ function PasswordInput({
           onChange={(event) => onChange(event.target.value)}
           autoComplete={autoComplete}
           required
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-11 text-sm text-gray-900 outline-none transition focus:border-[#D6B53B] focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white"
+          className="h-10 w-full rounded-xl border border-[#D6B53B]/30 bg-white py-2.5 pl-10 pr-11 font-sans text-sm text-gray-900 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all duration-300 placeholder:text-gray-500 hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 hover:shadow-sm focus:border-[#D6B53B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-400 dark:hover:bg-white/10 dark:focus:border-[#D6B53B] dark:focus:bg-[#1a1f18]"
         />
         <button
           type="button"
@@ -94,8 +106,94 @@ function PasswordInput({
   );
 }
 
+function AddressSelect({
+  id,
+  label,
+  value,
+  fallbackLabel,
+  options,
+  placeholder,
+  disabled,
+  loading,
+  icon: Icon,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  fallbackLabel?: string;
+  options: AddressDirectoryOption[];
+  placeholder: string;
+  disabled?: boolean;
+  loading?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  onChange: (option: AddressDirectoryOption) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find((option) => option.code === value);
+  const selectedLabel = selectedOption?.label || fallbackLabel || '';
+  const isDisabled = disabled || loading || options.length === 0;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-[#A3B19B]">
+        {label}
+      </label>
+      <div className={`relative group/input ${open ? 'z-[100]' : 'z-0'}`} ref={ref}>
+        <Icon className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors z-10 ${open ? 'text-[#D6B53B]' : 'text-gray-400 group-focus-within/input:text-[#D6B53B]'}`} />
+        <button
+          id={id}
+          type="button"
+          disabled={isDisabled}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={() => !isDisabled && setOpen(!open)}
+          className={`flex h-10 w-full items-center justify-between rounded-xl border ${open ? 'border-[#D6B53B] bg-white ring-2 ring-[#D6B53B]/20 dark:bg-[#1a1f18] dark:border-[#D6B53B]' : 'border-[#D6B53B]/30 bg-white dark:border-white/10 dark:bg-white/5'} pl-10 pr-3 font-sans text-sm shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all duration-300 ${!isDisabled ? 'hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 dark:hover:bg-white/10 hover:shadow-sm cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+        >
+          <span className={`block min-w-0 truncate text-left ${selectedLabel ? 'text-gray-900 font-medium dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+            {loading ? 'Loading...' : selectedLabel || placeholder}
+          </span>
+          <div className={`pointer-events-none transition-all duration-300 ${open ? 'text-[#D6B53B] rotate-180' : 'text-gray-400 group-hover/input:text-[#D6B53B]'}`}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+
+        {open && !isDisabled && (
+          <div
+            className="absolute bottom-full left-0 mb-2 w-full max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white/95 backdrop-blur-xl shadow-[0_12px_40px_rgba(47,62,50,0.15)] z-[100] py-1.5 dark:border-white/10 dark:bg-[#1a1f18]/95 events-scrollbar"
+            role="listbox"
+          >
+            {options.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                role="option"
+                aria-selected={value === option.code}
+                onClick={() => { onChange(option); setOpen(false); }}
+                className={`flex w-full items-center px-3 py-2.5 text-left text-sm transition-colors ${value === option.code ? 'bg-[#FFF2DB] text-[#8E7722] font-semibold dark:bg-[#D6B53B]/20 dark:text-[#D6B53B]' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10'}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const NOTICE_AUTO_HIDE_MS = 2000;
 
 function formatLocalNumber(digits: string) {
   if (!digits) {
@@ -188,6 +286,25 @@ export default function ProfileClient({
   const [profile, setProfile] = useState(initialProfile);
   const [fullName, setFullName] = useState(initialProfile.fullName ?? '');
   const [localNumber, setLocalNumber] = useState(() => parseContactNumber(initialProfile.contactNumber));
+  const [addressRegionCode, setAddressRegionCode] = useState(initialProfile.addressRegionCode ?? '');
+  const [addressRegion, setAddressRegion] = useState(initialProfile.addressRegion ?? '');
+  const [addressProvinceCode, setAddressProvinceCode] = useState(initialProfile.addressProvinceCode ?? '');
+  const [addressProvince, setAddressProvince] = useState(initialProfile.addressProvince ?? '');
+  const [addressCityCode, setAddressCityCode] = useState(initialProfile.addressCityCode ?? '');
+  const [addressCity, setAddressCity] = useState(initialProfile.addressCity ?? '');
+  const [addressBarangayCode, setAddressBarangayCode] = useState(initialProfile.addressBarangayCode ?? '');
+  const [addressBarangay, setAddressBarangay] = useState(initialProfile.addressBarangay ?? '');
+  const [regionOptions, setRegionOptions] = useState<AddressDirectoryOption[]>([]);
+  const [provinceOptions, setProvinceOptions] = useState<AddressDirectoryOption[]>([]);
+  const [cityOptions, setCityOptions] = useState<AddressDirectoryOption[]>([]);
+  const [barangayOptions, setBarangayOptions] = useState<AddressDirectoryOption[]>([]);
+  const [addressLoading, setAddressLoading] = useState(() => ({
+    regions: true,
+    provinces: Boolean(initialProfile.addressRegionCode),
+    cities: Boolean(initialProfile.addressRegionCode && initialProfile.addressProvinceCode),
+    barangays: Boolean(initialProfile.addressCityCode),
+  }));
+  const [addressDirectoryError, setAddressDirectoryError] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -199,12 +316,51 @@ export default function ProfileClient({
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const touchTimerRef = useRef<number | null>(null);
+  const profileNoticeTimerRef = useRef<number | null>(null);
+  const passwordNoticeTimerRef = useRef<number | null>(null);
   const router = useRouter();
 
   const roleLabel = profile.role === 'SUPERADMIN' ? 'Super Admin' : 'Administrator';
-  const displayName = profile.fullName || profile.username;
+  const displayName = profile.fullName || 'Administrator';
   const initial = displayName.charAt(0).toUpperCase();
   const avatarImage = avatarPreview || profile.profileImage;
+  const profileAddress = composeAdminAddress(profile);
+  const addressPreview = composeAdminAddress({
+    addressRegionCode,
+    addressRegion,
+    addressProvinceCode,
+    addressProvince,
+    addressCityCode,
+    addressCity,
+    addressBarangayCode,
+    addressBarangay,
+  });
+  const addressStarted = Boolean(
+    addressRegionCode ||
+    addressRegion ||
+    addressProvinceCode ||
+    addressProvince ||
+    addressCityCode ||
+    addressCity ||
+    addressBarangayCode ||
+    addressBarangay
+  );
+  const addressComplete = Boolean(
+    addressRegionCode &&
+    addressProvinceCode &&
+    addressCityCode &&
+    addressBarangayCode
+  );
+
+  const setAddressLevelLoading = useCallback((
+    level: keyof typeof addressLoading,
+    loading: boolean,
+  ) => {
+    setAddressLoading((current) => ({
+      ...current,
+      [level]: loading,
+    }));
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -213,6 +369,172 @@ export default function ProfileClient({
       }
     };
   }, [avatarPreview]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchPsgcRegions()
+      .then((options) => {
+        if (!cancelled) {
+          setRegionOptions(options);
+          setAddressDirectoryError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAddressDirectoryError('Unable to load the official PSGC address directory.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAddressLevelLoading('regions', false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setAddressLevelLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!addressRegionCode) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchPsgcProvinces(addressRegionCode)
+      .then((options) => {
+        if (!cancelled) {
+          setProvinceOptions(options);
+          setAddressDirectoryError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAddressDirectoryError('Unable to load provinces for the selected region.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAddressLevelLoading('provinces', false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [addressRegionCode, setAddressLevelLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!addressRegionCode || !addressProvinceCode) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchPsgcCitiesMunicipalities(addressRegionCode, addressProvinceCode)
+      .then((options) => {
+        if (!cancelled) {
+          setCityOptions(options);
+          setAddressDirectoryError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAddressDirectoryError('Unable to load cities and municipalities for the selected province.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAddressLevelLoading('cities', false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [addressProvinceCode, addressRegionCode, setAddressLevelLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!addressCityCode) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchPsgcBarangays(addressCityCode)
+      .then((options) => {
+        if (!cancelled) {
+          setBarangayOptions(options);
+          setAddressDirectoryError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAddressDirectoryError('Unable to load barangays for the selected city or municipality.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAddressLevelLoading('barangays', false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [addressCityCode, setAddressLevelLoading]);
+
+  useEffect(() => {
+    if (!profileNotice) {
+      return;
+    }
+
+    if (profileNoticeTimerRef.current) {
+      window.clearTimeout(profileNoticeTimerRef.current);
+    }
+
+    profileNoticeTimerRef.current = window.setTimeout(() => {
+      setProfileNotice(null);
+      profileNoticeTimerRef.current = null;
+    }, NOTICE_AUTO_HIDE_MS);
+
+    return () => {
+      if (profileNoticeTimerRef.current) {
+        window.clearTimeout(profileNoticeTimerRef.current);
+        profileNoticeTimerRef.current = null;
+      }
+    };
+  }, [profileNotice]);
+
+  useEffect(() => {
+    if (!passwordNotice) {
+      return;
+    }
+
+    if (passwordNoticeTimerRef.current) {
+      window.clearTimeout(passwordNoticeTimerRef.current);
+    }
+
+    passwordNoticeTimerRef.current = window.setTimeout(() => {
+      setPasswordNotice(null);
+      passwordNoticeTimerRef.current = null;
+    }, NOTICE_AUTO_HIDE_MS);
+
+    return () => {
+      if (passwordNoticeTimerRef.current) {
+        window.clearTimeout(passwordNoticeTimerRef.current);
+        passwordNoticeTimerRef.current = null;
+      }
+    };
+  }, [passwordNotice]);
 
   const clearAvatarTouchTimer = () => {
     if (touchTimerRef.current) {
@@ -233,6 +555,111 @@ export default function ProfileClient({
     const digits = value.replace(/\D/g, '');
     const localDigits = digits.startsWith('0') ? digits.slice(1) : digits;
     setLocalNumber(formatLocalNumber(localDigits.slice(0, 12)));
+  };
+
+  const clearAddressFields = () => {
+    setAddressRegionCode('');
+    setAddressRegion('');
+    setAddressProvinceCode('');
+    setAddressProvince('');
+    setAddressCityCode('');
+    setAddressCity('');
+    setAddressBarangayCode('');
+    setAddressBarangay('');
+    setProvinceOptions([]);
+    setCityOptions([]);
+    setBarangayOptions([]);
+    setAddressDirectoryError(null);
+    setAddressLoading((current) => ({
+      ...current,
+      provinces: false,
+      cities: false,
+      barangays: false,
+    }));
+  };
+
+  const syncAddressFields = (updatedProfile: AdminProfile) => {
+    setAddressRegionCode(updatedProfile.addressRegionCode ?? '');
+    setAddressRegion(updatedProfile.addressRegion ?? '');
+    setAddressProvinceCode(updatedProfile.addressProvinceCode ?? '');
+    setAddressProvince(updatedProfile.addressProvince ?? '');
+    setAddressCityCode(updatedProfile.addressCityCode ?? '');
+    setAddressCity(updatedProfile.addressCity ?? '');
+    setAddressBarangayCode(updatedProfile.addressBarangayCode ?? '');
+    setAddressBarangay(updatedProfile.addressBarangay ?? '');
+    setAddressLoading((current) => ({
+      ...current,
+      provinces: Boolean(updatedProfile.addressRegionCode),
+      cities: Boolean(updatedProfile.addressRegionCode && updatedProfile.addressProvinceCode),
+      barangays: Boolean(updatedProfile.addressCityCode),
+    }));
+  };
+
+  const handleRegionChange = (option: AddressDirectoryOption) => {
+    setAddressRegionCode(option.code);
+    setAddressRegion(option.label);
+    setAddressProvinceCode('');
+    setAddressProvince('');
+    setAddressCityCode('');
+    setAddressCity('');
+    setAddressBarangayCode('');
+    setAddressBarangay('');
+    setProvinceOptions([]);
+    setCityOptions([]);
+    setBarangayOptions([]);
+    setAddressDirectoryError(null);
+    setAddressLoading((current) => ({
+      ...current,
+      provinces: true,
+      cities: false,
+      barangays: false,
+    }));
+  };
+
+  const handleProvinceChange = (option: AddressDirectoryOption) => {
+    setAddressProvinceCode(option.code);
+    setAddressProvince(option.label);
+    setAddressCityCode('');
+    setAddressCity('');
+    setAddressBarangayCode('');
+    setAddressBarangay('');
+    setCityOptions([]);
+    setBarangayOptions([]);
+    setAddressDirectoryError(null);
+    setAddressLoading((current) => ({
+      ...current,
+      cities: true,
+      barangays: false,
+    }));
+  };
+
+  const handleCityChange = (option: AddressDirectoryOption) => {
+    setAddressCityCode(option.code);
+    setAddressCity(option.label);
+    setAddressBarangayCode('');
+    setAddressBarangay('');
+    setBarangayOptions([]);
+    setAddressDirectoryError(null);
+    setAddressLoading((current) => ({
+      ...current,
+      barangays: true,
+    }));
+  };
+
+  const handleBarangayChange = (option: AddressDirectoryOption) => {
+    setAddressBarangayCode(option.code);
+    setAddressBarangay(option.label);
+    setAddressDirectoryError(null);
+  };
+
+  const validateAddressSelection = () => {
+    if (!addressStarted) {
+      return;
+    }
+
+    if (!addressComplete) {
+      throw new Error('Please complete your region, province, city or municipality, and barangay.');
+    }
   };
 
   const handleAvatarFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -355,17 +782,27 @@ export default function ProfileClient({
 
     try {
       validateLocalContactNumber(localNumber);
+      validateAddressSelection();
 
       const updatedProfile = await updateOwnProfile({
         fullName,
         contactNumber: composeContactNumber(localNumber),
+        addressRegionCode,
+        addressRegion,
+        addressProvinceCode,
+        addressProvince,
+        addressCityCode,
+        addressCity,
+        addressBarangayCode,
+        addressBarangay,
       });
       setProfile(updatedProfile);
       setFullName(updatedProfile.fullName ?? '');
       setLocalNumber(parseContactNumber(updatedProfile.contactNumber));
+      syncAddressFields(updatedProfile);
       setProfileNotice({
         type: 'success',
-        message: 'Your contact details were updated.',
+        message: 'Your personal details were updated.',
       });
       router.refresh();
     } catch (error) {
@@ -509,12 +946,6 @@ export default function ProfileClient({
             <dl className="mt-6 space-y-4 border-t border-gray-100 pt-5 text-sm dark:border-white/5">
               <div>
                 <dt className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
-                  <AtSign className="h-3.5 w-3.5" /> Username
-                </dt>
-                <dd className="font-medium text-gray-800 dark:text-gray-100">@{profile.username}</dd>
-              </div>
-              <div>
-                <dt className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
                   <Mail className="h-3.5 w-3.5" /> Email
                 </dt>
                 <dd className="break-all font-medium text-gray-800 dark:text-gray-100">{profile.email}</dd>
@@ -525,6 +956,14 @@ export default function ProfileClient({
                 </dt>
                 <dd className="font-medium text-gray-800 dark:text-gray-100">
                   {formatInternationalContact(profile.contactNumber)}
+                </dd>
+              </div>
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+                  <MapPin className="h-3.5 w-3.5" /> Address
+                </dt>
+                <dd className="text-sm font-medium leading-5 text-gray-800 dark:text-gray-100">
+                  {profileAddress || 'Not provided'}
                 </dd>
               </div>
               <div>
@@ -556,7 +995,7 @@ export default function ProfileClient({
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label htmlFor="fullName" className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-[#A3B19B]">
+                  <label htmlFor="fullName" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-[#A3B19B]">
                     Full Name
                   </label>
                   <input
@@ -567,15 +1006,15 @@ export default function ProfileClient({
                     required
                     maxLength={255}
                     autoComplete="name"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#D6B53B] focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    className="h-10 w-full rounded-xl border border-[#D6B53B]/30 bg-white px-3 font-sans text-sm text-gray-900 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all duration-300 placeholder:text-gray-500 hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 hover:shadow-sm focus:border-[#D6B53B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-400 dark:hover:bg-white/10 dark:focus:border-[#D6B53B] dark:focus:bg-[#1a1f18]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contactNumber" className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-[#A3B19B]">
+                  <label htmlFor="contactNumber" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-[#A3B19B]">
                     Contact Number
                   </label>
                   <div className="flex">
-                    <div className="flex items-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 px-3.5 text-sm font-semibold text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-[#A3B19B]">
+                    <div className="flex items-center rounded-l-xl border border-[#D6B53B]/30 border-r-0 bg-[#FDF5CC]/30 px-3.5 text-sm font-semibold text-[#8E7722] dark:border-white/10 dark:bg-[#D6B53B]/10 dark:text-[#D6B53B] backdrop-blur-md">
                       +63
                     </div>
                     <input
@@ -586,11 +1025,105 @@ export default function ProfileClient({
                       maxLength={13}
                       autoComplete="tel-national"
                       placeholder="912 345 6789"
-                      className="w-full rounded-r-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#D6B53B] focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                      className="h-10 w-full rounded-r-xl border border-[#D6B53B]/30 bg-white px-3 font-sans text-sm text-gray-900 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all duration-300 placeholder:text-gray-500 hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 hover:shadow-sm focus:border-[#D6B53B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-400 dark:hover:bg-white/10 dark:focus:border-[#D6B53B] dark:focus:bg-[#1a1f18]"
                     />
                   </div>
                 </div>
               </div>
+
+              <section className="rounded-2xl border border-[#D6B53B]/20 bg-gradient-to-br from-[#FDF5CC]/35 via-white to-white p-4 shadow-[0_18px_50px_rgba(26,31,24,0.05)] transition-all duration-500 hover:border-[#D6B53B]/35 dark:border-white/10 dark:from-[#D6B53B]/10 dark:via-white/[0.03] dark:to-transparent">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#8E7722] shadow-sm ring-1 ring-[#D6B53B]/20 dark:bg-white/5 dark:text-[#D6B53B]">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Address</h3>
+                      <p className="mt-1 text-xs font-medium leading-5 text-gray-500 dark:text-[#A3B19B]">
+                        Official PSGC region, province, city or municipality, and barangay record.
+                      </p>
+                    </div>
+                  </div>
+                  {addressStarted && (
+                    <button
+                      type="button"
+                      onClick={clearAddressFields}
+                      className="self-start rounded-full border border-[#D6B53B]/25 bg-white/75 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8E7722] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6B53B] hover:bg-[#FDF5CC] dark:border-white/10 dark:bg-white/5 dark:text-[#D6B53B] dark:hover:bg-[#D6B53B]/10"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {addressDirectoryError && (
+                  <div role="alert" className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold leading-5 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+                    {addressDirectoryError}
+                  </div>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <AddressSelect
+                    id="addressRegion"
+                    label="Region"
+                    value={addressRegionCode}
+                    fallbackLabel={addressRegion}
+                    options={regionOptions}
+                    placeholder="Select region"
+                    loading={addressLoading.regions}
+                    icon={Map}
+                    onChange={handleRegionChange}
+                  />
+
+                  <AddressSelect
+                    id="addressProvince"
+                    label="Province"
+                    value={addressProvinceCode}
+                    fallbackLabel={addressProvince}
+                    options={provinceOptions}
+                    placeholder={addressRegionCode ? 'Select province' : 'Choose region first'}
+                    disabled={!addressRegionCode}
+                    loading={addressLoading.provinces}
+                    icon={Building2}
+                    onChange={handleProvinceChange}
+                  />
+
+                  <AddressSelect
+                    id="addressCity"
+                    label="City / Municipality"
+                    value={addressCityCode}
+                    fallbackLabel={addressCity}
+                    options={cityOptions}
+                    placeholder={addressProvinceCode ? 'Select city or municipality' : 'Choose province first'}
+                    disabled={!addressProvinceCode}
+                    loading={addressLoading.cities}
+                    icon={MapPin}
+                    onChange={handleCityChange}
+                  />
+
+                  <AddressSelect
+                    id="addressBarangay"
+                    label="Barangay"
+                    value={addressBarangayCode}
+                    fallbackLabel={addressBarangay}
+                    options={barangayOptions}
+                    placeholder={addressCityCode ? 'Select barangay' : 'Choose city first'}
+                    disabled={!addressCityCode}
+                    loading={addressLoading.barangays}
+                    icon={Home}
+                    onChange={handleBarangayChange}
+                  />
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-[#D6B53B]/15 bg-white/70 px-4 py-3 text-sm shadow-inner transition-all duration-500 dark:border-white/10 dark:bg-white/[0.03]">
+                  <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#8E7722] dark:text-[#D6B53B]">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Address Preview
+                  </div>
+                  <p className="leading-6 text-gray-700 dark:text-gray-100">
+                    {addressPreview || 'Complete the address selectors to preview your saved admin address.'}
+                  </p>
+                </div>
+              </section>
 
               <div className="flex justify-end">
                 <button

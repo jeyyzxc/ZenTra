@@ -28,6 +28,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ExportFormatMenu, { type ExportFormat, type ExportScope } from '@/components/admin/ExportFormatMenu';
 
 type UserRole = 'SUPERADMIN' | 'ADMIN';
 
@@ -203,7 +204,7 @@ function money(value: number) {
 
 function label(value: string | null | undefined) {
   if (!value) return 'Not set';
-  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 function formatDate(value: string | null | undefined, includeTime = false) {
@@ -489,6 +490,24 @@ export default function PaymentManagementClient({ currentUserRole }: { currentUs
     );
   };
 
+  const exportPayments = (format: ExportFormat, scope: ExportScope) => {
+    if (format === 'print') {
+      window.print();
+      return;
+    }
+
+    const params = new URLSearchParams(queryString);
+    params.set('format', format);
+    params.set('scope', scope);
+    params.set('timeZone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+    if (scope === 'selected' && selectedId) {
+      params.set('ids', selectedId);
+    }
+
+    window.location.href = `/api/payments/export?${params.toString()}`;
+  };
+
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
@@ -502,6 +521,27 @@ export default function PaymentManagementClient({ currentUserRole }: { currentUs
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportFormatMenu
+            onExport={exportPayments}
+            scopeOptions={[
+              {
+                scope: 'filtered',
+                label: 'Filtered',
+                description: `${data?.records.length ?? 0} matching payment record(s)`,
+              },
+              {
+                scope: 'selected',
+                label: 'Selected',
+                description: selected ? selected.paymentReference : 'Open a payment to export one record',
+                disabled: !selectedId,
+              },
+              {
+                scope: 'all',
+                label: 'All Authorized',
+                description: 'All payment records you are allowed to export',
+              },
+            ]}
+          />
           <button
             type="button"
             onClick={() => setShowFilters((current) => !current)}
@@ -950,6 +990,12 @@ function PaymentDrawer({
         </div>
 
         <div className="sticky bottom-0 grid gap-2 border-t border-[#D6B53B]/15 bg-white/95 p-4 backdrop-blur sm:grid-cols-2 dark:bg-[#141A13]/95">
+          <a href={`/api/payments/${record.id}/receipt?timeZone=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6B53B]/30 px-4 py-3 text-sm font-bold text-[#8E7722] hover:bg-[#FDF5CC] dark:text-[#D6B53B]">
+            <ReceiptText className="h-4 w-4" /> Receipt PDF
+          </a>
+          <a href={`/api/payments/${record.id}/statement?timeZone=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6B53B]/30 px-4 py-3 text-sm font-bold text-[#8E7722] hover:bg-[#FDF5CC] dark:text-[#D6B53B]">
+            <FileText className="h-4 w-4" /> Statement PDF
+          </a>
           <button type="button" disabled={record.pendingAmount > 0 || isSaving} onClick={onAdd} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a1f18] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-[#D6B53B] dark:text-[#141A13]">
             <Plus className="h-4 w-4" /> Add Payment
           </button>

@@ -217,7 +217,7 @@ function enumLabel(value: string) {
 }
 
 function adminLabel(actor: CurrentAdmin) {
-  return `@${actor.username}`;
+  return actor.fullName?.trim() || actor.email;
 }
 
 function revalidateSupportSurfaces() {

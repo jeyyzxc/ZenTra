@@ -26,6 +26,8 @@ function responseForExport(
   logs: Awaited<ReturnType<typeof getAuditLogsForExport>>['logs'],
   scope: AuditExportScope,
   timeZone?: string,
+  generatedBy?: string,
+  filters?: Record<string, unknown>,
 ) {
   if (format === 'csv') {
     return {
@@ -37,7 +39,7 @@ function responseForExport(
 
   if (format === 'excel') {
     return {
-      body: createAuditXlsx(logs, timeZone, scope),
+      body: createAuditXlsx(logs, timeZone, scope, generatedBy, filters),
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       extension: 'xlsx',
     };
@@ -71,7 +73,14 @@ export async function GET(request: Request) {
   try {
     const scope: AuditExportScope = actor.role === 'SUPERADMIN' ? 'all' : 'own';
     const exportData = await getAuditLogsForExport(searchParams, actor);
-    const output = responseForExport(format, exportData.logs, scope, timeZone);
+    const output = responseForExport(
+      format,
+      exportData.logs,
+      scope,
+      timeZone,
+      actor.fullName || actor.email,
+      exportData.filters,
+    );
     const filename = getAuditExportFilename(output.extension, scope);
 
     await createAuditLog({

@@ -32,7 +32,7 @@ function formatDate(value: string | null) {
 }
 
 function formatEnum(value: string | null) {
-  return value ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) : '-';
+  return value ? value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI') : '-';
 }
 
 function relatedRecord(log: EmailLogListItem) {
@@ -161,20 +161,20 @@ export default function EmailLogTable({
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-sm font-bold text-gray-900 dark:text-white">{log.recipientEmail}</div>
-                      <div className="truncate text-xs text-gray-400">{log.recipientName ?? '-'}</div>
+                      <div className="truncate text-xs text-gray-500 dark:text-gray-400">{log.recipientName ?? '-'}</div>
                     </div>
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-[#8E7722] dark:text-[#D6B53B]">
+                <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                   {formatEnum(log.emailType)}
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
                   {relatedRecord(log)}
                 </td>
-                <td className="max-w-[340px] px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                <td className="max-w-[340px] px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
                   <span className="line-clamp-2">{log.subject}</span>
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                   {formatEnum(log.triggerSource)}
                 </td>
                 <td className="max-w-[220px] px-4 py-4 text-sm text-gray-500 dark:text-[#A3B19B]">

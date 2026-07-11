@@ -1,57 +1,132 @@
 "use client";
 
-import React, { useState } from 'react';
+import Image from 'next/image';
+import { BookOpen, ExternalLink, Maximize2, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+
+import styles from './PackageFlipbook.module.css';
+
+const FLIPBOOK_URL = 'https://heyzine.com/flip-book/eeabcd2f18.html';
 
 export default function PackageFlipbook() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const readerRef = useRef<HTMLElement>(null);
+
+  const openFlipbook = () => {
+    setIsExpanded(true);
+    setIsLoading(true);
+  };
+
+  const openFullscreen = () => {
+    void readerRef.current?.requestFullscreen?.();
+  };
+
+  if (!isExpanded) {
+    return (
+      <button
+        type="button"
+        onClick={openFlipbook}
+        className={styles.coverButton}
+        aria-label="Open Zion package magazine"
+      >
+        <span className={styles.pageStack} aria-hidden="true" />
+        <span className={styles.magazineEdge} aria-hidden="true" />
+        <span className={styles.coverRule} aria-hidden="true" />
+        <span className={styles.coverIssue}>No. 01</span>
+        <span className={styles.coverInner}>
+          <span className={styles.coverMeta}>
+            <span className={styles.coverKicker}>
+              The Event Issue
+            </span>
+            <span className={styles.coverTitle}>ZION</span>
+            <span className={styles.coverTitleSmall}>Celebration Journal</span>
+          </span>
+
+          <span className={styles.logoSeal} aria-hidden="true">
+            <Image
+              src="/zion-logo.png"
+              alt=""
+              width={260}
+              height={260}
+              className={styles.logoImage}
+            />
+          </span>
+
+          <span className={styles.coverSubtitle}>
+            A curated edit of elegant spaces, refined packages, and unforgettable moments.
+          </span>
+
+          <span className={styles.coverAction}>
+            <BookOpen className="h-4 w-4" strokeWidth={1.8} />
+            Open Magazine
+          </span>
+        </span>
+      </button>
+    );
+  }
 
   return (
-    <div 
-      className={`bg-white shadow-lg border border-[#D4AF37]/30 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] relative ${
-        isExpanded 
-          ? 'w-full h-[600px] sm:h-[700px] max-w-none' 
-          : 'w-full max-w-sm aspect-[4/5] cursor-pointer hover:shadow-xl'
-      }`}
-      onClick={() => {
-        if (!isExpanded) setIsExpanded(true);
-      }}
-    >
-      {!isExpanded ? (
-        <div className="w-full h-full flex items-center justify-center relative group">
-          <div className="w-2/3 opacity-80 transition-transform duration-500 group-hover:scale-105">
-            <img src="/zion-logo.png" alt="Zion" className="w-full h-auto filter brightness-0" />
-          </div>
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-            <div className="bg-gradient-to-r from-[#D4AF37] to-[#C5B358] text-white px-6 py-3 rounded-full font-serif tracking-widest shadow-[0_4px_15px_rgba(212,175,55,0.4)] text-sm uppercase flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 border-none">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-              View Flipbook
-            </div>
-          </div>
+    <section ref={readerRef} className={styles.readerShell} aria-label="Zion package magazine reader">
+      <div className={styles.readerHeader}>
+        <div>
+          <p className={styles.readerKicker}>Celebration Journal</p>
+          <h3 className={styles.readerTitle}>Zion Event Issue</h3>
         </div>
-      ) : (
-        <div className="w-full h-full flex flex-col bg-white animate-in fade-in duration-500">
-          <div className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5B358] flex justify-between items-center px-6 py-3 text-white shadow-md z-10">
-            <span className="font-serif tracking-[0.2em] text-sm uppercase">Package Details</span>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(false);
-              }}
-              className="hover:text-white transition-colors flex items-center gap-2 text-xs uppercase tracking-wider font-sans bg-white/10 px-3 py-1.5 rounded-full hover:bg-red-500/80"
-            >
-              Close
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-          <iframe
-            src="https://heyzine.com/flip-book/eeabcd2f18.html"
-            className="w-full flex-1 border-none bg-white"
-            allowFullScreen
-            scrolling="no"
-            title="Package Details Flipbook"
-          />
+
+        <div className={styles.readerActions}>
+          <a
+            href={FLIPBOOK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.iconButton}
+            title="Open in new tab"
+            aria-label="Open package magazine in a new tab"
+          >
+            <ExternalLink className="h-4 w-4" strokeWidth={1.8} />
+          </a>
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={openFullscreen}
+            title="Fullscreen"
+            aria-label="View package magazine fullscreen"
+          >
+            <Maximize2 className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => {
+              setIsExpanded(false);
+              setIsLoading(true);
+            }}
+            title="Close"
+            aria-label="Close package magazine"
+          >
+            <X className="h-4 w-4" strokeWidth={1.8} />
+          </button>
         </div>
-      )}
-    </div>
+      </div>
+
+      <div className={styles.iframeFrame}>
+        {isLoading && (
+          <div className={styles.loadingOverlay} aria-live="polite">
+            <span className={styles.loadingMark} aria-hidden="true">
+              <Maximize2 className="h-5 w-5" strokeWidth={1.6} />
+            </span>
+            <span>Preparing magazine</span>
+          </div>
+        )}
+        <iframe
+          src={FLIPBOOK_URL}
+          className={styles.flipbookFrame}
+          allowFullScreen
+          scrolling="no"
+          title="Zion Events Place package magazine"
+          onLoad={() => setIsLoading(false)}
+        />
+      </div>
+    </section>
   );
 }

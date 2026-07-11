@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { requireBookingOrchestrationKey } from '@/services/booking-orchestration';
+import {
+  requireBookingOrchestrationKey,
+  requireN8nWorkflowHeaders,
+} from '@/services/booking-orchestration';
 import {
   DashboardService,
   type AdminTodoBulkCreateInput,
 } from '@/lib/dashboard-service';
 
 export const dynamic = 'force-dynamic';
-
-const WORKFLOW_NAME = 'Zion - New Booking Orchestration';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({
@@ -24,23 +25,6 @@ function methodNotAllowed() {
     status: 405,
     headers: { Allow: 'POST' },
   });
-}
-
-function requireN8nHeaders(request: Request) {
-  const source = request.headers.get('x-zion-source')?.trim().toLowerCase();
-  const workflow = request.headers.get('x-zion-workflow')?.trim();
-
-  if (source !== 'n8n') {
-    const error = new Error('Invalid orchestration source.') as Error & { status: number };
-    error.status = 401;
-    throw error;
-  }
-
-  if (workflow !== WORKFLOW_NAME) {
-    const error = new Error('Invalid orchestration workflow.') as Error & { status: number };
-    error.status = 401;
-    throw error;
-  }
 }
 
 async function readJsonBody(request: Request): Promise<AdminTodoBulkCreateInput> {
@@ -68,7 +52,7 @@ async function readJsonBody(request: Request): Promise<AdminTodoBulkCreateInput>
 export async function POST(request: Request) {
   try {
     requireBookingOrchestrationKey(request);
-    requireN8nHeaders(request);
+    requireN8nWorkflowHeaders(request);
 
     const body = await readJsonBody(request);
     const data = await DashboardService.bulkCreateAdminTodoList(body);
@@ -79,6 +63,7 @@ export async function POST(request: Request) {
       data: {
         createdCount: data.createdCount,
         bookingReference: data.bookingReference,
+        taskIds: data.taskIds,
       },
     }, { status: data.createdCount > 0 ? 201 : 200 });
   } catch (error) {

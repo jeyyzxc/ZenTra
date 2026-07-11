@@ -18,6 +18,28 @@ enum Role {
   CLIENT
 }
 
+enum UserStatus {
+  PENDING_SETUP
+  ACTIVE
+  TEMP_ACCESS
+  PASSWORD_RESET_REQUIRED
+  DISABLED
+  LOCKED
+  INVITATION_EXPIRED
+  RESET_EXPIRED
+}
+
+enum AccountTokenType {
+  INVITATION
+  PASSWORD_RESET
+  TEMP_LOGIN
+}
+
+enum SessionAccessScope {
+  FULL_ACCESS
+  PASSWORD_CHANGE_ONLY
+}
+
 enum EventStatus {
   PENDING
   CONFIRMED
@@ -59,6 +81,7 @@ enum BookingSource {
   N8N_WORKFLOW
   PAYMENT_SYNC
   CONTRACT_SYNC
+  DEMO_CLIENT_ADMIN_BRIDGE
 }
 
 enum SyncStatus {
@@ -75,6 +98,7 @@ enum AutomationStatus {
   PROCESSING
   COMPLETED
   FAILED
+  DEMO_MODE
 }
 
 enum PaymentSummaryStatus {
@@ -132,6 +156,16 @@ enum AuditAction {
   FILE_DELETE
   PERMISSION_CHANGE
   ROLE_ASSIGNMENT
+  TEAM_MEMBER_INVITED
+  INVITATION_RESENT
+  PASSWORD_RESET_LINK_SENT
+  TEMP_ACCESS_CODE_SENT
+  PASSWORD_CHANGED
+  TEMP_ACCESS_EXPIRED
+  ACCOUNT_LOCKED
+  ACCOUNT_DISABLED
+  ACCOUNT_ACTIVATED
+  ROLE_CHANGED
   SYSTEM_CONFIG
   EXPORT
   ERROR
@@ -146,6 +180,9 @@ enum AuditStatus {
 
 enum EmailType {
   EMAIL_VERIFICATION
+  TEAM_INVITATION
+  TEAM_PASSWORD_RESET
+  TEAM_TEMP_ACCESS
   BOOKING_CONFIRMATION
   BOOKING_UPDATE
   PAYMENT_REMINDER
@@ -167,6 +204,8 @@ enum EmailStatus {
   BOUNCED
   RETRIED
   NOT_SENT
+  PENDING_DEMO
+  SENT_DEMO
 }
 
 enum TriggerSource {
@@ -174,6 +213,7 @@ enum TriggerSource {
   AI_ORCHESTRATION
   N8N_WORKFLOW
   MANUAL_RESEND
+  DEMO_CLIENT_ADMIN_BRIDGE
 }
 
 enum RelatedModule {
@@ -260,6 +300,7 @@ enum ContractWorkflowStatus {
   FAILED
   RETRYING
   MANUAL_FALLBACK
+  DEMO_MODE
 }
 
 enum ContractSignatureStatus {
@@ -333,18 +374,72 @@ enum AssistantQuestionStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  username      String   @unique
-  email         String   @unique
-  password      String
-  fullName      String?  @map("full_name") @db.VarChar(255)
-  contactNumber String?  @map("contact_number") @db.VarChar(20)
-  profileImage  String?  @map("profile_image") @db.VarChar(500)
-  role          Role     @default(CLIENT)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                    String           @id @default(cuid())
+  username              String           @unique
+  email                 String           @unique
+  passwordHash          String?          @map("password_hash") @db.Text
+  fullName              String?          @map("full_name") @db.VarChar(255)
+  contactNumber         String?          @map("contact_number") @db.VarChar(20)
+  addressRegionCode     String?          @map("address_region_code") @db.VarChar(20)
+  addressRegion         String?          @map("address_region") @db.VarChar(120)
+  addressProvinceCode   String?          @map("address_province_code") @db.VarChar(20)
+  addressProvince       String?          @map("address_province") @db.VarChar(120)
+  addressCityCode       String?          @map("address_city_code") @db.VarChar(20)
+  addressCity           String?          @map("address_city") @db.VarChar(120)
+  addressBarangayCode   String?          @map("address_barangay_code") @db.VarChar(20)
+  addressBarangay       String?          @map("address_barangay") @db.VarChar(120)
+  profileImage          String?          @map("profile_image") @db.VarChar(500)
+  role                  Role             @default(CLIENT)
+  status                UserStatus       @default(ACTIVE)
+  mustChangePassword    Boolean          @default(false) @map("must_change_password")
+  createdBy             String?          @map("created_by")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  lastPasswordChangedAt DateTime?        @map("last_password_changed_at")
+  accountTokens         AccountToken[]
+  accountSessions       AccountSession[]
 
   @@map("users")
+}
+
+model AccountToken {
+  id           String           @id @default(cuid())
+  userId       String           @map("user_id")
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String           @map("token_hash") @db.Text
+  tokenType    AccountTokenType @map("token_type")
+  expiresAt    DateTime         @map("expires_at")
+  usedAt       DateTime?        @map("used_at")
+  createdBy    String?          @map("created_by")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  ipAddress    String?          @map("ip_address") @db.VarChar(100)
+  userAgent    String?          @map("user_agent") @db.Text
+  attemptCount Int              @default(0) @map("attempt_count")
+  lockedAt     DateTime?        @map("locked_at")
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([tokenType])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@map("account_tokens")
+}
+
+model AccountSession {
+  id               String             @id @default(cuid())
+  userId           String             @map("user_id")
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionTokenHash String             @unique @map("session_token_hash") @db.Text
+  accessScope      SessionAccessScope @default(FULL_ACCESS) @map("access_scope")
+  expiresAt        DateTime           @map("expires_at")
+  revokedAt        DateTime?          @map("revoked_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([accessScope])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("sessions")
 }
 
 model Event {
@@ -401,6 +496,7 @@ model Inquiry {
   message              String            @db.Text
   eventInterest        String?           @map("event_interest") @db.VarChar(180)
   packageInterest      String?           @map("package_interest") @db.VarChar(255)
+  requestedEventDate   DateTime?         @map("requested_event_date")
   sourcePage           String            @default("contact_us") @map("source_page") @db.VarChar(80)
   status               InquiryStatus     @default(NEW)
   priority             InquiryPriority   @default(NORMAL)
@@ -420,6 +516,7 @@ model Inquiry {
   @@index([priority])
   @@index([assignedTo])
   @@index([eventInterest])
+  @@index([requestedEventDate])
   @@index([preferredContactTime])
   @@index([relatedBookingId])
   @@index([status, priority, submittedAt])
@@ -510,6 +607,7 @@ model Booking {
   timeline                BookingTimeline[]
   calendarEvent           Event?
   packageSnapshot         BookingPackageSnapshot?
+  orchestrationContext    BookingOrchestrationContext?
   testimonies             Testimony[]
   inquiries               Inquiry[]
   createdAt               DateTime                @default(now()) @map("created_at")
@@ -803,6 +901,32 @@ model BookingPackageSnapshot {
   @@map("booking_package_snapshots")
 }
 
+model BookingOrchestrationContext {
+  id                   String   @id @default(cuid())
+  bookingId            String   @unique @map("booking_id")
+  booking              Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingReference     String   @map("booking_reference")
+  eventCategory        String   @map("event_category")
+  eventCategoryKey     String   @map("event_category_key")
+  packageCategory      String   @map("package_category")
+  packageTier          String   @map("package_tier")
+  taskTemplateKey      String   @map("task_template_key")
+  riskLevel            String   @map("risk_level")
+  hasScheduleConflict  Boolean  @default(false) @map("has_schedule_conflict")
+  requiresManualReview Boolean  @default(false) @map("requires_manual_review")
+  suggestedAdminRole   String   @default("ADMIN") @map("suggested_admin_role")
+  tags                 Json?
+  reasonCodes          Json?    @map("reason_codes")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([bookingReference])
+  @@index([eventCategoryKey])
+  @@index([taskTemplateKey])
+  @@index([riskLevel])
+  @@map("booking_orchestration_contexts")
+}
+
 model BookingTimeline {
   id          String   @id @default(cuid())
   bookingId   String   @map("booking_id")
@@ -844,6 +968,16 @@ model AuditLog {
   @@index([timestamp, action])
   @@index([timestamp, userId])
   @@map("audit_logs")
+}
+
+model SystemSetting {
+  id        String   @id
+  settings  Json
+  updatedBy String?  @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 model EmailLog {
@@ -1029,6 +1163,12 @@ model DashboardTask {
   source          DashboardTaskSource   @default(MANUAL)
   workflowName    String?               @map("workflow_name")
   workflowExecutionId String?           @map("workflow_execution_id")
+  orderIndex      Int                   @default(0) @map("order_index")
+  taskTemplateKey String?               @map("task_template_key")
+  activationStatus String?              @default("active") @map("activation_status")
+  isActive        Boolean               @default(true) @map("is_active")
+  isEditable      Boolean               @default(true) @map("is_editable")
+  startedAt       DateTime?             @map("started_at")
   reminderOption  String?               @map("reminder_option")
   createdBy       String?               @map("created_by")
   completedBy     String?               @map("completed_by")
@@ -1044,6 +1184,10 @@ model DashboardTask {
   @@index([bookingReference])
   @@index([category])
   @@index([workflowExecutionId])
+  @@index([taskTemplateKey])
+  @@index([activationStatus])
+  @@index([isActive])
+  @@index([relatedRecordId, orderIndex])
   @@index([relatedModule, relatedRecordId])
   @@index([relatedRecordId, workflowExecutionId])
   @@index([taskDate, status])

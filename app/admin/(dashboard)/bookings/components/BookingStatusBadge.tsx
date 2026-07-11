@@ -71,7 +71,7 @@ const STYLES: Record<BadgeKind, Record<string, string>> = {
 
 function formatLabel(value: string) {
   return LABELS[value] ??
-    value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+    value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\bN8n\b/g, 'n8n').replace(/\bAi\b/g, 'AI');
 }
 
 export default function BookingStatusBadge({

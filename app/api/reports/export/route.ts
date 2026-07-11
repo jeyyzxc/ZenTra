@@ -1,46 +1,78 @@
+import { AuditAction, AuditStatus } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import { requireAdmin } from '@/lib/authorization';
+import { createReportsExportResult } from '@/lib/export/reports-export';
+import { createExportResponse } from '@/lib/export/response';
 import { getReportsData } from '@/lib/reports-service';
 
 export const dynamic = 'force-dynamic';
 
-function csvCell(value: string | number) {
-  return `"${String(value).replaceAll('"', '""')}"`;
+const FORMATS = ['csv', 'excel', 'pdf'] as const;
+const DATASETS = ['monthly', 'metrics', 'categories'] as const;
+
+type ExportFormat = (typeof FORMATS)[number];
+
+function isExportFormat(format: string): format is ExportFormat {
+  return FORMATS.includes(format as ExportFormat);
 }
 
-export async function GET() {
-  try {
-    await requireAdmin();
-    const data = await getReportsData();
-    const rows = [
-      ['Month', 'Bookings', 'Pending', 'Confirmed', 'Revenue'],
-      ...data.monthly.map((month) => [
-        month.label,
-        month.bookings,
-        month.pending,
-        month.confirmed,
-        month.revenue,
-      ]),
-      [],
-      ['Metric', 'Value'],
-      ['Booking Count', data.summary.bookingCount],
-      ['Pending Booking Count', data.summary.pendingBookingCount],
-      ['Revenue Collected', data.summary.revenueCollected],
-      ['Revenue Forecast', data.summary.revenueForecast],
-      ['Pending Payment Count', data.summary.pendingPaymentCount],
-      ['Pending Payment Balance', data.summary.pendingPaymentBalance],
-    ];
-    const csv = rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+export async function GET(request: Request) {
+  let actor: Awaited<ReturnType<typeof requireAdmin>>;
 
-    return new Response(csv, {
-      headers: {
-        'content-type': 'text/csv; charset=utf-8',
-        'content-disposition': `attachment; filename="zion-reports-${new Date().toISOString().slice(0, 10)}.csv"`,
+  try {
+    actor = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const requestUrl = new URL(request.url);
+  const requestContext = getRequestContext(request);
+  const format = requestUrl.searchParams.get('format')?.trim().toLowerCase() || 'csv';
+  const datasetParam = requestUrl.searchParams.get('dataset')?.trim().toLowerCase() || 'monthly';
+  const dataset = DATASETS.includes(datasetParam as (typeof DATASETS)[number]) ? datasetParam : 'monthly';
+  const timeZone = requestUrl.searchParams.get('timeZone')?.trim() || undefined;
+
+  if (!isExportFormat(format)) {
+    return NextResponse.json({ error: 'format must be csv, excel, or pdf.' }, { status: 400 });
+  }
+
+  try {
+    const data = await getReportsData();
+    const result = createReportsExportResult(format, data, actor, timeZone, dataset);
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Reports',
+      description: `Exported reports and analytics as ${format.toUpperCase()}.`,
+      status: AuditStatus.SUCCESS,
+      ...requestContext,
+      metadata: {
+        requestPath: requestUrl.pathname,
+        format,
+        dataset,
+        exportedRecords: result.exportedRecords,
       },
     });
+
+    return createExportResponse(result);
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith('Unauthorized')) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    return Response.json({ error: 'Unable to export reports.' }, { status: 500 });
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Reports',
+      description: `Failed to export reports and analytics as ${format.toUpperCase()}.`,
+      status: AuditStatus.FAILED,
+      ...requestContext,
+      metadata: {
+        requestPath: requestUrl.pathname,
+        format,
+        dataset,
+        ...errorMetadata(error),
+      },
+    });
+
+    return NextResponse.json({ error: 'Unable to export reports.' }, { status: 500 });
   }
 }

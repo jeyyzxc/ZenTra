@@ -4,12 +4,14 @@ Purpose: validate the minimal booking-created webhook, fetch full booking detail
 
 Do not add email delivery, admin notifications, To-Do tasks, payment processing, contract generation, workflow callbacks, or error workflows in this step.
 
+After this step is working, continue with `docs/n8n/zion-booking-receipt-email.md` to prepare the premium Zion client receipt email, send it, save the email log, and update the booking email status.
+
 ## Required n8n environment variables
 
 ```env
-ZION_WEBHOOK_SECRET="same value as the app N8N_WEBHOOK_SECRET"
 ZION_BACKEND_URL="http://localhost:3000"
-ZION_BACKEND_ORCHESTRATION_SECRET="same value as the app BACKEND_ORCHESTRATION_SECRET"
+N8N_WEBHOOK_SECRET="same value as the app .env.local N8N_WEBHOOK_SECRET"
+BACKEND_ORCHESTRATION_SECRET="same value as the app .env.local BACKEND_ORCHESTRATION_SECRET"
 ```
 
 If n8n is running in Docker Desktop and the Next app runs on the host machine, use `http://host.docker.internal:3000` for `ZION_BACKEND_URL`.
@@ -27,7 +29,7 @@ If n8n is running in Docker Desktop and the Next app runs on the host machine, u
 const item = $input.first().json;
 const headers = item.headers ?? {};
 const body = item.body ?? {};
-const expectedSecret = String($env.ZION_WEBHOOK_SECRET ?? '').trim();
+const expectedSecret = String($env.N8N_WEBHOOK_SECRET ?? '').trim();
 
 const header = (name) => String(
   headers[name] ??
@@ -127,7 +129,7 @@ False branch goes to Node 4. True branch goes to Node 5.
 - Method: `GET`
 - URL: `={{ $env.ZION_BACKEND_URL.replace(/\/+$/, '') }}/api/orchestration/bookings/{{ $json.booking_id }}/details`
 - Headers:
-  - `x-n8n-secret`: `={{ $env.ZION_BACKEND_ORCHESTRATION_SECRET }}`
+  - `x-n8n-secret`: `={{ $env.BACKEND_ORCHESTRATION_SECRET }}`
   - `x-zion-source`: `n8n`
   - `x-zion-workflow`: `Zion - New Booking Orchestration`
   - `x-zion-booking-reference`: `={{ $json.booking_reference }}`

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, UserStatus } from '@prisma/client';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not configured.');
@@ -34,17 +34,19 @@ try {
       data: {
         username,
         email,
-        password: passwordHash,
+        passwordHash,
         fullName,
         role: Role.SUPERADMIN,
+        status: UserStatus.ACTIVE,
+        lastPasswordChangedAt: new Date(),
       },
     });
 
     console.log('Initial superadmin created.');
     console.log(`Username: ${username}`);
     console.log(`Email: ${email}`);
-    console.log(`Temporary password: ${password}`);
-    console.log('Change this password from Team Management after the first login.');
+    console.log(`Bootstrap password: ${password}`);
+    console.log('Change this password from My Profile after the first login.');
   }
 
   console.log('Seed complete. No bookings, payments, contracts, logs, services, packages, FAQs, or other business records were created.');

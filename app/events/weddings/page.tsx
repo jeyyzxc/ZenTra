@@ -9,7 +9,7 @@ export default function WeddingsPage() {
       contentBlocks={[
         {
           text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
-          imageSrc: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069&auto=format&fit=crop",
+          imageSrc: "/zion/684222572_17948428422152473_4013856636383990076_n.jpg",
           imagePosition: 'right'
         },
         {

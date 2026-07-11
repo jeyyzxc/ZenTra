@@ -38,13 +38,11 @@ export default async function AuditLogsPage({
       ? prisma.user.findMany({
           select: {
             id: true,
-            username: true,
+            fullName: true,
             email: true,
             role: true,
           },
-          orderBy: {
-            username: 'asc',
-          },
+          orderBy: [{ fullName: 'asc' }, { email: 'asc' }],
         })
       : Promise.resolve([]),
     getEmailWorkflowOptions(),
@@ -52,7 +50,7 @@ export default async function AuditLogsPage({
 
   const userOptions: AuditUserOption[] = users.map((user) => ({
     id: user.id,
-    label: `@${user.username} · ${user.email}`,
+    label: user.fullName ? `${user.fullName} - ${user.email}` : user.email,
     role: user.role,
   }));
 

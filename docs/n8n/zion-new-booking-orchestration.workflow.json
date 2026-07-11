@@ -1,0 +1,877 @@
+{
+  "name": "Zion - New Booking Orchestration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zion-booking-created",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "01-zion-booking-webhook",
+      "name": "01. Zion Booking Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        0
+      ],
+      "webhookId": "zion-booking-created"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst headers = item.headers ?? {};\nconst body = item.body && typeof item.body === 'object' ? item.body : item;\nconst header = (name) => String(headers[name] ?? headers[name.toLowerCase()] ?? headers[name.toUpperCase()] ?? '').trim();\nconst text = (value) => typeof value === 'string' && value.trim() ? value.trim() : '';\nconst expectedSecret = String($env.N8N_WEBHOOK_SECRET ?? '').trim();\nconst errors = [];\nif (item.httpMethod && String(item.httpMethod).toUpperCase() !== 'POST') errors.push('Invalid request method.');\nif (header('x-zion-source') !== 'backend') errors.push('Invalid source.');\nif (!expectedSecret || header('x-zion-workflow-secret') !== expectedSecret) errors.push('Invalid workflow secret.');\nif (header('x-zion-event') !== 'booking.created') errors.push('Invalid event.');\nif (!text(body.booking_id)) errors.push('Missing booking_id.');\nif (!text(body.booking_reference)) errors.push('Missing booking_reference.');\nif (!body.categorization || typeof body.categorization !== 'object' || !text(body.categorization.taskTemplateKey)) errors.push('Missing categorization.taskTemplateKey.');\nif (header('x-zion-idempotency-key') && header('x-zion-idempotency-key') !== text(body.booking_reference)) errors.push('Invalid idempotency key.');\nreturn [{ json: { authorized: errors.length === 0, errors, booking: { booking_id: text(body.booking_id), booking_reference: text(body.booking_reference), event_type: text(body.event_type) }, categorization: body.categorization ?? {}, workflow: { name: 'Zion - New Booking Orchestration', executionId: String($execution.id), triggeredAt: text(body.triggered_at) || new Date().toISOString() } } }];"
+      },
+      "id": "02-validate-zion-booking-request",
+      "name": "02. Validate Zion Booking Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "authorized-request",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "03-authorized-request",
+      "name": "03. Authorized Request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, message: 'Unauthorized orchestration request.' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "04a-reject-unauthorized-request",
+      "name": "04A. Reject Unauthorized Request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -940,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/{{ $json.booking.booking_id }}/details",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.BACKEND_ORCHESTRATION_SECRET }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $json.booking.booking_reference }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "04b-fetch-verified-booking-details",
+      "name": "04B. Fetch Verified Booking Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -940,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success !== true || !payload.booking) throw new Error(payload.message || 'Backend booking details response was not successful.');\nconst booking = payload.booking;\nconst categorization = payload.categorization ?? $('02. Validate Zion Booking Request').first().json.categorization ?? {};\nconst eventTime = [booking.start_time, booking.end_time].filter(Boolean).join(' - ') || 'To be confirmed';\nreturn [{ json: { booking, categorization, summary: { bookingReference: booking.booking_reference, clientName: booking.client_name, clientEmail: booking.client_email, eventType: booking.event_type, eventDate: booking.event_date, eventTime, packageName: booking.package_name, guestCount: Number(booking.guest_count) || 0, riskLevel: categorization.riskLevel || 'medium', taskTemplateKey: categorization.taskTemplateKey || 'general_event_standard' }, workflow: { name: 'Zion - New Booking Orchestration', executionId: String($execution.id) } } }];"
+      },
+      "id": "05-create-structured-booking-summary",
+      "name": "05. Create Structured Booking Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "valid-client-email",
+              "leftValue": "={{ /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test($json.booking.client_email || '') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "06-is-client-email-valid",
+      "name": "06. Is Client Email Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -500,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/{{ $json.booking.booking_id }}/receipt-email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.BACKEND_ORCHESTRATION_SECRET }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $json.booking.booking_reference }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "07a-prepare-premium-booking-receipt-email",
+      "name": "07A. Prepare Premium Booking Receipt Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -260,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ZION_EMAIL_FROM || 'bookings@zion.local' }}",
+        "toEmail": "={{ $json.email.to }}",
+        "subject": "={{ $json.email.subject }}",
+        "emailFormat": "both",
+        "text": "={{ $json.email.text }}",
+        "html": "={{ $json.email.html }}",
+        "options": {}
+      },
+      "id": "08a-send-client-booking-receipt-email",
+      "name": "08A. Send Client Booking Receipt Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -20,
+        -220
+      ],
+      "notesInFlow": true,
+      "notes": "Configure SMTP/email credentials after importing. Do not add n8n footers or workflow IDs to this email."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/email-logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { recipientEmail: $('07A. Prepare Premium Booking Receipt Email').first().json.email.to, recipientName: $('07A. Prepare Premium Booking Receipt Email').first().json.email.recipient_name, emailType: 'BOOKING_UPDATE', relatedModule: 'BOOKING', relatedRecordId: $('07A. Prepare Premium Booking Receipt Email').first().json.booking.booking_id, subject: $('07A. Prepare Premium Booking Receipt Email').first().json.email.subject, triggerSource: 'N8N_WORKFLOW', workflowName: 'Zion - New Booking Orchestration', workflowExecutionId: String($execution.id), status: 'SENT', emailPreview: $('07A. Prepare Premium Booking Receipt Email').first().json.email.preheader, payloadSummary: { bookingReference: $('07A. Prepare Premium Booking Receipt Email').first().json.booking.booking_reference, receiptLink: $('07A. Prepare Premium Booking Receipt Email').first().json.email.receipt_link } } }}",
+        "options": {}
+      },
+      "id": "09a-save-zion-email-log",
+      "name": "09A. Save Zion Email Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/{{ $('07A. Prepare Premium Booking Receipt Email').first().json.booking.booking_id }}/email-status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { emailStatus: 'sent', emailType: 'booking_receipt', lastEmailSentAt: new Date().toISOString(), workflowExecutionId: String($execution.id), emailLogReference: $json.data?.id || $json.id || '' } }}",
+        "options": {}
+      },
+      "id": "10a-update-booking-email-status",
+      "name": "10A. Update Booking Email Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('05. Create Structured Booking Summary').first().json;\nconst booking = source.booking;\nconst categorization = source.categorization ?? {};\nconst templateKey = categorization.taskTemplateKey || 'general_event_standard';\nconst due = (days) => new Date(Date.now() + days * 86400000).toISOString();\nconst mk = (title, category, priority = 'medium', dueOffset = 1) => ({ title, category, priority, dueOffset });\nconst base = [mk('Review submitted booking details', 'booking_review', 'high', 1), mk('Verify event date and schedule availability', 'schedule_review', 'high', 1), mk('Confirm selected package inclusions', 'package_review', 'medium', 2), mk('Check payment and down payment requirements', 'payment_review', 'medium', 2), mk('Prepare client confirmation requirements', 'client_confirmation', 'medium', 3)];\nconst additions = { wedding_standard: [mk('Coordinate ceremony/reception requirements', 'event_requirements'), mk('Confirm motif, layout, and styling details', 'styling'), mk('Prepare supplier coordination checklist', 'supplier_coordination'), mk('Confirm food, guest count, and program timeline', 'program_food'), mk('Prepare final event coordination checklist', 'final_coordination')], birthday_debut_standard: [mk('Confirm theme and program flow', 'program_flow'), mk('Review setup, decorations, and stage requirements', 'styling'), mk('Confirm food and guest count', 'program_food'), mk('Prepare event host/program coordination checklist', 'program_coordination'), mk('Prepare final event coordination checklist', 'final_coordination')], christening_standard: [mk('Confirm ceremony and reception schedule', 'event_requirements'), mk('Review family/guest seating needs', 'seating'), mk('Confirm food and guest count', 'program_food'), mk('Prepare styling and setup requirements', 'styling'), mk('Prepare final event coordination checklist', 'final_coordination')], corporate_group_standard: [mk('Confirm company/group event requirements', 'event_requirements'), mk('Review technical needs such as sound, projector, and program flow', 'technical_requirements'), mk('Confirm food and guest count', 'program_food'), mk('Prepare logistics and supplier coordination checklist', 'supplier_coordination'), mk('Prepare final event coordination checklist', 'final_coordination')], general_event_standard: [mk('Confirm event requirements', 'event_requirements'), mk('Review setup and package inclusions', 'package_review'), mk('Confirm food and guest count', 'program_food'), mk('Prepare logistics checklist', 'logistics'), mk('Prepare final event coordination checklist', 'final_coordination')] };\nconst selected = additions[templateKey] || additions.general_event_standard;\nconst tasks = [...base, ...selected].map((task, index) => ({ orderIndex: index + 1, title: task.title, description: `${task.title} for booking ${booking.booking_reference}.`, priority: task.priority, status: 'pending', activationStatus: 'pending_booking_approval', isActive: false, isEditable: true, category: task.category, dueDate: due(task.dueOffset), assignedToRole: 'ADMIN', taskTemplateKey: templateKey }));\nreturn [{ json: { relatedModule: 'booking', relatedRecordId: booking.booking_id, bookingReference: booking.booking_reference, source: 'n8n_workflow', workflowName: 'Zion - New Booking Orchestration', workflowExecutionId: String($execution.id), eventType: booking.event_type, clientName: booking.client_name, categorization, tasks } }];"
+      },
+      "id": "11a-generate-admin-to-do-list",
+      "name": "11A. Generate Admin To-Do List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/tasks/bulk-create",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "12a-save-admin-to-do-list",
+      "name": "12A. Save Admin To-Do List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const taskPayload = $('11A. Generate Admin To-Do List').first().json;\nconst saveResult = $input.first().json;\nconst createdCount = saveResult.data?.createdCount ?? saveResult.createdCount ?? taskPayload.tasks.length;\nreturn [{ json: { type: 'NEW_BOOKING_TASK_LIST_CREATED', priority: 'HIGH', title: `New booking received: ${taskPayload.bookingReference}`, message: `A new ${taskPayload.eventType} booking was submitted. The admin To-Do list has been generated and is waiting for booking approval.`, relatedModule: 'BOOKING', relatedRecordId: taskPayload.relatedRecordId, bookingReference: taskPayload.bookingReference, audience: ['SUPERADMIN', 'ADMIN'], payload: { bookingSummary: { bookingReference: taskPayload.bookingReference, clientName: taskPayload.clientName, eventType: taskPayload.eventType }, categorization: taskPayload.categorization, taskCount: createdCount, tasksPreview: taskPayload.tasks.slice(0, 5).map((task) => ({ orderIndex: task.orderIndex, title: task.title, category: task.category })) } } }];"
+      },
+      "id": "13a-prepare-admin-notification-payload",
+      "name": "13A. Prepare Admin Notification Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/notifications/create",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "14a-create-admin-notification",
+      "name": "14A. Create Admin Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/workflow-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, automationStatus: 'COMPLETED', workflowResult: { structuredSummaryCreated: true, receiptEmailSent: true, emailLogSaved: true, emailStatusUpdated: true, taskListCreated: true, adminNotificationCreated: true, tasksActivated: false, activationReason: 'pending_admin_approval' }, n8nWorkflowId: 'Zion - New Booking Orchestration', n8nExecutionId: String($execution.id) } }}",
+        "options": {}
+      },
+      "id": "15a-save-successful-workflow-result",
+      "name": "15A. Save Successful Workflow Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Booking orchestration completed successfully.', bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, tasksActivated: false, activationReason: 'pending_admin_approval' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "16a-return-booking-orchestration-success",
+      "name": "16A. Return Booking Orchestration Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1900,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/email-logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { recipientEmail: $json.booking.client_email || 'missing-client-email@zion.local', recipientName: $json.booking.client_name, emailType: 'BOOKING_UPDATE', relatedModule: 'BOOKING', relatedRecordId: $json.booking.booking_id, subject: `Booking Request Receipt Skipped - ${$json.booking.booking_reference}`, triggerSource: 'N8N_WORKFLOW', workflowName: 'Zion - New Booking Orchestration', workflowExecutionId: String($execution.id), status: 'SKIPPED', emailPreview: 'Client email is missing or invalid. Admin review is required.', failureReason: 'INVALID_CLIENT_EMAIL', payloadSummary: { bookingReference: $json.booking.booking_reference } } }}",
+        "options": {}
+      },
+      "id": "07b-save-skipped-email-log",
+      "name": "07B. Save Skipped/Failed Email Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -260,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/{{ $('05. Create Structured Booking Summary').first().json.booking.booking_id }}/email-status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { emailStatus: 'skipped', emailType: 'booking_receipt', lastEmailSentAt: null, workflowExecutionId: String($execution.id), emailLogReference: $json.data?.id || $json.id || '' } }}",
+        "options": {}
+      },
+      "id": "08b-update-booking-email-status-skipped",
+      "name": "08B. Update Booking Email Status as Failed or Skipped",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -20,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/notifications/create",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { type: 'BOOKING_EMAIL_ISSUE', priority: 'HIGH', title: `Client email issue: ${$('05. Create Structured Booking Summary').first().json.booking.booking_reference}`, message: 'A booking was submitted, but the client email is missing or invalid. Please review before resending the receipt.', relatedModule: 'BOOKING', relatedRecordId: $('05. Create Structured Booking Summary').first().json.booking.booking_id, bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, audience: ['SUPERADMIN', 'ADMIN'], payload: { failureStep: 'client_email_validation', safeErrorMessage: 'Client email is missing or invalid.' } } }}",
+        "options": {}
+      },
+      "id": "09b-create-admin-email-issue-notification",
+      "name": "09B. Create Admin Email Issue Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/bookings/workflow-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.BOOKING_ORCHESTRATION_API_KEY }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, automationStatus: 'PARTIAL_FAILED', workflowResult: { structuredSummaryCreated: true, receiptEmailSent: false, emailLogSaved: true, emailStatusUpdated: true, taskListCreated: false, adminNotificationCreated: true, tasksActivated: false, failureStep: 'client_email_validation', safeErrorMessage: 'Client email is missing or invalid.' }, n8nWorkflowId: 'Zion - New Booking Orchestration', n8nExecutionId: String($execution.id) } }}",
+        "options": {}
+      },
+      "id": "10b-save-failed-partial-workflow-result",
+      "name": "10B. Save Failed/Partial Workflow Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, partial: true, message: 'Booking was received, but client email could not be sent. Admin review is required.', bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference } }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "11b-return-booking-orchestration-failed-or-partial",
+      "name": "11B. Return Booking Orchestration Failed or Partial",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        700,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "01. Zion Booking Webhook": {
+      "main": [
+        [
+          {
+            "node": "02. Validate Zion Booking Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02. Validate Zion Booking Request": {
+      "main": [
+        [
+          {
+            "node": "03. Authorized Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03. Authorized Request?": {
+      "main": [
+        [
+          {
+            "node": "04B. Fetch Verified Booking Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "04A. Reject Unauthorized Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04B. Fetch Verified Booking Details": {
+      "main": [
+        [
+          {
+            "node": "05. Create Structured Booking Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05. Create Structured Booking Summary": {
+      "main": [
+        [
+          {
+            "node": "06. Is Client Email Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06. Is Client Email Valid?": {
+      "main": [
+        [
+          {
+            "node": "07A. Prepare Premium Booking Receipt Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "07B. Save Skipped/Failed Email Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07A. Prepare Premium Booking Receipt Email": {
+      "main": [
+        [
+          {
+            "node": "08A. Send Client Booking Receipt Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08A. Send Client Booking Receipt Email": {
+      "main": [
+        [
+          {
+            "node": "09A. Save Zion Email Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09A. Save Zion Email Log": {
+      "main": [
+        [
+          {
+            "node": "10A. Update Booking Email Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10A. Update Booking Email Status": {
+      "main": [
+        [
+          {
+            "node": "11A. Generate Admin To-Do List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11A. Generate Admin To-Do List": {
+      "main": [
+        [
+          {
+            "node": "12A. Save Admin To-Do List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12A. Save Admin To-Do List": {
+      "main": [
+        [
+          {
+            "node": "13A. Prepare Admin Notification Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13A. Prepare Admin Notification Payload": {
+      "main": [
+        [
+          {
+            "node": "14A. Create Admin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14A. Create Admin Notification": {
+      "main": [
+        [
+          {
+            "node": "15A. Save Successful Workflow Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15A. Save Successful Workflow Result": {
+      "main": [
+        [
+          {
+            "node": "16A. Return Booking Orchestration Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07B. Save Skipped/Failed Email Log": {
+      "main": [
+        [
+          {
+            "node": "08B. Update Booking Email Status as Failed or Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08B. Update Booking Email Status as Failed or Skipped": {
+      "main": [
+        [
+          {
+            "node": "09B. Create Admin Email Issue Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09B. Create Admin Email Issue Notification": {
+      "main": [
+        [
+          {
+            "node": "10B. Save Failed/Partial Workflow Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10B. Save Failed/Partial Workflow Result": {
+      "main": [
+        [
+          {
+            "node": "11B. Return Booking Orchestration Failed or Partial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "zion"
+    },
+    {
+      "name": "booking"
+    },
+    {
+      "name": "orchestration"
+    }
+  ],
+  "active": false,
+  "versionId": "zion-booking-orchestration-2026-07-05"
+}

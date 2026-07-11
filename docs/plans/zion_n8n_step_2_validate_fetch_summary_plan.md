@@ -146,9 +146,9 @@ Configure these values in the n8n environment.
 For local Docker testing:
 
 ```env
-ZION_WEBHOOK_SECRET=replace_with_same_secret_used_by_backend
 ZION_BACKEND_URL=http://host.docker.internal:3000
-ZION_BACKEND_ORCHESTRATION_SECRET=replace_with_secure_backend_callback_secret
+N8N_WEBHOOK_SECRET=replace_with_same_value_as_app_env_local
+BACKEND_ORCHESTRATION_SECRET=replace_with_same_value_as_app_env_local
 ZION_ALLOWED_EVENT=booking.created
 ```
 
@@ -212,8 +212,8 @@ const item = $input.first().json;
 const headers = item.headers || {};
 const body = item.body || {};
 
-const expectedSecret = process.env.ZION_WEBHOOK_SECRET;
-const expectedEvent = process.env.ZION_ALLOWED_EVENT || "booking.created";
+const expectedSecret = String($env.N8N_WEBHOOK_SECRET ?? "").trim();
+const expectedEvent = String($env.ZION_ALLOWED_EVENT ?? "booking.created").trim();
 
 function getHeader(name) {
   const lower = name.toLowerCase();
@@ -326,7 +326,7 @@ Example full URL from n8n:
 Required request headers from n8n to backend:
 
 ```text
-x-n8n-secret: value_from_ZION_BACKEND_ORCHESTRATION_SECRET
+x-n8n-secret: value_from_BACKEND_ORCHESTRATION_SECRET
 x-zion-source: n8n
 x-zion-workflow: Zion - New Booking Orchestration
 x-zion-booking-reference: booking_reference
@@ -400,7 +400,7 @@ URL: {{$env.ZION_BACKEND_URL}}/api/orchestration/bookings/{{$json.booking_id}}/d
 Headers:
 
 ```text
-x-n8n-secret: {{$env.ZION_BACKEND_ORCHESTRATION_SECRET}}
+x-n8n-secret: {{$env.BACKEND_ORCHESTRATION_SECRET}}
 x-zion-source: n8n
 x-zion-workflow: Zion - New Booking Orchestration
 x-zion-booking-reference: {{$json.booking_reference}}
@@ -818,7 +818,7 @@ Before marking Step 2 as complete, verify:
 
 ### Test D: Invalid Backend Secret
 
-1. Temporarily change n8n `ZION_BACKEND_ORCHESTRATION_SECRET`.
+1. Temporarily change n8n `BACKEND_ORCHESTRATION_SECRET`.
 2. Run test.
 3. Confirm backend rejects the full booking detail request.
 

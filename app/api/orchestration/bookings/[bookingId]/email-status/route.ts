@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   requireBookingOrchestrationKey,
+  requireN8nWorkflowHeaders,
   updateBookingEmailStatus,
 } from '@/services/booking-orchestration';
 import { BookingRequestError } from '@/lib/booking-validation';
@@ -12,8 +13,6 @@ type RouteContext = {
     bookingId?: string;
   }>;
 };
-
-const WORKFLOW_NAME = 'Zion - New Booking Orchestration';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({
@@ -32,19 +31,6 @@ function methodNotAllowed() {
   });
 }
 
-function requireN8nHeaders(request: Request) {
-  const source = request.headers.get('x-zion-source')?.trim().toLowerCase();
-  const workflow = request.headers.get('x-zion-workflow')?.trim();
-
-  if (source !== 'n8n') {
-    throw new BookingRequestError('Invalid orchestration source.', 401);
-  }
-
-  if (workflow !== WORKFLOW_NAME) {
-    throw new BookingRequestError('Invalid orchestration workflow.', 401);
-  }
-}
-
 async function readJsonBody(request: Request) {
   try {
     return await request.json() as Record<string, unknown>;
@@ -56,7 +42,7 @@ async function readJsonBody(request: Request) {
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     requireBookingOrchestrationKey(request);
-    requireN8nHeaders(request);
+    requireN8nWorkflowHeaders(request);
 
     const { bookingId } = await context.params;
     const body = await readJsonBody(request);

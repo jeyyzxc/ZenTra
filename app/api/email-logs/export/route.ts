@@ -1,4 +1,6 @@
+import { AuditAction, AuditStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import { requireAdmin } from '@/lib/authorization';
 import {
   type EmailLogExportScope,
@@ -24,6 +26,8 @@ function responseForExport(
   logs: Awaited<ReturnType<typeof getEmailLogsForExport>>['logs'],
   scope: EmailLogExportScope,
   timeZone?: string,
+  generatedBy?: string,
+  filters?: Record<string, unknown>,
 ) {
   if (format === 'csv') {
     return {
@@ -35,7 +39,7 @@ function responseForExport(
 
   if (format === 'excel') {
     return {
-      body: createEmailLogXlsx(logs, timeZone, scope),
+      body: createEmailLogXlsx(logs, timeZone, scope, generatedBy, filters),
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       extension: 'xlsx',
     };
@@ -57,6 +61,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  const requestContext = getRequestContext(request);
   const searchParams = new URL(request.url).searchParams;
   const format = searchParams.get('format')?.trim().toLowerCase() || 'csv';
   const timeZone = searchParams.get('timeZone')?.trim() || undefined;
@@ -68,8 +73,33 @@ export async function GET(request: Request) {
   try {
     const scope: EmailLogExportScope = actor.role === 'SUPERADMIN' ? 'all' : 'admin';
     const exportData = await getEmailLogsForExport(searchParams, actor);
-    const output = responseForExport(format, exportData.logs, scope, timeZone);
+    const output = responseForExport(
+      format,
+      exportData.logs,
+      scope,
+      timeZone,
+      actor.fullName || actor.email,
+      exportData.filters,
+    );
     const filename = getEmailLogExportFilename(output.extension);
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Audit',
+      description: `Exported ${exportData.logs.length} email log record(s) as ${format.toUpperCase()}.`,
+      status: AuditStatus.SUCCESS,
+      ...requestContext,
+      metadata: {
+        requestPath: new URL(request.url).pathname,
+        format,
+        timeZone,
+        filters: exportData.filters,
+        totalRecords: exportData.totalRecords,
+        exportedRecords: exportData.logs.length,
+        limitApplied: exportData.limitApplied,
+      },
+    });
 
     return new Response(output.body, {
       headers: {
@@ -82,6 +112,20 @@ export async function GET(request: Request) {
     if (error instanceof EmailLogQueryError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
+
+    await createAuditLog({
+      ...auditActor(actor),
+      action: AuditAction.EXPORT,
+      module: 'Audit',
+      description: `Failed to export email logs as ${format.toUpperCase()}.`,
+      status: AuditStatus.FAILED,
+      ...requestContext,
+      metadata: {
+        requestPath: new URL(request.url).pathname,
+        format,
+        ...errorMetadata(error),
+      },
+    });
 
     return NextResponse.json({ error: 'Unable to export email logs.' }, { status: 500 });
   }

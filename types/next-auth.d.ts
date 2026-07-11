@@ -1,5 +1,5 @@
 import type { DefaultSession } from 'next-auth';
-import type { Role } from '@prisma/client';
+import type { Role, SessionAccessScope, UserStatus } from '@prisma/client';
 
 declare module 'next-auth' {
   interface Session {
@@ -7,6 +7,10 @@ declare module 'next-auth' {
       id: string;
       username: string;
       role: Role;
+      status: UserStatus;
+      accessScope: SessionAccessScope;
+      mustChangePassword: boolean;
+      accountSessionId?: string;
     } & DefaultSession['user'];
   }
 
@@ -14,6 +18,12 @@ declare module 'next-auth' {
     username: string;
     role: Role;
     rememberMe?: boolean;
+    status?: UserStatus;
+    accessScope?: SessionAccessScope;
+    mustChangePassword?: boolean;
+    accountSessionId?: string;
+    sessionExpiresAt?: number;
+    passwordVersionAt?: number;
   }
 }
 
@@ -23,5 +33,9 @@ declare module 'next-auth/jwt' {
     role?: Role;
     rememberMe?: boolean;
     sessionExpiresAt?: number;
+    accessScope?: SessionAccessScope;
+    mustChangePassword?: boolean;
+    accountSessionId?: string;
+    passwordVersionAt?: number;
   }
 }

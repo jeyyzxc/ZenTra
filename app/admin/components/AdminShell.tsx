@@ -7,10 +7,10 @@ import AdminTopbar from './AdminTopbar';
 
 type AdminShellUser = {
   id: string;
-  username: string;
   email: string;
   profileImage: string | null;
   role: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
+  fullName: string | null;
 };
 
 export default function AdminShell({

@@ -9,8 +9,12 @@ import type { CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
 
 export const EMAIL_TYPES = Object.values(EmailType);
-export const EMAIL_STATUSES = Object.values(EmailStatus);
-export const TRIGGER_SOURCES = Object.values(TriggerSource);
+export const EMAIL_STATUSES: EmailStatus[] = Object.values(EmailStatus).filter(
+  (status) => status !== EmailStatus.PENDING_DEMO && status !== EmailStatus.SENT_DEMO,
+);
+export const TRIGGER_SOURCES: TriggerSource[] = Object.values(TriggerSource).filter(
+  (source) => source !== TriggerSource.DEMO_CLIENT_ADMIN_BRIDGE,
+);
 export const RELATED_MODULES = Object.values(RelatedModule);
 
 const SORT_FIELDS = [
@@ -142,6 +146,15 @@ export function serializeEmailLog(log: {
   createdAt: Date;
   updatedAt: Date;
 }): EmailLogDto {
+  const status = log.status === EmailStatus.PENDING_DEMO
+    ? EmailStatus.PENDING
+    : log.status === EmailStatus.SENT_DEMO
+      ? EmailStatus.SENT
+      : log.status;
+  const triggerSource = log.triggerSource === TriggerSource.DEMO_CLIENT_ADMIN_BRIDGE
+    ? TriggerSource.SYSTEM
+    : log.triggerSource;
+
   return {
     id: log.id,
     recipientEmail: log.recipientEmail,
@@ -150,11 +163,11 @@ export function serializeEmailLog(log: {
     relatedModule: log.relatedModule,
     relatedRecordId: log.relatedRecordId,
     subject: log.subject,
-    triggerSource: log.triggerSource,
+    triggerSource,
     workflowName: log.workflowName,
     workflowExecutionId: log.workflowExecutionId,
     providerMessageId: log.providerMessageId,
-    status: log.status,
+    status,
     retryCount: log.retryCount,
     lastAttemptAt: toIso(log.lastAttemptAt),
     sentAt: toIso(log.sentAt),

@@ -45,6 +45,7 @@ type InquiryItem = {
   message: string;
   eventInterest: string | null;
   packageInterest: string | null;
+  requestedEventDate: string | null;
   sourcePage: string;
   status: InquiryStatus;
   priority: InquiryPriority;
@@ -92,7 +93,6 @@ type Summary = {
 
 type AdminOption = {
   id: string;
-  username: string;
   label: string;
   role: string;
 };
@@ -159,6 +159,7 @@ function formatDateOnly(value: string) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   }).format(new Date(value));
 }
 
@@ -415,7 +416,7 @@ export default function InquiryManagementClient({
     setConversionForm({
       eventTitle: `${selected.eventInterest || 'Zion'} event for ${selected.fullName}`,
       eventType: selected.eventInterest || 'Wedding Reception',
-      eventDate: '',
+      eventDate: selected.requestedEventDate?.slice(0, 10) ?? '',
       startTime: '',
       endTime: '',
       venue: 'Main Hall',
@@ -545,20 +546,21 @@ export default function InquiryManagementClient({
 
         <div className="mt-5 overflow-hidden rounded-2xl border border-white/80 bg-white shadow-sm dark:border-white/10 dark:bg-[#1C1D21]">
           <div className="overflow-x-auto">
-            <table className="min-w-[1380px] w-full text-left">
+            <table className="min-w-[1480px] w-full text-left">
               <thead className="border-b border-gray-100 bg-gray-50/80 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-[#A3B19B]">
                 <tr>
-                  {['Submitted Date', 'Client', 'Message Preview', 'Preferred Time', 'Event Interest', 'Status', 'Priority', 'Assigned To', 'Last Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}
+                  {['Submitted Date', 'Requested Date', 'Client', 'Message Preview', 'Preferred Time', 'Event Interest', 'Status', 'Priority', 'Assigned To', 'Last Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                 {isLoading ? (
-                  <tr><td colSpan={10} className="h-64 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-[#D6B53B]" /></td></tr>
+                  <tr><td colSpan={11} className="h-64 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin text-[#D6B53B]" /></td></tr>
                 ) : inquiries.length === 0 ? (
-                  <tr><td colSpan={10} className="px-6 py-20 text-center"><Inbox className="mx-auto h-10 w-10 text-[#D6B53B]/60" /><p className="mt-4 font-sahitya text-xl font-bold">No inquiries yet.</p><p className="mt-1 text-sm text-gray-500 dark:text-[#A3B19B]">Client messages from the Contact Us page will appear here once submitted.</p></td></tr>
+                  <tr><td colSpan={11} className="px-6 py-20 text-center"><Inbox className="mx-auto h-10 w-10 text-[#D6B53B]/60" /><p className="mt-4 font-sahitya text-xl font-bold">No inquiries yet.</p><p className="mt-1 text-sm text-gray-500 dark:text-[#A3B19B]">Client messages from the Contact Us page will appear here once submitted.</p></td></tr>
                 ) : inquiries.map((inquiry) => (
                   <tr key={inquiry.id} className="text-sm transition hover:bg-[#FDF5CC]/20 dark:hover:bg-white/[0.03]">
                     <td className="whitespace-nowrap px-4 py-4 text-xs text-gray-500">{formatDate(inquiry.submittedAt)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-xs font-semibold text-[#8E7722] dark:text-[#D6B53B]">{inquiry.requestedEventDate ? formatDateOnly(inquiry.requestedEventDate) : 'Not selected'}</td>
                     <td className="px-4 py-4"><p className="font-bold">{inquiry.fullName}</p><p className="mt-1 max-w-48 truncate text-xs text-gray-400">{inquiry.email}</p><p className="max-w-48 truncate text-xs text-gray-400">{inquiry.phoneNumber || 'No phone'}</p></td>
                     <td className="max-w-xs px-4 py-4"><p className="line-clamp-2 text-xs leading-5 text-gray-600 dark:text-[#A3B19B]">{inquiry.message}</p></td>
                     <td className="px-4 py-4 text-xs font-semibold">{inquiry.preferredContactTime || 'Any time'}</td>
@@ -623,6 +625,7 @@ export default function InquiryManagementClient({
                 <dl className="mt-5 grid grid-cols-1 gap-4 rounded-2xl bg-gray-50 p-5 text-sm dark:bg-white/5 sm:grid-cols-2">
                   {[
                     ['Preferred contact time', selected.preferredContactTime || 'Any time'],
+                    ['Requested event date', selected.requestedEventDate ? formatDateOnly(selected.requestedEventDate) : 'Not selected'],
                     ['Event interest', selected.eventInterest || 'Not specified'],
                     ['Package interest', selected.packageInterest || 'Not specified'],
                     ['Source', normalizeLabel(selected.sourcePage)],

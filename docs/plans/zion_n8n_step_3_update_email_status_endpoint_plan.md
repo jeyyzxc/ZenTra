@@ -119,7 +119,7 @@ Therefore, the n8n HTTP Request node must send:
 
 ```text
 Content-Type: application/json
-x-api-key: local-zion-booking-orchestration-key-change-before-production
+x-api-key: {{$env.BOOKING_ORCHESTRATION_API_KEY}}
 x-zion-source: n8n
 x-zion-workflow: Zion - New Booking Orchestration
 ```
@@ -133,7 +133,7 @@ The local API key must be changed before deployment.
 The key must come from the backend environment variable:
 
 ```env
-BOOKING_ORCHESTRATION_API_KEY=local-zion-booking-orchestration-key-change-before-production
+BOOKING_ORCHESTRATION_API_KEY=replace_with_same_value_as_app_env_local
 ```
 
 ---
@@ -715,9 +715,7 @@ Before marking this fix as complete, verify:
 
 The current key:
 
-```text
-local-zion-booking-orchestration-key-change-before-production
-```
+Use the current `BOOKING_ORCHESTRATION_API_KEY` value from the app `.env.local` file. Do not paste old placeholder keys into the n8n workflow.
 
 is only for local testing.
 

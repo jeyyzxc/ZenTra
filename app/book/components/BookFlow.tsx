@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import SubpageHero from '@/components/client/SubpageHero';
 import Step1EventType from './Step1EventType';
-import Step2Date from './Step2Date'; 
+import Step2Date from './Step2Date';
 import Step3Theme from './Step3Theme';
 import Step4Guests from './Step4Guests';
 import Step5Time from './Step5Time';
@@ -89,7 +89,7 @@ export default function BookFlow() {
 
   // Constants for design
   const totalSteps = 9; // Not counting generating/result for the progress bar
-  
+
   // Custom headers per step
   const stepHeaders: Record<number, { title: string; subtitle: string }> = {
     1: { title: "What are we celebrating?", subtitle: "Tell us what we're celebrating." },
@@ -135,13 +135,32 @@ export default function BookFlow() {
   if (step === 11) {
     return (
       <div className="w-full flex flex-col animate-[fadeIn_0.5s_ease-out]">
-        <SubpageHero 
-          title="Craft Your Legacy at Zion"
-          subtitle="Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured."
-          imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
+        <SubpageHero
+          slides={[
+            {
+              title: "Craft Your Legacy at Zion",
+              subtitle: "Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured.",
+              imageSrc: "/zion/475432722_17894220468152473_3402569861204614886_n.jpg"
+            },
+            {
+              title: "A Venue Beyond Compare",
+              subtitle: "Experience breathtaking views and unparalleled elegance. Let Zion be the canvas for your most cherished memories.",
+              imageSrc: "/zion/476060128_17894980743152473_185156717656488658_n.jpg"
+            },
+            {
+              title: "Where Moments Become Timeless",
+              subtitle: "From intimate gatherings to grand celebrations, our dedicated team curates every detail to perfection, ensuring a seamless experience.",
+              imageSrc: "/zion/652801058_17941061265152473_780514116733355264_n.jpg"
+            },
+            {
+              title: "Celebrate Life's Milestones",
+              subtitle: "Create unforgettable memories surrounded by the beauty and elegance of Zion Events Place.",
+              imageSrc: "/zion/659085357_17944398867152473_7164489881428293506_n.jpg"
+            }
+          ]}
         />
         <div className="w-full relative z-10 bg-[#FDFCEE] min-h-screen">
-           {renderStep()}
+          {renderStep()}
         </div>
       </div>
     );
@@ -153,89 +172,159 @@ export default function BookFlow() {
   return (
     <div className="flex flex-col w-full">
       {step <= 9 && (
-        <SubpageHero 
-          title="Craft Your Legacy at Zion"
-          subtitle="Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured."
-          imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
+        <SubpageHero
+          slides={[
+            {
+              title: "Craft Your Legacy at Zion",
+              subtitle: "Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured.",
+              imageSrc: "/zion/475432722_17894220468152473_3402569861204614886_n.jpg"
+            },
+            {
+              title: "A Venue Beyond Compare",
+              subtitle: "Experience breathtaking views and unparalleled elegance. Let Zion be the canvas for your most cherished memories.",
+              imageSrc: "/zion/476060128_17894980743152473_185156717656488658_n.jpg"
+            },
+            {
+              title: "Where Moments Become Timeless",
+              subtitle: "From intimate gatherings to grand celebrations, our dedicated team curates every detail to perfection, ensuring a seamless experience.",
+              imageSrc: "/zion/652801058_17941061265152473_780514116733355264_n.jpg"
+            },
+            {
+              title: "Celebrate Life's Milestones",
+              subtitle: "Create unforgettable memories surrounded by the beauty and elegance of Zion Events Place.",
+              imageSrc: "/zion/659085357_17944398867152473_7164489881428293506_n.jpg"
+            }
+          ]}
         />
       )}
-      
-      <div className="w-full relative z-10 bg-[#EAE5C3] min-h-[80vh] flex flex-col items-center pt-16 pb-24 px-4 md:px-8">
-        
+
+      <div className="w-full relative z-10 bg-transparent min-h-[80vh] flex flex-col items-center pt-8 pb-12 px-4 md:px-8">
+
         {/* Header section (except step 10/11) */}
         {step !== 10 && (
-          <div className="text-center mb-10 max-w-4xl mx-auto px-4">
-            <h2 className="font-serif text-4xl md:text-5xl text-[#2F3E32] mb-4 md:whitespace-nowrap">
+          <div className="text-center mb-6 max-w-4xl mx-auto px-4">
+            <h2 className="font-sahitya text-center text-4xl md:text-5xl text-[#2F3E32] mb-3">
               {currentHeader?.title}
             </h2>
             {currentHeader?.subtitle && (
-              <p className="font-serif text-xl text-[#3A4B3C]">
+              <p className="font-sans tracking-wide font-medium text-center text-lg text-[#3A4B3C] mx-auto">
                 {currentHeader.subtitle}
               </p>
             )}
           </div>
         )}
 
-        {/* Progress Bar (only steps 1-9) */}
+        {/* Progress Bar with Stations and Carpet Effect (only steps 1-9) */}
         {step <= 9 && (
-          <div className="w-full max-w-2xl h-2.5 bg-[#D2CB96]/40 rounded-full mb-16 overflow-hidden flex shadow-inner relative">
-            {/* Embedded style for flowing shimmer animation */}
-            <style>{`
-              @keyframes shimmerFlow {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
-              }
-            `}</style>
-            
-            <div 
-              className="h-full bg-gradient-to-r from-[#978D52] via-[#C5BC47] to-[#D4A017] rounded-full transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative overflow-hidden shadow-[0_0_15px_rgba(212,160,23,0.5)]"
-              style={{ width: `${progressPercent}%` }}
-            >
-              {/* Flowing shine element */}
-              <div 
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent w-[150%] h-full"
-                style={{ animation: 'shimmerFlow 2s infinite linear' }}
+          <div className="w-full max-w-4xl mx-auto mb-10 mt-4 px-2 sm:px-6">
+            <div className="relative flex items-center">
+
+              {/* Background Track */}
+              <div className="absolute left-[16px] right-[16px] h-3 bg-[#EAE6D1] border border-[#2F3E32]/10 shadow-inner rounded-full" />
+
+              {/* The "Carpet" Rolling Out */}
+              <div
+                className="absolute left-[16px] h-3 rounded-full transition-all duration-1000 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_2px_15px_rgba(139,0,0,0.5)] z-0"
+                style={{
+                  width: `calc(${((step - 1) / 8) * 100}% - ${((step - 1) / 8) * 32}px)`,
+                  // Luxurious red carpet with golden trims
+                  background: 'repeating-linear-gradient(45deg, #9b111e 0px, #9b111e 10px, #8a0f1b 10px, #8a0f1b 20px)',
+                  borderTop: '1px solid #D4A017',
+                  borderBottom: '1px solid #D4A017'
+                }}
               />
+
+              {/* Shimmer on Carpet */}
+              <div
+                className="absolute left-[16px] h-3 overflow-hidden rounded-full pointer-events-none z-0"
+                style={{ width: `calc(${((step - 1) / 8) * 100}% - ${((step - 1) / 8) * 32}px)` }}
+              >
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%] h-full"
+                  style={{ animation: 'carpetShimmer 2.5s infinite linear' }}
+                />
+              </div>
+
+              {/* Embedded animation for shimmer */}
+              <style>{`
+                @keyframes carpetShimmer {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(50%); }
+                }
+              `}</style>
+
+              {/* Stations */}
+              <div className="relative w-full flex justify-between z-10">
+                {Array.from({ length: 9 }).map((_, i) => {
+                  const stationStep = i + 1;
+                  const isPassed = step > stationStep;
+                  const isCurrent = step === stationStep;
+
+                  return (
+                    <div key={stationStep} className="flex flex-col items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full border-[3px] flex items-center justify-center transition-all duration-500 ease-out ${
+                          isCurrent
+                            ? 'bg-[#FDFCEE] border-[#D4A017] shadow-[0_0_20px_rgba(212,160,23,0.6)] scale-[1.3] ring-4 ring-[#D4A017]/20'
+                            : isPassed
+                              ? 'bg-[#9b111e] border-[#D4A017]'
+                              : 'bg-[#F9F8F1] border-[#D2CB96]/60'
+                        }`}
+                      >
+                        {isPassed ? (
+                          <svg className="w-4 h-4 text-[#D4A017]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <span className={`text-[11px] font-bold ${isCurrent ? 'text-[#8a0f1b]' : 'text-gray-400'}`}>
+                            {stationStep}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
         {/* Content Area */}
-        <div className="w-full max-w-5xl flex-grow flex flex-col justify-center mb-16">
+        <div className={`w-full flex-grow flex flex-col justify-center mb-4 ${step === 1 ? 'max-w-[95%]' : 'max-w-5xl'}`}>
           {renderStep()}
         </div>
 
         {/* Navigation Buttons (only steps 1-9) */}
         {step > 1 && step <= 9 && (
-          <div className="flex flex-col items-center gap-4 mt-auto pt-8">
+          <div className="flex flex-col items-center gap-4 mt-2">
             {validationMessage && (
               <p className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
                 {validationMessage}
               </p>
             )}
             <div className="flex gap-8 justify-center">
-            {/* Back Button */}
-            <button 
-              onClick={prevStep}
-              className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            {/* Next Button */}
-            {step < 9 && (
-              <button 
-                onClick={advanceWithValidation}
-                aria-label="Next step"
+              {/* Back Button */}
+              <button
+                onClick={prevStep}
                 className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-            )}
+
+              {/* Next Button */}
+              {step < 9 && (
+                <button
+                  onClick={advanceWithValidation}
+                  aria-label="Next step"
+                  className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
             </div>
             <button
               type="button"

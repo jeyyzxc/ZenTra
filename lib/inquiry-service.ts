@@ -21,7 +21,7 @@ import {
   createManualBooking,
   type ManualBookingInput,
 } from '@/services/booking-orchestration';
-import { BookingRequestError } from '@/lib/booking-validation';
+import { BookingRequestError, parseBookingDate } from '@/lib/booking-validation';
 import { prisma } from '@/lib/prisma';
 
 const URGENT_PATTERN = /\b(asap|urgent|today|immediately|right away)\b/i;
@@ -53,6 +53,24 @@ function optionalText(value: unknown, maxLength = 255) {
   return typeof value === 'string' && value.trim()
     ? value.trim().slice(0, maxLength)
     : null;
+}
+
+function optionalDate(value: unknown, label: string) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return parseBookingDate(value, label);
+}
+
+function requiredDate(value: unknown, label: string) {
+  const parsed = optionalDate(value, label);
+
+  if (!parsed) {
+    throw new InquiryError(`${label} is required.`);
+  }
+
+  return parsed;
 }
 
 function parseEnum<T extends string>(
@@ -99,6 +117,7 @@ function inquiryToListDto(inquiry: {
   message: string;
   eventInterest: string | null;
   packageInterest: string | null;
+  requestedEventDate: Date | null;
   sourcePage: string;
   status: InquiryStatus;
   priority: InquiryPriority;
@@ -120,6 +139,7 @@ function inquiryToListDto(inquiry: {
     message: inquiry.message,
     eventInterest: inquiry.eventInterest,
     packageInterest: inquiry.packageInterest,
+    requestedEventDate: inquiry.requestedEventDate?.toISOString() ?? null,
     sourcePage: inquiry.sourcePage,
     status: inquiry.status.toLowerCase(),
     priority: inquiry.priority.toLowerCase(),
@@ -146,7 +166,7 @@ async function activity(
 }
 
 function adminLabel(actor: CurrentAdmin) {
-  return `@${actor.username}`;
+  return actor.fullName?.trim() || actor.email;
 }
 
 function revalidateInquirySurfaces() {
@@ -157,14 +177,27 @@ function revalidateInquirySurfaces() {
 
 export async function submitInquiry(request: Request) {
   const body = await request.json() as Record<string, unknown>;
+  const sourcePage = optionalText(body.sourcePage, 80) ?? 'contact_us';
+  const isHomeInquiry = sourcePage.toLowerCase() === 'home';
   const fullName = requiredText(body.fullName ?? body.name, 'Full name', 180);
   const phoneNumber = requiredText(body.phoneNumber ?? body.phone, 'Phone number', 40);
   const email = requiredText(body.email, 'Email', 255).toLowerCase();
-  const preferredContactTime = optionalText(body.preferredContactTime, 100);
+  const preferredContactTime = isHomeInquiry
+    ? requiredText(body.preferredContactTime, 'Preferred date and time', 100)
+    : optionalText(body.preferredContactTime, 100);
   const message = requiredText(body.message, 'Message', 3000);
-  const eventInterest = optionalText(body.eventInterest, 180);
-  const packageInterest = optionalText(body.packageInterest, 255);
-  const sourcePage = optionalText(body.sourcePage, 80) ?? 'contact_us';
+  const eventInterest = isHomeInquiry
+    ? requiredText(body.eventInterest ?? body.eventType, 'Event type', 180)
+    : optionalText(body.eventInterest ?? body.eventType, 180);
+  const packageInterest = isHomeInquiry
+    ? requiredText(body.packageInterest, 'Package interest', 255)
+    : optionalText(body.packageInterest, 255);
+  const guestCount = isHomeInquiry
+    ? requiredText(body.guestCount, 'Guest count', 80)
+    : optionalText(body.guestCount, 80);
+  const requestedEventDate = isHomeInquiry
+    ? requiredDate(body.requestedEventDate ?? body.eventDate, 'Requested event date')
+    : optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new InquiryError('Please enter a valid email address.');
@@ -187,6 +220,7 @@ export async function submitInquiry(request: Request) {
           message,
           eventInterest,
           packageInterest,
+          requestedEventDate,
           sourcePage,
           priority,
         },
@@ -195,14 +229,18 @@ export async function submitInquiry(request: Request) {
       await activity(tx, {
         inquiryId: inquiry.id,
         action: 'submitted',
-        description: `Inquiry ${inquiryReference} was submitted from ${sourcePage}.`,
+        description: requestedEventDate
+          ? `Inquiry ${inquiryReference} was submitted from ${sourcePage} for ${requestedEventDate.toISOString().slice(0, 10)}.`
+          : `Inquiry ${inquiryReference} was submitted from ${sourcePage}.`,
         performedBy: fullName,
       });
 
       await tx.notification.create({
         data: {
           title: 'New inquiry submitted',
-          message: `New inquiry submitted by ${fullName}.`,
+          message: requestedEventDate
+            ? `New inquiry submitted by ${fullName} for ${requestedEventDate.toISOString().slice(0, 10)}.`
+            : `New inquiry submitted by ${fullName}.`,
           type: NotificationType.INQUIRY,
           priority: NotificationPriority.MEDIUM,
           relatedModule: 'inquiries',
@@ -232,6 +270,8 @@ export async function submitInquiry(request: Request) {
       preferredContactTime,
       eventInterest,
       packageInterest,
+      guestCount,
+      requestedEventDate: requestedEventDate?.toISOString() ?? null,
       priority,
       sourcePage,
     },
@@ -316,8 +356,8 @@ export async function getInquiryPage(url: URL) {
     }),
     prisma.user.findMany({
       where: { role: { in: [Role.ADMIN, Role.SUPERADMIN] } },
-      orderBy: [{ fullName: 'asc' }, { username: 'asc' }],
-      select: { id: true, username: true, fullName: true, role: true },
+      orderBy: [{ fullName: 'asc' }, { email: 'asc' }],
+      select: { id: true, email: true, fullName: true, role: true },
     }),
   ]);
 
@@ -334,8 +374,7 @@ export async function getInquiryPage(url: URL) {
       preferredTimes: preferredTimes.flatMap((item) => item.preferredContactTime ? [item.preferredContactTime] : []),
       admins: admins.map((admin) => ({
         id: admin.id,
-        username: admin.username,
-        label: admin.fullName || `@${admin.username}`,
+        label: admin.fullName || admin.email,
         role: admin.role,
       })),
     },
@@ -522,6 +561,7 @@ async function updateWithActivity(input: {
       priority: updated.priority,
       assignedTo: updated.assignedTo,
       relatedBookingId: updated.relatedBookingId,
+      requestedEventDate: updated.requestedEventDate?.toISOString() ?? null,
     },
     metadata: {
       inquiryId: updated.id,
@@ -561,6 +601,9 @@ export async function updateInquiry(
   }
   if ('eventInterest' in body) data.eventInterest = optionalText(body.eventInterest, 180);
   if ('packageInterest' in body) data.packageInterest = optionalText(body.packageInterest, 255);
+  if ('requestedEventDate' in body || 'eventDate' in body) {
+    data.requestedEventDate = optionalDate(body.requestedEventDate ?? body.eventDate, 'Requested event date');
+  }
   if ('preferredContactTime' in body) {
     data.preferredContactTime = optionalText(body.preferredContactTime, 100);
   }
@@ -579,6 +622,7 @@ export async function updateInquiry(
       priority: existing.priority,
       eventInterest: existing.eventInterest,
       packageInterest: existing.packageInterest,
+      requestedEventDate: existing.requestedEventDate?.toISOString() ?? null,
       preferredContactTime: existing.preferredContactTime,
     },
   });
@@ -629,13 +673,13 @@ export async function assignInquiry(
   if (assignedTo) {
     const admin = await prisma.user.findFirst({
       where: {
-        OR: [{ id: assignedTo }, { username: assignedTo.replace(/^@/, '') }, { fullName: assignedTo }],
+        OR: [{ id: assignedTo }, { email: assignedTo }, { fullName: assignedTo }],
         role: { in: [Role.ADMIN, Role.SUPERADMIN] },
       },
-      select: { username: true, fullName: true },
+      select: { email: true, fullName: true },
     });
     if (!admin) throw new InquiryError('Assigned administrator was not found.');
-    const label = admin.fullName || `@${admin.username}`;
+    const label = admin.fullName || admin.email;
     return updateWithActivity({
       inquiryId: id,
       actor,
@@ -717,13 +761,18 @@ export async function convertInquiryToBooking(
     throw new InquiryError('This inquiry is already linked to a booking.', 409);
   }
 
+  const conversionEventDate = optionalText(body.eventDate, 40) ?? inquiry.requestedEventDate;
+  if (!conversionEventDate) {
+    throw new InquiryError('Event date is required.');
+  }
+
   const bookingInput: ManualBookingInput = {
     clientName: inquiry.fullName,
     clientEmail: inquiry.email,
     clientPhone: inquiry.phoneNumber,
     eventTitle: requiredText(body.eventTitle, 'Event title', 255),
     eventType: requiredText(body.eventType ?? inquiry.eventInterest, 'Event type', 180),
-    eventDate: requiredText(body.eventDate, 'Event date', 40),
+    eventDate: conversionEventDate,
     startTime: optionalText(body.startTime, 10),
     endTime: optionalText(body.endTime, 10),
     venue: requiredText(body.venue, 'Venue', 255),

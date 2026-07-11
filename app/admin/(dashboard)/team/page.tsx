@@ -16,9 +16,19 @@ export default async function TeamManagementPage() {
   }
 
   const members = await getTeamMembers();
+  const membersVersion = members
+    .map((member) => {
+      const updatedAt = member.updatedAt instanceof Date
+        ? member.updatedAt.toISOString()
+        : String(member.updatedAt);
+
+      return `${member.id}:${updatedAt}`;
+    })
+    .join('|');
 
   return (
     <TeamManagementClient
+      key={membersVersion}
       initialMembers={members}
       currentUserId={currentAdmin.id}
     />

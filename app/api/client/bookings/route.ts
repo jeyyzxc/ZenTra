@@ -4,11 +4,13 @@ import {
   type ClientBookingInput,
 } from '@/services/booking-orchestration';
 import { BookingRequestError } from '@/lib/booking-validation';
+import { requireClientFeature, settingsErrorResponse } from '@/lib/system-settings';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    await requireClientFeature('bookingRequests');
     const body = await request.json() as ClientBookingInput;
     const result = await createClientBooking(body);
 
@@ -26,8 +28,6 @@ export async function POST(request: Request) {
       }, { status: error.status });
     }
 
-    return NextResponse.json({
-      error: 'Unable to submit your booking request.',
-    }, { status: 500 });
+    return settingsErrorResponse(error, 'Unable to submit your booking request.');
   }
 }

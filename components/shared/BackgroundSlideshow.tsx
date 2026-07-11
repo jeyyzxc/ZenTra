@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 
 const images = [
-  '/bg1.jpg',
-  '/bg2.jpg',
-  '/bg3.jpg'
+  '/admin-bg-1.jpg',
+  '/admin-bg-2.jpg'
 ];
 
 export default function BackgroundSlideshow() {
