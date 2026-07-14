@@ -80,14 +80,22 @@ Important: the backend calculates `remaining_balance` as:
 remaining_balance = package_price - down_payment
 ```
 
-## Node: Send an Email
+## Node: Send through Gmail
 
-Use the prepared email fields only.
+Use the Gmail node with an approved Gmail OAuth credential. This uses the Gmail API and
+works on development hosts that block outbound SMTP ports.
 
 - To: `={{ $json.email.to }}`
 - Subject: `={{ $json.email.subject }}`
-- HTML: `={{ $json.email.html }}`
-- Text: `={{ $json.email.text }}`
+- Email Type: `HTML`
+- Message: `={{ $json.email.html }}`
+- Sender Name: `Zion Events Place`
+- Send Replies To: `={{ $env.ZION_SUPPORT_EMAIL || $env.ZION_EMAIL_FROM }}`
+- Append n8n Attribution: disabled
+
+The authenticated Gmail account is the actual sender. Keep `ZION_EMAIL_FROM` aligned
+with that account or one of its verified send-as aliases. The backend-rendered plain-text
+version remains available for deterministic fallbacks and audit-safe previews.
 
 Do not add n8n branding, workflow names, execution IDs, webhook URLs, secrets, or internal logs to the email body.
 

@@ -199,26 +199,28 @@
     },
     {
       "parameters": {
-        "fromEmail": "={{ $env.ZION_EMAIL_FROM || 'bookings@zion.local' }}",
-        "toEmail": "={{ $json.email.to }}",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.email.to }}",
         "subject": "={{ $json.email.subject }}",
-        "emailFormat": "both",
-        "text": "={{ $json.email.text }}",
-        "html": "={{ $json.email.html }}",
+        "emailType": "html",
+        "message": "={{ $json.email.html }}",
         "options": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "senderName": "Zion Events Place",
+          "replyTo": "={{ $env.ZION_SUPPORT_EMAIL || $env.ZION_EMAIL_FROM }}"
         }
       },
       "id": "08a-send-client-booking-receipt-email",
       "name": "08A. Send Client Booking Receipt Email",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
       "position": [
         -20,
         -220
       ],
       "notesInFlow": true,
-      "notes": "Configure SMTP/email credentials after importing. Keep Append n8n Attribution disabled and do not add workflow IDs to this email."
+      "notes": "Select the approved Gmail OAuth credential after importing. The authenticated Gmail account is the sender. Keep Append n8n Attribution disabled and do not add workflow IDs to this email."
     },
     {
       "parameters": {

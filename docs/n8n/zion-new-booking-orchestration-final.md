@@ -2,7 +2,7 @@
 
 Last verified from the current codebase: 2026-07-05
 
-Status: import-ready workflow template. The n8n email credential is intentionally not committed and must be selected after import.
+Status: import-ready workflow template. The n8n Gmail OAuth credential is intentionally not committed and must be selected after import.
 
 ## Artifacts
 
@@ -61,8 +61,8 @@ If n8n and the Next.js app run on the same host outside Docker, `ZION_BACKEND_UR
 
 1. In n8n, import `docs/n8n/zion-new-booking-orchestration.workflow.json`.
 2. Open `08A. Send Client Booking Receipt Email`.
-3. Select the production email credential for the Email Send node.
-4. Confirm `fromEmail` resolves from `ZION_EMAIL_FROM`, or replace it with the approved Zion sender address.
+3. Select the approved Gmail OAuth credential for the Gmail node.
+4. Confirm the authenticated Gmail account matches `ZION_EMAIL_FROM` or an approved send-as alias, and confirm replies go to `ZION_SUPPORT_EMAIL`.
 5. Keep the workflow inactive until the manual test passes.
 6. Run a test booking through the app or trigger n8n's test webhook with an existing `booking_id` and matching `booking_reference`.
 7. Activate the workflow.
