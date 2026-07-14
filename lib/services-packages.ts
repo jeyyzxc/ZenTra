@@ -11,6 +11,8 @@ import {
 import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import type { CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
+import { generateUniqueCategoryKey } from '@/services/event-category';
+import { bootstrapCategoryTemplate } from '@/services/task-template';
 
 const SERVICES_MODULE = 'services_packages';
 
@@ -306,6 +308,7 @@ function categoryPayload(category: Awaited<ReturnType<typeof prisma.eventCategor
     id: category.id,
     name: category.name,
     slug: category.slug,
+    categoryKey: category.categoryKey,
     description: category.description,
     coverImageUrl: category.coverImageUrl,
     displayOrder: category.displayOrder,
@@ -633,29 +636,41 @@ export async function getAdminEventCategory(idOrSlug: string) {
 export async function createEventCategory(input: CategoryInput, actor: CurrentAdmin, request?: Request) {
   const normalized = normalizeCategoryInput(input);
   await assertUniqueCategorySlug(normalized.slug);
-
-  const category = await prisma.eventCategory.create({
-    data: {
-      name: normalized.name,
-      slug: normalized.slug,
-      description: normalized.description,
-      coverImageUrl: normalized.coverImageUrl,
-      displayOrder: normalized.displayOrder,
-      status: normalized.status,
-      clientVisible: normalized.clientVisible,
-      createdBy: actor.username,
-      updatedBy: actor.username,
-    },
-    include: {
-      packages: {
-        select: {
-          id: true,
-          status: true,
-          clientVisible: true,
+  const created = await prisma.$transaction(async (transaction) => {
+    const categoryKey = await generateUniqueCategoryKey(normalized.name, transaction);
+    const category = await transaction.eventCategory.create({
+      data: {
+        name: normalized.name,
+        slug: normalized.slug,
+        categoryKey,
+        description: normalized.description,
+        coverImageUrl: normalized.coverImageUrl,
+        displayOrder: normalized.displayOrder,
+        status: normalized.status,
+        clientVisible: normalized.clientVisible,
+        createdBy: actor.username,
+        updatedBy: actor.username,
+      },
+      include: {
+        packages: {
+          select: {
+            id: true,
+            status: true,
+            clientVisible: true,
+          },
         },
       },
-    },
+    });
+    const draftTemplate = await bootstrapCategoryTemplate({
+      db: transaction,
+      eventCategoryId: category.id,
+      categoryName: category.name,
+      categoryKey,
+    });
+
+    return { category, draftTemplate };
   });
+  const { category, draftTemplate } = created;
 
   await auditServicesChange({
     actor,
@@ -663,11 +678,37 @@ export async function createEventCategory(input: CategoryInput, actor: CurrentAd
     action: AuditAction.CREATE,
     description: `Event category created: ${category.name}.`,
     newValues: category as unknown as Record<string, unknown>,
-    metadata: { eventCategoryId: category.id },
+    metadata: {
+      event: 'EVENT_CATEGORY_CREATED',
+      eventCategoryId: category.id,
+      categoryKey: category.categoryKey,
+      taskTemplateId: draftTemplate.id,
+      taskTemplateKey: draftTemplate.templateKey,
+    },
+  });
+
+  await createAuditLog({
+    ...auditActor(actor),
+    action: AuditAction.CREATE,
+    module: 'Task Templates',
+    description: `Automatically created draft template ${draftTemplate.templateKey}.`,
+    status: AuditStatus.SUCCESS,
+    metadata: {
+      event: 'TASK_TEMPLATE_AUTO_CREATED',
+      eventCategoryId: category.id,
+      categoryKey: category.categoryKey,
+      taskTemplateId: draftTemplate.id,
+      taskTemplateKey: draftTemplate.templateKey,
+      taskTemplateVersion: draftTemplate.version,
+    },
+    ...(request ? getRequestContext(request) : {}),
   });
 
   await maybeNotifyVisibleCategoryWithoutOffers(category.id, actor);
-  return categoryPayload(category);
+  return {
+    ...categoryPayload(category),
+    draftTemplate,
+  };
 }
 
 export async function updateEventCategory(
@@ -710,7 +751,7 @@ export async function updateEventCategory(
     description: `Event category updated: ${updated.name}.`,
     previousValues: previous as unknown as Record<string, unknown>,
     newValues: updated as unknown as Record<string, unknown>,
-    metadata: { eventCategoryId: updated.id },
+    metadata: { event: 'EVENT_CATEGORY_UPDATED', eventCategoryId: updated.id },
   });
 
   await maybeNotifyVisibleCategoryWithoutOffers(updated.id, actor);
@@ -744,7 +785,11 @@ export async function archiveEventCategory(idOrSlug: string, actor: CurrentAdmin
     description: `Event category archived: ${updated.name}.`,
     previousValues: previous as unknown as Record<string, unknown>,
     newValues: updated as unknown as Record<string, unknown>,
-    metadata: { eventCategoryId: updated.id, categoryStatus: 'archived' },
+    metadata: {
+      event: 'EVENT_CATEGORY_DISABLED',
+      eventCategoryId: updated.id,
+      categoryStatus: 'archived',
+    },
   });
 
   return categoryPayload(updated);

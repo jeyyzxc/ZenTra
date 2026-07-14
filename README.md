@@ -22,8 +22,8 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 The Payment & History module stores receipt files in a private Supabase Storage bucket. Before accepting payment changes:
 
-1. Run `supabase/payment-proofs.sql` in the Supabase SQL editor.
-2. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the server environment.
+1. Run `supabase/storage-buckets.sql` in the Supabase SQL editor.
+2. Set `SUPABASE_URL` and preferably `SUPABASE_SECRET_KEY` in the server environment.
 3. Optionally set `SUPABASE_PAYMENT_PROOFS_BUCKET`; it defaults to `payment-proofs`.
 
 The service-role key must remain server-only and must never use the `NEXT_PUBLIC_` prefix.
@@ -31,6 +31,10 @@ The service-role key must remain server-only and must never use the `NEXT_PUBLIC
 ## Documentation
 
 Implementation plans, architecture notes, and n8n workflow documentation live in `docs/`.
+Command Center production prerequisites and rollout gates are documented in
+[`docs/zentra-command-center-deployment.md`](docs/zentra-command-center-deployment.md).
+The canonical Vercel + Supabase + Render runbook is
+[`docs/deployment/vercel-supabase-render.md`](docs/deployment/vercel-supabase-render.md).
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

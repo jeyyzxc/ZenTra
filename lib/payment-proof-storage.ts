@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
-const MAX_PROOF_SIZE = 5 * 1024 * 1024;
+// Vercel Functions enforce a 4.5 MB request/response body limit. Keep the
+// multipart request safely below it until payment proofs use signed uploads.
+const MAX_PROOF_SIZE = 4 * 1024 * 1024;
 const ALLOWED_PROOF_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -26,7 +28,7 @@ export type StoredPaymentProof = {
 
 function storageConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/+$/, '');
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_PAYMENT_PROOFS_BUCKET || 'payment-proofs';
 
   if (!url || !serviceRoleKey) {
@@ -61,7 +63,7 @@ export function validatePaymentProof(file: File | null | undefined): asserts fil
   }
 
   if (file.size > MAX_PROOF_SIZE) {
-    throw new PaymentProofError('Payment proof must not exceed 5 MB.');
+    throw new PaymentProofError('Payment proof must not exceed 4 MB.');
   }
 }
 

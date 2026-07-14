@@ -629,11 +629,11 @@ export default function SupportCenterClient({
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#D6B53B]/30 bg-[#FDF5CC] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8E7722] dark:bg-[#D6B53B]/10 dark:text-[#D6B53B]">
             <Bot className="h-3.5 w-3.5" />
-            Support Center
+            Assistant Knowledge Base
           </div>
-          <h1 className="font-sahitya text-3xl font-bold uppercase tracking-[0.08em]">Support Center</h1>
+          <h1 className="font-sahitya text-3xl font-bold uppercase tracking-[0.08em]">Assistant Knowledge Base & FAQ</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-500 dark:text-[#A3B19B]">
-            Manage FAQ content, Smart Assistant knowledge, client help answers, and support guidance.
+            Add, review, approve, publish, and manage verified information that the ZENTRA Smart Assistant is allowed to retrieve. This updates retrieval knowledge and does not fine-tune the underlying model.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

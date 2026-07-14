@@ -1,6 +1,7 @@
 import { AccountTokenType } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/audit';
+import { passwordSecurityErrorDetails } from '@/lib/password-security';
 import { completePasswordWithToken } from '@/lib/team-access';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,12 @@ export async function POST(request: Request) {
       message: 'Your password has been changed successfully.',
     });
   } catch (error) {
+    const securityError = passwordSecurityErrorDetails(error);
+
+    if (securityError) {
+      return NextResponse.json(securityError.body, { status: securityError.status });
+    }
+
     const message = error instanceof Error ? error.message : 'Unable to reset this password.';
     
     let code = 'RESET_ERROR';

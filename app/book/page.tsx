@@ -1,10 +1,12 @@
 import React from 'react';
+import { connection } from 'next/server';
 
 import ClientFeatureUnavailable from '@/components/client/ClientFeatureUnavailable';
 import { getClientFeatureAvailability } from '@/lib/system-settings';
 import BookFlow from './components/BookFlow';
 
 export default async function BookPage() {
+  await connection();
   const bookingAvailability = await getClientFeatureAvailability('bookingRequests');
 
   return (

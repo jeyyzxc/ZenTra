@@ -2,9 +2,12 @@ import {
   AssistantQuestionStatus,
   AuditAction,
   AuditStatus,
+  CommandCenterJobType,
+  KnowledgeIndexStatus,
   NotificationPriority,
   NotificationType,
   Prisma,
+  PublicationStatus,
   SupportCategoryStatus,
   SupportFaqStatus,
   SupportRelatedModule,
@@ -102,6 +105,19 @@ type SupportFaqShape = {
     createdAt: Date;
   }>;
   _count?: { versions?: number };
+  currentPublishedVersion?: {
+    question: string | null;
+    answer: string | null;
+    tags: string[];
+    relatedModule: SupportRelatedModule | null;
+    clientVisible: boolean | null;
+    assistantEnabled: boolean | null;
+    priority: number | null;
+    publicationStatus: PublicationStatus;
+    publishedAt: Date | null;
+    expiresAt: Date | null;
+    createdAt: Date;
+  } | null;
 };
 
 type AssistantMatch = {
@@ -281,10 +297,32 @@ function faqToDto(faq: SupportFaqShape, includePrivate = true) {
   };
 }
 
+function publishedFaqToDto(faq: SupportFaqShape) {
+  const version = faq.currentPublishedVersion;
+  if (!version) return faqToDto(faq, false);
+  return faqToDto({
+    ...faq,
+    question: version.question ?? faq.question,
+    answer: version.answer ?? faq.answer,
+    tags: version.tags,
+    relatedModule: version.relatedModule ?? faq.relatedModule,
+    clientVisible: version.clientVisible ?? faq.clientVisible,
+    assistantEnabled: version.assistantEnabled ?? faq.assistantEnabled,
+    priority: version.priority ?? faq.priority,
+    updatedAt: version.publishedAt ?? version.createdAt,
+  }, false);
+}
+
 function publicFaqWhere(search?: string, category?: string): Prisma.SupportFaqEntryWhereInput {
   return {
-    status: SupportFaqStatus.PUBLISHED,
-    clientVisible: true,
+    status: { notIn: [SupportFaqStatus.HIDDEN, SupportFaqStatus.ARCHIVED] },
+    currentPublishedVersion: {
+      is: {
+        publicationStatus: PublicationStatus.PUBLISHED,
+        clientVisible: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+    },
     OR: [
       { categoryId: null },
       {
@@ -308,9 +346,9 @@ function publicFaqWhere(search?: string, category?: string): Prisma.SupportFaqEn
           AND: [
             {
               OR: [
-                { question: { contains: search, mode: 'insensitive' } },
-                { answer: { contains: search, mode: 'insensitive' } },
-                { tags: { has: search } },
+                { currentPublishedVersion: { is: { question: { contains: search, mode: 'insensitive' } } } },
+                { currentPublishedVersion: { is: { answer: { contains: search, mode: 'insensitive' } } } },
+                { currentPublishedVersion: { is: { tags: { has: search } } } },
               ],
             },
           ],
@@ -375,10 +413,13 @@ async function ensureCategory(categoryId: string | null) {
   return category;
 }
 
-export async function getAdminFaqPage(url: URL) {
+export async function getAdminFaqPage(url: URL, includeRestricted = true) {
   const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
   const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 10, 5), 50);
-  const where = buildAdminFaqWhere(url);
+  const requestedWhere = buildAdminFaqWhere(url);
+  const where: Prisma.SupportFaqEntryWhereInput = includeRestricted
+    ? requestedWhere
+    : { AND: [requestedWhere, publicFaqWhere()] };
   const [
     faqs,
     totalRecords,
@@ -395,7 +436,7 @@ export async function getAdminFaqPage(url: URL) {
   ] = await Promise.all([
     prisma.supportFaqEntry.findMany({
       where,
-      include: { category: true, _count: { select: { versions: true } } },
+      include: { category: true, currentPublishedVersion: true, _count: { select: { versions: true } } },
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       skip: (page - 1) * limit,
       take: limit,
@@ -411,11 +452,11 @@ export async function getAdminFaqPage(url: URL) {
       orderBy: { updatedBy: 'asc' },
       select: { updatedBy: true },
     }),
-    prisma.supportFaqEntry.count(),
-    prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.PUBLISHED } }),
-    prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.DRAFT } }),
-    prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.HIDDEN } }),
-    prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.ARCHIVED } }),
+    prisma.supportFaqEntry.count({ where: includeRestricted ? undefined : publicFaqWhere() }),
+    prisma.supportFaqEntry.count({ where: includeRestricted ? { status: SupportFaqStatus.PUBLISHED } : publicFaqWhere() }),
+    includeRestricted ? prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.DRAFT } }) : Promise.resolve(0),
+    includeRestricted ? prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.HIDDEN } }) : Promise.resolve(0),
+    includeRestricted ? prisma.supportFaqEntry.count({ where: { status: SupportFaqStatus.ARCHIVED } }) : Promise.resolve(0),
     prisma.supportFaqEntry.count({
       where: { status: SupportFaqStatus.PUBLISHED, assistantEnabled: true },
     }),
@@ -428,7 +469,7 @@ export async function getAdminFaqPage(url: URL) {
   ]);
 
   return {
-    faqs: faqs.map((faq) => faqToDto(faq)),
+    faqs: faqs.map((faq) => includeRestricted ? faqToDto(faq) : publishedFaqToDto(faq)),
     pagination: {
       page,
       limit,
@@ -454,16 +495,30 @@ export async function getAdminFaqPage(url: URL) {
   };
 }
 
-export async function getFaqDetail(id: string) {
+export async function getFaqDetail(id: string, includeRestricted = true) {
   const faq = await prisma.supportFaqEntry.findUnique({
     where: { id },
     include: {
       category: true,
+      currentPublishedVersion: true,
       versions: { orderBy: { createdAt: 'desc' } },
       _count: { select: { versions: true } },
     },
   });
   if (!faq) throw new SupportCenterError('FAQ entry not found.', 404);
+  if (!includeRestricted) {
+    if (
+      faq.status === SupportFaqStatus.HIDDEN ||
+      faq.status === SupportFaqStatus.ARCHIVED ||
+      !faq.currentPublishedVersion ||
+      faq.currentPublishedVersion.publicationStatus !== PublicationStatus.PUBLISHED ||
+      faq.currentPublishedVersion.clientVisible !== true ||
+      (faq.currentPublishedVersion.expiresAt && faq.currentPublishedVersion.expiresAt <= new Date())
+    ) {
+      throw new SupportCenterError('Published FAQ entry not found.', 404);
+    }
+    return publishedFaqToDto(faq);
+  }
   return faqToDto(faq);
 }
 
@@ -486,12 +541,7 @@ export async function createFaq(
       'relatedModule',
       SupportRelatedModule.GENERAL,
     ),
-    status: enumValue(
-      body.status,
-      Object.values(SupportFaqStatus),
-      'status',
-      SupportFaqStatus.DRAFT,
-    ),
+    status: SupportFaqStatus.DRAFT,
     clientVisible: booleanValue(body.clientVisible),
     assistantEnabled: booleanValue(body.assistantEnabled),
     priority: intValue(body.priority),
@@ -500,9 +550,31 @@ export async function createFaq(
     updatedBy: adminLabel(actor),
   };
 
-  const created = await prisma.supportFaqEntry.create({
-    data,
-    include: { category: true, _count: { select: { versions: true } } },
+  const created = await prisma.$transaction(async (transaction) => {
+    const entry = await transaction.supportFaqEntry.create({ data });
+    const version = await transaction.supportFaqVersion.create({
+      data: {
+        faqEntryId: entry.id,
+        versionNumber: 1,
+        question: entry.question,
+        answer: entry.answer,
+        categoryId: entry.categoryId,
+        tags: entry.tags,
+        relatedModule: entry.relatedModule,
+        clientVisible: entry.clientVisible,
+        assistantEnabled: entry.assistantEnabled,
+        priority: entry.priority,
+        internalNotes: entry.internalNotes,
+        publicationStatus: PublicationStatus.DRAFT,
+        changeSummary: optionalText(body.changeSummary, 1000) ?? 'Initial FAQ draft.',
+        changedBy: adminLabel(actor),
+      },
+    });
+    return transaction.supportFaqEntry.update({
+      where: { id: entry.id },
+      data: { currentDraftVersionId: version.id },
+      include: { category: true, _count: { select: { versions: true } } },
+    });
   });
 
   await createAuditLog({
@@ -621,7 +693,11 @@ export async function updateFaq(
 
   if (!changed) throw new SupportCenterError('No supported FAQ changes were provided.');
 
-  const questionOrAnswerChanged = 'question' in newValues || 'answer' in newValues;
+  if (existing.status === SupportFaqStatus.PUBLISHED) {
+    data.status = SupportFaqStatus.DRAFT;
+    newValues.status = SupportFaqStatus.DRAFT;
+    previousValues.status = existing.status;
+  }
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.supportFaqEntry.update({
       where: { id },
@@ -629,17 +705,47 @@ export async function updateFaq(
       include: { category: true, _count: { select: { versions: true } } },
     });
 
-    if (questionOrAnswerChanged) {
-      await tx.supportFaqVersion.create({
+    let draftVersionId = existing.currentDraftVersionId;
+    if (draftVersionId) {
+      const draft = await tx.supportFaqVersion.findUnique({ where: { id: draftVersionId } });
+      if (!draft || ![PublicationStatus.DRAFT, PublicationStatus.REJECTED].includes(draft.publicationStatus as 'DRAFT' | 'REJECTED')) {
+        draftVersionId = null;
+      }
+    }
+    const snapshot = {
+      question: result.question,
+      answer: result.answer,
+      categoryId: result.categoryId,
+      tags: result.tags,
+      relatedModule: result.relatedModule,
+      clientVisible: result.clientVisible,
+      assistantEnabled: result.assistantEnabled,
+      priority: result.priority,
+      internalNotes: result.internalNotes,
+      publicationStatus: PublicationStatus.DRAFT,
+      changeSummary: optionalText(body.changeSummary, 1000) ?? 'Updated FAQ draft.',
+      changedBy: adminLabel(actor),
+    };
+    if (draftVersionId) {
+      await tx.supportFaqVersion.update({
+        where: { id: draftVersionId },
+        data: snapshot,
+      });
+    } else {
+      const latest = await tx.supportFaqVersion.aggregate({
+        where: { faqEntryId: id },
+        _max: { versionNumber: true },
+      });
+      const draft = await tx.supportFaqVersion.create({
         data: {
           faqEntryId: id,
-          oldQuestion: existing.question,
-          oldAnswer: existing.answer,
-          newQuestion: result.question,
-          newAnswer: result.answer,
-          changeSummary: optionalText(body.changeSummary, 1000) ?? 'Updated approved support knowledge.',
-          changedBy: adminLabel(actor),
+          versionNumber: (latest._max.versionNumber ?? 0) + 1,
+          ...snapshot,
         },
+      });
+      await tx.supportFaqEntry.update({
+        where: { id },
+        data: { currentDraftVersionId: draft.id },
       });
     }
 
@@ -670,11 +776,93 @@ export async function setFaqStatus(
   const existing = await prisma.supportFaqEntry.findUnique({ where: { id } });
   if (!existing) throw new SupportCenterError('FAQ entry not found.', 404);
 
-  const updated = await prisma.supportFaqEntry.update({
-    where: { id },
-    data: { status, updatedBy: adminLabel(actor) },
-    include: { category: true, _count: { select: { versions: true } } },
-  });
+  const updated = status === SupportFaqStatus.PUBLISHED
+    ? await prisma.$transaction(async (transaction) => {
+        const current = await transaction.supportFaqEntry.findUnique({ where: { id } });
+        if (!current) throw new SupportCenterError('FAQ entry not found.', 404);
+        let draft = current.currentDraftVersionId
+          ? await transaction.supportFaqVersion.findUnique({ where: { id: current.currentDraftVersionId } })
+          : null;
+        if (!draft) {
+          const latest = await transaction.supportFaqVersion.aggregate({
+            where: { faqEntryId: id },
+            _max: { versionNumber: true },
+          });
+          draft = await transaction.supportFaqVersion.create({
+            data: {
+              faqEntryId: id,
+              versionNumber: (latest._max.versionNumber ?? 0) + 1,
+              question: current.question,
+              answer: current.answer,
+              categoryId: current.categoryId,
+              tags: current.tags,
+              relatedModule: current.relatedModule,
+              clientVisible: current.clientVisible,
+              assistantEnabled: current.assistantEnabled,
+              priority: current.priority,
+              internalNotes: current.internalNotes,
+              publicationStatus: PublicationStatus.DRAFT,
+              changeSummary: 'Legacy FAQ draft prepared for publication.',
+              changedBy: adminLabel(actor),
+            },
+          });
+        }
+        if (![PublicationStatus.DRAFT, PublicationStatus.IN_REVIEW, PublicationStatus.APPROVED, PublicationStatus.REJECTED].includes(draft.publicationStatus as 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED')) {
+          throw new SupportCenterError('FAQ version is not publishable.', 409);
+        }
+        const now = new Date();
+        await transaction.supportFaqVersion.updateMany({
+          where: {
+            faqEntryId: id,
+            publicationStatus: PublicationStatus.PUBLISHED,
+            id: { not: draft.id },
+          },
+          data: { publicationStatus: PublicationStatus.ARCHIVED },
+        });
+        await transaction.supportFaqVersion.update({
+          where: { id: draft.id },
+          data: {
+            publicationStatus: PublicationStatus.PUBLISHED,
+            approvedAt: draft.approvedAt ?? now,
+            approvedBy: draft.approvedBy ?? actor.id,
+            publishedAt: now,
+            publishedBy: actor.id,
+          },
+        });
+        const latestGeneration = await transaction.knowledgeIndexGeneration.aggregate({ _max: { generation: true } });
+        const generation = await transaction.knowledgeIndexGeneration.create({
+          data: {
+            generation: (latestGeneration._max.generation ?? 0) + 1,
+            modelIdentifier: process.env.GEMINI_EMBEDDING_MODEL?.trim() || 'gemini-embedding-001',
+            embeddingDimension: 768,
+            status: KnowledgeIndexStatus.PENDING,
+          },
+        });
+        await transaction.commandCenterJob.create({
+          data: {
+            type: CommandCenterJobType.INDEX_KNOWLEDGE,
+            resourceType: 'knowledge_generation',
+            resourceId: generation.id,
+            idempotencyKey: `index:faq:${id}:${draft.id}`,
+            createdBy: actor.id,
+          },
+        });
+        return transaction.supportFaqEntry.update({
+          where: { id },
+          data: {
+            status,
+            updatedBy: adminLabel(actor),
+            currentPublishedVersionId: draft.id,
+            currentDraftVersionId: null,
+          },
+          include: { category: true, _count: { select: { versions: true } } },
+        });
+      })
+    : await prisma.supportFaqEntry.update({
+        where: { id },
+        data: { status, updatedBy: adminLabel(actor) },
+        include: { category: true, _count: { select: { versions: true } } },
+      });
   const action = status === SupportFaqStatus.PUBLISHED ? AuditAction.APPROVAL : AuditAction.UPDATE;
   const actionLabel = enumLabel(status);
 
@@ -702,25 +890,10 @@ export async function setFaqAssistantEnabled(
   const existing = await prisma.supportFaqEntry.findUnique({ where: { id } });
   if (!existing) throw new SupportCenterError('FAQ entry not found.', 404);
   const assistantEnabled = booleanValue(enabledValue, !existing.assistantEnabled);
-  const updated = await prisma.supportFaqEntry.update({
-    where: { id },
-    data: { assistantEnabled, updatedBy: adminLabel(actor) },
-    include: { category: true, _count: { select: { versions: true } } },
-  });
-
-  await createAuditLog({
-    ...auditActor(actor),
-    action: AuditAction.UPDATE,
-    module: SUPPORT_MODULE,
-    description: `${actor.username} ${assistantEnabled ? 'enabled' : 'disabled'} Smart Assistant use for "${existing.question}".`,
-    status: AuditStatus.SUCCESS,
-    ...getRequestContext(request),
-    previousValues: { assistantEnabled: existing.assistantEnabled },
-    newValues: { faqId: id, assistantEnabled },
-  });
-
-  revalidateSupportSurfaces();
-  return faqToDto(updated);
+  return updateFaq(id, {
+    assistantEnabled,
+    changeSummary: `${assistantEnabled ? 'Enable' : 'Disable'} Assistant retrieval in a new FAQ draft.`,
+  }, actor, request);
 }
 
 export async function setFaqClientVisible(
@@ -732,25 +905,10 @@ export async function setFaqClientVisible(
   const existing = await prisma.supportFaqEntry.findUnique({ where: { id } });
   if (!existing) throw new SupportCenterError('FAQ entry not found.', 404);
   const clientVisible = booleanValue(visibleValue, !existing.clientVisible);
-  const updated = await prisma.supportFaqEntry.update({
-    where: { id },
-    data: { clientVisible, updatedBy: adminLabel(actor) },
-    include: { category: true, _count: { select: { versions: true } } },
-  });
-
-  await createAuditLog({
-    ...auditActor(actor),
-    action: AuditAction.UPDATE,
-    module: SUPPORT_MODULE,
-    description: `${actor.username} ${clientVisible ? 'showed' : 'hid'} support FAQ "${existing.question}" on the Client FAQ page.`,
-    status: AuditStatus.SUCCESS,
-    ...getRequestContext(request),
-    previousValues: { clientVisible: existing.clientVisible },
-    newValues: { faqId: id, clientVisible },
-  });
-
-  revalidateSupportSurfaces();
-  return faqToDto(updated);
+  return updateFaq(id, {
+    clientVisible,
+    changeSummary: `${clientVisible ? 'Show' : 'Hide'} the FAQ on public pages in a new draft.`,
+  }, actor, request);
 }
 
 export async function getAdminCategories() {
@@ -871,7 +1029,7 @@ export async function getPublicFaqs(url: URL, request?: Request) {
   const [faqs, totalRecords] = await Promise.all([
     prisma.supportFaqEntry.findMany({
       where,
-      include: { category: true },
+      include: { category: true, currentPublishedVersion: true },
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       skip: (page - 1) * limit,
       take: limit,
@@ -897,7 +1055,7 @@ export async function getPublicFaqs(url: URL, request?: Request) {
   }
 
   return {
-    faqs: faqs.map((faq) => faqToDto(faq, false)),
+    faqs: faqs.map((faq) => publishedFaqToDto(faq)),
     pagination: {
       page,
       limit,
@@ -911,11 +1069,11 @@ export async function getPublicPopularFaqs(limitValue = 6) {
   const limit = Math.min(Math.max(limitValue, 1), 12);
   const faqs = await prisma.supportFaqEntry.findMany({
     where: publicFaqWhere(),
-    include: { category: true },
+    include: { category: true, currentPublishedVersion: true },
     orderBy: [{ viewCount: 'desc' }, { priority: 'desc' }, { updatedAt: 'desc' }],
     take: limit,
   });
-  return { faqs: faqs.map((faq) => faqToDto(faq, false)) };
+  return { faqs: faqs.map((faq) => publishedFaqToDto(faq)) };
 }
 
 export async function getPublicFaqCategories() {
@@ -925,8 +1083,8 @@ export async function getPublicFaqCategories() {
       clientVisible: true,
       entries: {
         some: {
-          status: SupportFaqStatus.PUBLISHED,
-          clientVisible: true,
+          status: { notIn: [SupportFaqStatus.HIDDEN, SupportFaqStatus.ARCHIVED] },
+          currentPublishedVersion: { is: { publicationStatus: PublicationStatus.PUBLISHED, clientVisible: true } },
         },
       },
     },
@@ -936,8 +1094,8 @@ export async function getPublicFaqCategories() {
         select: {
           entries: {
             where: {
-              status: SupportFaqStatus.PUBLISHED,
-              clientVisible: true,
+              status: { notIn: [SupportFaqStatus.HIDDEN, SupportFaqStatus.ARCHIVED] },
+              currentPublishedVersion: { is: { publicationStatus: PublicationStatus.PUBLISHED, clientVisible: true } },
             },
           },
         },

@@ -18,6 +18,8 @@ type ForgotPasswordCodeFormProps = {
 };
 
 const VERIFICATION_CODE_LENGTH = 8;
+const AUTH_NOTICE_AUTO_HIDE_MS = 10_000;
+const VERIFIED_REDIRECT_DELAY_MS = 500;
 
 function noticeClass(type: NonNullable<Notice>['type']) {
   if (type === 'success') {
@@ -65,11 +67,33 @@ export default function ForgotPasswordCodeForm({
     return null;
   });
 
+  useEffect(() => {
+    if (notice) {
+      const timer = setTimeout(() => {
+        setNotice(null);
+      }, AUTH_NOTICE_AUTO_HIDE_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [notice]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(initialNotice === 'sent' ? 45 : 0);
-  
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isVerified) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      router.replace('/change-password');
+      router.refresh();
+    }, VERIFIED_REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isVerified, router]);
 
   // Timer logic
   useEffect(() => {
@@ -198,13 +222,8 @@ export default function ForgotPasswordCodeForm({
         return;
       }
 
+      setIsVerified(true);
       setNotice({ type: 'success', message: 'Your identity has been verified.' });
-      
-      // Delay to show the success message briefly before redirecting
-      setTimeout(() => {
-        router.replace('/change-password');
-        router.refresh();
-      }, 500);
       
     } catch {
       setNotice({
@@ -289,7 +308,7 @@ export default function ForgotPasswordCodeForm({
             <VerificationCodeInput
               value={temporaryCode}
               onChange={setTemporaryCode}
-              disabled={isSubmitting || isResending}
+              disabled={isSubmitting || isResending || isVerified}
               length={VERIFICATION_CODE_LENGTH}
             />
           </div>
@@ -297,21 +316,21 @@ export default function ForgotPasswordCodeForm({
           <div className="grid gap-4">
             <button
               type="submit"
-              disabled={isSubmitting || temporaryCode.length < VERIFICATION_CODE_LENGTH}
+              disabled={isSubmitting || isVerified || temporaryCode.length < VERIFICATION_CODE_LENGTH}
               className="group relative w-full overflow-hidden rounded-xl py-3.5 shadow-[0_10px_20px_rgba(26,31,24,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_25px_rgba(214,181,59,0.25)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <div className="absolute inset-0 bg-[#1a1f18] transition-transform duration-500 ease-in-out group-hover:translate-x-full" />
               <div className="absolute inset-0 -translate-x-full bg-[#D6B53B] transition-transform duration-500 ease-in-out group-hover:translate-x-0" />
               <span className="relative z-10 flex items-center justify-center gap-2 font-sans text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors duration-300 group-hover:text-[#1a1f18]">
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'VERIFYING...' : 'VERIFY CODE'}
+                {isVerified ? 'VERIFIED' : isSubmitting ? 'VERIFYING...' : 'VERIFY CODE'}
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => requestTemporaryCode(true)}
-              disabled={isSubmitting || isResending || resendTimer > 0}
+              disabled={isSubmitting || isResending || isVerified || resendTimer > 0}
               className="group relative w-full overflow-hidden rounded-xl py-3 border border-[#D6B53B]/30 bg-transparent transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6B53B]/80 hover:shadow-[0_10px_20px_rgba(214,181,59,0.15)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="relative z-10 flex items-center justify-center gap-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#8E7722] transition-colors group-hover:text-[#D6B53B]">
@@ -333,7 +352,8 @@ export default function ForgotPasswordCodeForm({
                 setNotice(null);
                 setTemporaryCode('');
               }}
-              className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 transition hover:text-[#D6B53B]"
+              disabled={isVerified}
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 transition hover:text-[#D6B53B] disabled:cursor-not-allowed disabled:opacity-60"
             >
               USE A DIFFERENT EMAIL
             </button>

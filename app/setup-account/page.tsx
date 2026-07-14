@@ -2,8 +2,6 @@ import Image from 'next/image';
 import { AccountTokenType } from '@prisma/client';
 import AccountPasswordForm from '@/components/auth/AccountPasswordForm';
 import { getAccountTokenPreview } from '@/lib/team-access';
-import BackgroundSlideshow from '@/components/shared/BackgroundSlideshow';
-
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -29,11 +27,7 @@ function AccessMessage({ status }: { status: string }) {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-900 px-4 py-10">
-      <div className="absolute inset-0">
-        <BackgroundSlideshow />
-      </div>
-
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F9F8F1] transition-colors duration-500 ease-in-out dark:bg-[#0C100B] px-4 py-10">
       <div className="fixed top-1/2 left-1/2 z-10 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-[#FDF5CC]/90 p-5 shadow-[0_30px_60px_-15px_rgba(214,181,59,0.25)] backdrop-blur-2xl animate-[fadeInUp_0.8s_ease-out] sm:p-6 text-center">
         <div className="mb-8 flex flex-col items-center">
           <div className="relative z-10 -mb-4 h-[120px] w-[120px] pointer-events-none">
@@ -92,11 +86,7 @@ export default async function SetupAccountPage({
   const firstName = preview.user?.fullName.split(' ')[0] || 'Team Member';
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-900 px-4 py-10">
-      <div className="absolute inset-0">
-        <BackgroundSlideshow />
-      </div>
-
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F9F8F1] transition-colors duration-500 ease-in-out dark:bg-[#0C100B] px-4 py-10">
       <div className="fixed top-1/2 left-1/2 z-10 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-[#FDF5CC]/90 p-5 shadow-[0_30px_60px_-15px_rgba(214,181,59,0.25)] backdrop-blur-2xl animate-[fadeInUp_0.8s_ease-out] sm:p-6">
         <div className="mb-6 flex flex-col items-center">
           <div className="relative z-10 -mb-4 h-[110px] w-[110px] pointer-events-none">

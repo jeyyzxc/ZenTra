@@ -1,7 +1,9 @@
 import React from 'react';
+import { connection } from 'next/server';
 
 import ClientFeatureUnavailable from '@/components/client/ClientFeatureUnavailable';
-import SubpageHero from '@/components/client/SubpageHero';
+import PublicSubpageShell from '@/components/client/PublicSubpageShell';
+import type { PublicPageHeroKey } from '@/config/public-page-heroes';
 import { getClientFeatureAvailability } from '@/lib/system-settings';
 import PackageFlipbook from './PackageFlipbook';
 
@@ -12,28 +14,23 @@ export interface ContentBlock {
 }
 
 interface PackageLayoutProps {
-  title: string;
-  subtitle: string;
-  heroImage: string;
+  heroKey: PublicPageHeroKey;
   contentBlocks: ContentBlock[];
   packageText: string;
   galleryImages: string[];
 }
 
 export default async function PackageLayout({
-  title,
-  subtitle,
-  heroImage,
+  heroKey,
   contentBlocks,
   packageText,
   galleryImages
 }: PackageLayoutProps) {
+  await connection();
   const packageAvailability = await getClientFeatureAvailability('packages');
 
   return (
-    <main className="flex flex-col min-h-screen bg-transparent relative">
-      <SubpageHero title={title} subtitle={subtitle} imageSrc={heroImage} />
-
+    <PublicSubpageShell heroKey={heroKey}>
       {!packageAvailability.enabled ? (
         <ClientFeatureUnavailable
           title="Packages Are Paused"
@@ -130,6 +127,6 @@ export default async function PackageLayout({
 
       </div>
       )}
-    </main>
+    </PublicSubpageShell>
   );
 }

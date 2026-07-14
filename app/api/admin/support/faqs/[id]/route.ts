@@ -12,9 +12,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireAdmin();
+    const actor = await requireAdmin();
     const { id } = await params;
-    return Response.json({ faq: await getFaqDetail(decodeURIComponent(id)) });
+    return Response.json({
+      faq: await getFaqDetail(decodeURIComponent(id), actor.role === 'SUPERADMIN'),
+    });
   } catch (error) {
     return supportErrorResponse(error, 'Unable to load support FAQ entry.');
   }

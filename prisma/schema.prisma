@@ -250,6 +250,106 @@ enum DashboardTaskSource {
   CALENDAR
 }
 
+enum TaskTemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TaskTemplateSyncState {
+  SYNCED
+  CUSTOMIZED
+  LOCKED
+}
+
+enum TaskTemplateMigrationStatus {
+  PREVIEWED
+  APPLYING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PublicationStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  EXPIRED
+  REJECTED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ContentType {
+  GALLERY_ITEM
+  FACILITY
+  RULES
+  PRIVACY
+  TERMS
+}
+
+enum MediaAssetStatus {
+  DRAFT
+  PUBLISHED
+  TRASHED
+  DELETED
+}
+
+enum KnowledgeDocumentType {
+  TEXT
+  PDF
+  DOCX
+}
+
+enum KnowledgeAccessLevel {
+  PUBLIC
+  CLIENT
+  ADMIN
+  SUPERADMIN
+}
+
+enum KnowledgeIndexStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+enum CommandCenterJobType {
+  PUBLISH_VERSION
+  EXPIRE_VERSION
+  INDEX_KNOWLEDGE
+  DELETE_MEDIA
+  TASK_MIGRATION
+}
+
+enum CommandCenterJobStatus {
+  QUEUED
+  PROCESSING
+  SUCCESS
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
+enum AssistantActorType {
+  GUEST
+  CLIENT
+  ADMIN
+  SUPERADMIN
+}
+
+enum AssistantResponseStatus {
+  ANSWERED
+  UNABLE_TO_VERIFY
+  FORBIDDEN
+  PROVIDER_UNAVAILABLE
+  FAILED
+}
+
 enum NotificationType {
   BOOKING
   PAYMENT
@@ -367,37 +467,40 @@ enum SupportRelatedModule {
 enum AssistantQuestionStatus {
   NEW              @map("new")
   REVIEWED         @map("reviewed")
-  ANSWERED          @map("answered")
-  CONVERTED_TO_FAQ  @map("converted_to_faq")
-  IGNORED           @map("ignored")
-  ARCHIVED          @map("archived")
+  ANSWERED         @map("answered")
+  CONVERTED_TO_FAQ @map("converted_to_faq")
+  IGNORED          @map("ignored")
+  ARCHIVED         @map("archived")
 }
 
 model User {
-  id                    String           @id @default(cuid())
-  username              String           @unique
-  email                 String           @unique
-  passwordHash          String?          @map("password_hash") @db.Text
-  fullName              String?          @map("full_name") @db.VarChar(255)
-  contactNumber         String?          @map("contact_number") @db.VarChar(20)
-  addressRegionCode     String?          @map("address_region_code") @db.VarChar(20)
-  addressRegion         String?          @map("address_region") @db.VarChar(120)
-  addressProvinceCode   String?          @map("address_province_code") @db.VarChar(20)
-  addressProvince       String?          @map("address_province") @db.VarChar(120)
-  addressCityCode       String?          @map("address_city_code") @db.VarChar(20)
-  addressCity           String?          @map("address_city") @db.VarChar(120)
-  addressBarangayCode   String?          @map("address_barangay_code") @db.VarChar(20)
-  addressBarangay       String?          @map("address_barangay") @db.VarChar(120)
-  profileImage          String?          @map("profile_image") @db.VarChar(500)
-  role                  Role             @default(CLIENT)
-  status                UserStatus       @default(ACTIVE)
-  mustChangePassword    Boolean          @default(false) @map("must_change_password")
-  createdBy             String?          @map("created_by")
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  lastPasswordChangedAt DateTime?        @map("last_password_changed_at")
-  accountTokens         AccountToken[]
-  accountSessions       AccountSession[]
+  id                         String            @id @default(cuid())
+  username                   String            @unique
+  email                      String            @unique
+  passwordHash               String?           @map("password_hash") @db.Text
+  fullName                   String?           @map("full_name") @db.VarChar(255)
+  contactNumber              String?           @map("contact_number") @db.VarChar(20)
+  addressRegionCode          String?           @map("address_region_code") @db.VarChar(20)
+  addressRegion              String?           @map("address_region") @db.VarChar(120)
+  addressProvinceCode        String?           @map("address_province_code") @db.VarChar(20)
+  addressProvince            String?           @map("address_province") @db.VarChar(120)
+  addressCityCode            String?           @map("address_city_code") @db.VarChar(20)
+  addressCity                String?           @map("address_city") @db.VarChar(120)
+  addressBarangayCode        String?           @map("address_barangay_code") @db.VarChar(20)
+  addressBarangay            String?           @map("address_barangay") @db.VarChar(120)
+  profileImage               String?           @map("profile_image") @db.VarChar(500)
+  role                       Role              @default(CLIENT)
+  status                     UserStatus        @default(ACTIVE)
+  mustChangePassword         Boolean           @default(false) @map("must_change_password")
+  createdBy                  String?           @map("created_by")
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  lastPasswordChangedAt      DateTime?         @map("last_password_changed_at")
+  passwordChangeAttemptCount Int               @default(0) @map("password_change_attempt_count")
+  passwordChangeLockedUntil  DateTime?         @map("password_change_locked_until")
+  accountTokens              AccountToken[]
+  accountSessions            AccountSession[]
+  passwordHistory            PasswordHistory[]
 
   @@map("users")
 }
@@ -442,23 +545,34 @@ model AccountSession {
   @@map("sessions")
 }
 
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String   @map("password_hash") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("password_history")
+}
+
 model Event {
-  id           String      @id @default(cuid())
-  title        String
-  clientName   String
-  date         DateTime
-  startTime    String?
-  endTime      String?
-  status       EventStatus @default(PENDING)
-  eventType    String
-  venue        String
-  pax          Int
-  notes        String?     @db.Text
-  bookingId    String?     @unique @map("booking_id")
-  booking      Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  source       String?     @db.VarChar(80)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  title      String
+  clientName String
+  date       DateTime
+  startTime  String?
+  endTime    String?
+  status     EventStatus @default(PENDING)
+  eventType  String
+  venue      String
+  pax        Int
+  notes      String?     @db.Text
+  bookingId  String?     @unique @map("booking_id")
+  booking    Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  source     String?     @db.VarChar(80)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model TaskList {
@@ -484,6 +598,8 @@ model Task {
   list          TaskList? @relation(fields: [listId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([listId])
 }
 
 model Inquiry {
@@ -552,56 +668,57 @@ model InquiryActivity {
 }
 
 model Booking {
-  id                      String                  @id @default(cuid())
-  bookingReference        String                  @unique @map("booking_reference")
-  clientName              String                  @map("client_name")
-  clientEmail             String?                 @map("client_email")
-  clientPhone             String?                 @map("client_phone") @db.VarChar(20)
-  clientAddress           String?                 @map("client_address") @db.Text
-  eventTitle              String                  @map("event_title")
-  eventType               String                  @map("event_type")
-  eventCategoryId         String?                 @map("event_category_id")
-  eventCategory           EventCategory?          @relation(fields: [eventCategoryId], references: [id], onDelete: SetNull)
-  eventCategoryName       String?                 @map("event_category_name")
-  eventDate               DateTime                @map("event_date")
-  startTime               String?                 @map("start_time")
-  endTime                 String?                 @map("end_time")
+  id                      String                       @id @default(cuid())
+  bookingReference        String                       @unique @map("booking_reference")
+  clientName              String                       @map("client_name")
+  clientEmail             String?                      @map("client_email")
+  clientPhone             String?                      @map("client_phone") @db.VarChar(20)
+  clientAddress           String?                      @map("client_address") @db.Text
+  eventTitle              String                       @map("event_title")
+  eventType               String                       @map("event_type")
+  eventCategoryId         String?                      @map("event_category_id")
+  eventCategory           EventCategory?               @relation(fields: [eventCategoryId], references: [id], onDelete: SetNull)
+  eventCategoryName       String?                      @map("event_category_name")
+  eventDate               DateTime                     @map("event_date")
+  startTime               String?                      @map("start_time")
+  endTime                 String?                      @map("end_time")
   venue                   String
-  guestCount              Int                     @default(0) @map("guest_count")
-  packageId               String?                 @map("package_id")
-  package                 Package?                @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  packageVersion          Int?                    @map("package_version")
-  packageSelected         String?                 @map("package_selected")
+  guestCount              Int                          @default(0) @map("guest_count")
+  packageId               String?                      @map("package_id")
+  package                 Package?                     @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packageVersion          Int?                         @map("package_version")
+  packageSelected         String?                      @map("package_selected")
   theme                   String?
   colors                  String?
-  specialRequests         String?                 @map("special_requests") @db.Text
-  status                  BookingStatus           @default(PENDING)
-  statusChangedAt         DateTime?               @map("status_changed_at")
-  statusChangedBy         String?                 @map("status_changed_by")
-  statusChangeReason      String?                 @map("status_change_reason") @db.Text
-  assignedCoordinator     String?                 @map("assigned_coordinator")
-  paymentRecordId         String?                 @map("payment_record_id")
-  paymentSummaryStatus    PaymentSummaryStatus    @default(UNPAID) @map("payment_summary_status")
-  paymentTotalAmount      Float?                  @map("payment_total_amount")
-  paymentAmountPaid       Float?                  @map("payment_amount_paid")
-  paymentRemainingBalance Float?                  @map("payment_remaining_balance")
-  paymentDueDate          DateTime?               @map("payment_due_date")
-  paymentLastDate         DateTime?               @map("payment_last_date")
-  paymentReference        String?                 @map("payment_reference")
-  contractRecordId        String?                 @map("contract_record_id")
-  contractStatus          String?                 @map("contract_status")
-  bookingSource           BookingSource           @default(ADMIN_MANUAL) @map("booking_source")
-  syncStatus              SyncStatus              @default(MANUAL_UPDATE) @map("sync_status")
-  automationStatus        AutomationStatus        @default(NOT_STARTED) @map("automation_status")
-  lastSyncedAt            DateTime?               @map("last_synced_at")
-  n8nWorkflowId           String?                 @map("n8n_workflow_id")
-  n8nExecutionId          String?                 @map("n8n_execution_id")
-  lastWorkflowResult      String?                 @map("last_workflow_result") @db.Text
-  emailLogReferenceId     String?                 @map("email_log_reference_id")
-  emailStatus             String?                 @default("pending") @map("email_status")
-  emailType               String?                 @map("email_type")
-  lastEmailSentAt         DateTime?               @map("last_email_sent_at")
-  internalNotes           String?                 @map("internal_notes") @db.Text
+  specialRequests         String?                      @map("special_requests") @db.Text
+  status                  BookingStatus                @default(PENDING)
+  statusChangedAt         DateTime?                    @map("status_changed_at")
+  statusChangedBy         String?                      @map("status_changed_by")
+  statusChangeReason      String?                      @map("status_change_reason") @db.Text
+  assignedCoordinator     String?                      @map("assigned_coordinator")
+  paymentRecordId         String?                      @map("payment_record_id")
+  paymentSummaryStatus    PaymentSummaryStatus         @default(UNPAID) @map("payment_summary_status")
+  paymentTotalAmount      Float?                       @map("payment_total_amount")
+  paymentAmountPaid       Float?                       @map("payment_amount_paid")
+  paymentRemainingBalance Float?                       @map("payment_remaining_balance")
+  paymentDueDate          DateTime?                    @map("payment_due_date")
+  paymentLastDate         DateTime?                    @map("payment_last_date")
+  paymentReference        String?                      @map("payment_reference")
+  contractRecordId        String?                      @map("contract_record_id")
+  contractStatus          String?                      @map("contract_status")
+  bookingSource           BookingSource                @default(ADMIN_MANUAL) @map("booking_source")
+  syncStatus              SyncStatus                   @default(MANUAL_UPDATE) @map("sync_status")
+  automationStatus        AutomationStatus             @default(NOT_STARTED) @map("automation_status")
+  lastSyncedAt            DateTime?                    @map("last_synced_at")
+  n8nWorkflowId           String?                      @map("n8n_workflow_id")
+  n8nExecutionId          String?                      @map("n8n_execution_id")
+  lastWorkflowResult      String?                      @map("last_workflow_result") @db.Text
+  emailLogReferenceId     String?                      @map("email_log_reference_id")
+  emailStatus             String?                      @default("pending") @map("email_status")
+  emailType               String?                      @map("email_type")
+  lastEmailSentAt         DateTime?                    @map("last_email_sent_at")
+  internalNotes           String?                      @map("internal_notes") @db.Text
+  completedAt             DateTime?                    @map("completed_at")
   contracts               Contract[]
   paymentRecord           PaymentRecord?
   timeline                BookingTimeline[]
@@ -610,8 +727,9 @@ model Booking {
   orchestrationContext    BookingOrchestrationContext?
   testimonies             Testimony[]
   inquiries               Inquiry[]
-  createdAt               DateTime                @default(now()) @map("created_at")
-  updatedAt               DateTime                @updatedAt @map("updated_at")
+  clientAccessGrants      ClientAccessGrant[]
+  createdAt               DateTime                     @default(now()) @map("created_at")
+  updatedAt               DateTime                     @updatedAt @map("updated_at")
 
   @@index([bookingReference])
   @@index([clientEmail])
@@ -681,6 +799,7 @@ model EventCategory {
   id               String                   @id @default(cuid())
   name             String
   slug             String                   @unique
+  categoryKey      String                   @unique @map("category_key")
   description      String?                  @db.Text
   coverImageUrl    String?                  @map("cover_image_url") @db.Text
   displayOrder     Int                      @default(0) @map("display_order")
@@ -693,12 +812,64 @@ model EventCategory {
   packages         Package[]
   bookings         Booking[]
   bookingSnapshots BookingPackageSnapshot[]
+  taskTemplates    TaskTemplate[]
 
   @@index([status])
   @@index([clientVisible])
   @@index([displayOrder])
   @@index([status, clientVisible])
   @@map("event_categories")
+}
+
+model TaskTemplate {
+  id               String             @id @default(cuid())
+  eventCategoryId  String?            @map("event_category_id")
+  eventCategory    EventCategory?     @relation(fields: [eventCategoryId], references: [id], onDelete: SetNull)
+  templateKey      String             @map("template_key")
+  name             String
+  description      String?            @db.Text
+  version          Int                @default(1)
+  status           TaskTemplateStatus @default(DRAFT)
+  isActive         Boolean            @default(false) @map("is_active")
+  isDefault        Boolean            @default(false) @map("is_default")
+  sourceTemplateId String?            @map("source_template_id")
+  sourceTemplate   TaskTemplate?      @relation("TaskTemplateVersions", fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  derivedTemplates TaskTemplate[]     @relation("TaskTemplateVersions")
+  publishedAt      DateTime?          @map("published_at")
+  publishedById    String?            @map("published_by_id")
+  items            TaskTemplateItem[]
+  bookingTasks     DashboardTask[]
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  @@unique([templateKey, version])
+  @@index([eventCategoryId])
+  @@index([templateKey, status, isActive])
+  @@index([sourceTemplateId])
+  @@map("task_templates")
+}
+
+model TaskTemplateItem {
+  id             String          @id @default(cuid())
+  itemKey        String          @default(cuid()) @map("item_key") @db.VarChar(80)
+  taskTemplateId String          @map("task_template_id")
+  taskTemplate   TaskTemplate    @relation(fields: [taskTemplateId], references: [id], onDelete: Cascade)
+  orderIndex     Int             @map("order_index")
+  title          String
+  description    String?         @db.Text
+  priority       String          @default("medium") @db.VarChar(20)
+  assignedToRole String          @default("ADMIN") @map("assigned_to_role") @db.VarChar(30)
+  isRequired     Boolean         @default(true) @map("is_required")
+  dueOffsetDays  Int?            @map("due_offset_days")
+  category       String?         @db.VarChar(100)
+  bookingTasks   DashboardTask[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@unique([taskTemplateId, orderIndex])
+  @@unique([taskTemplateId, itemKey])
+  @@index([taskTemplateId])
+  @@map("task_template_items")
 }
 
 model Package {
@@ -797,27 +968,31 @@ model SupportCategory {
 }
 
 model SupportFaqEntry {
-  id                      String                        @id @default(cuid())
-  question                String                        @db.Text
-  answer                  String                        @db.Text
-  categoryId              String?                       @map("category_id")
-  category                SupportCategory?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  tags                    String[]                      @default([])
-  relatedModule           SupportRelatedModule          @default(GENERAL) @map("related_module")
-  status                  SupportFaqStatus              @default(DRAFT)
-  clientVisible           Boolean                       @default(false) @map("client_visible")
-  assistantEnabled        Boolean                       @default(false) @map("assistant_enabled")
-  priority                Int                           @default(0)
-  viewCount               Int                           @default(0) @map("view_count")
-  lastUsedByAssistantAt   DateTime?                     @map("last_used_by_assistant_at")
-  internalNotes           String?                       @map("internal_notes") @db.Text
-  createdBy               String?                       @map("created_by")
-  updatedBy               String?                       @map("updated_by")
-  createdAt               DateTime                      @default(now()) @map("created_at")
-  updatedAt               DateTime                      @updatedAt @map("updated_at")
-  versions                SupportFaqVersion[]
-  assistantTestLogs       AssistantTestLog[]
-  unansweredConversions   AssistantUnansweredQuestion[]
+  id                        String                        @id @default(cuid())
+  question                  String                        @db.Text
+  answer                    String                        @db.Text
+  categoryId                String?                       @map("category_id")
+  category                  SupportCategory?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags                      String[]                      @default([])
+  relatedModule             SupportRelatedModule          @default(GENERAL) @map("related_module")
+  status                    SupportFaqStatus              @default(DRAFT)
+  clientVisible             Boolean                       @default(false) @map("client_visible")
+  assistantEnabled          Boolean                       @default(false) @map("assistant_enabled")
+  priority                  Int                           @default(0)
+  viewCount                 Int                           @default(0) @map("view_count")
+  lastUsedByAssistantAt     DateTime?                     @map("last_used_by_assistant_at")
+  internalNotes             String?                       @map("internal_notes") @db.Text
+  createdBy                 String?                       @map("created_by")
+  updatedBy                 String?                       @map("updated_by")
+  createdAt                 DateTime                      @default(now()) @map("created_at")
+  updatedAt                 DateTime                      @updatedAt @map("updated_at")
+  currentDraftVersionId     String?                       @unique @map("current_draft_version_id")
+  currentDraftVersion       SupportFaqVersion?            @relation("FaqCurrentDraft", fields: [currentDraftVersionId], references: [id], onDelete: SetNull)
+  currentPublishedVersionId String?                       @unique @map("current_published_version_id")
+  currentPublishedVersion   SupportFaqVersion?            @relation("FaqCurrentPublished", fields: [currentPublishedVersionId], references: [id], onDelete: SetNull)
+  versions                  SupportFaqVersion[]
+  assistantTestLogs         AssistantTestLog[]
+  unansweredConversions     AssistantUnansweredQuestion[]
 
   @@index([categoryId])
   @@index([status])
@@ -832,18 +1007,39 @@ model SupportFaqEntry {
 }
 
 model SupportFaqVersion {
-  id            String          @id @default(cuid())
-  faqEntryId    String          @map("faq_entry_id")
-  faqEntry      SupportFaqEntry @relation(fields: [faqEntryId], references: [id], onDelete: Cascade)
-  oldQuestion   String?         @map("old_question") @db.Text
-  oldAnswer     String?         @map("old_answer") @db.Text
-  newQuestion   String?         @map("new_question") @db.Text
-  newAnswer     String?         @map("new_answer") @db.Text
-  changeSummary String?         @map("change_summary") @db.Text
-  changedBy     String?         @map("changed_by")
-  createdAt     DateTime        @default(now()) @map("created_at")
+  id                  String                @id @default(cuid())
+  faqEntryId          String                @map("faq_entry_id")
+  faqEntry            SupportFaqEntry       @relation(fields: [faqEntryId], references: [id], onDelete: Cascade)
+  oldQuestion         String?               @map("old_question") @db.Text
+  oldAnswer           String?               @map("old_answer") @db.Text
+  newQuestion         String?               @map("new_question") @db.Text
+  newAnswer           String?               @map("new_answer") @db.Text
+  changeSummary       String?               @map("change_summary") @db.Text
+  changedBy           String?               @map("changed_by")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  versionNumber       Int?                  @map("version_number")
+  question            String?               @db.Text
+  answer              String?               @db.Text
+  categoryId          String?               @map("category_id")
+  tags                String[]              @default([])
+  relatedModule       SupportRelatedModule? @map("related_module")
+  clientVisible       Boolean?              @map("client_visible")
+  assistantEnabled    Boolean?              @map("assistant_enabled")
+  priority            Int?
+  internalNotes       String?               @map("internal_notes") @db.Text
+  publicationStatus   PublicationStatus     @default(DRAFT) @map("publication_status")
+  publishAt           DateTime?             @map("publish_at")
+  publishedAt         DateTime?             @map("published_at")
+  expiresAt           DateTime?             @map("expires_at")
+  approvedAt          DateTime?             @map("approved_at")
+  approvedBy          String?               @map("approved_by")
+  publishedBy         String?               @map("published_by")
+  currentDraftFor     SupportFaqEntry?      @relation("FaqCurrentDraft")
+  currentPublishedFor SupportFaqEntry?      @relation("FaqCurrentPublished")
 
+  @@unique([faqEntryId, versionNumber])
   @@index([faqEntryId])
+  @@index([publicationStatus, publishAt])
   @@index([createdAt])
   @@map("support_faq_versions")
 }
@@ -863,6 +1059,7 @@ model AssistantUnansweredQuestion {
   @@index([status])
   @@index([sourcePage])
   @@index([matchConfidence])
+  @@index([convertedFaqId])
   @@index([createdAt])
   @@map("assistant_unanswered_questions")
 }
@@ -902,23 +1099,28 @@ model BookingPackageSnapshot {
 }
 
 model BookingOrchestrationContext {
-  id                   String   @id @default(cuid())
-  bookingId            String   @unique @map("booking_id")
-  booking              Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  bookingReference     String   @map("booking_reference")
-  eventCategory        String   @map("event_category")
-  eventCategoryKey     String   @map("event_category_key")
-  packageCategory      String   @map("package_category")
-  packageTier          String   @map("package_tier")
-  taskTemplateKey      String   @map("task_template_key")
-  riskLevel            String   @map("risk_level")
-  hasScheduleConflict  Boolean  @default(false) @map("has_schedule_conflict")
-  requiresManualReview Boolean  @default(false) @map("requires_manual_review")
-  suggestedAdminRole   String   @default("ADMIN") @map("suggested_admin_role")
-  tags                 Json?
-  reasonCodes          Json?    @map("reason_codes")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                       String   @id @default(cuid())
+  bookingId                String   @unique @map("booking_id")
+  booking                  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingReference         String   @map("booking_reference")
+  eventCategory            String   @map("event_category")
+  eventCategoryKey         String   @map("event_category_key")
+  packageCategory          String   @map("package_category")
+  packageTier              String   @map("package_tier")
+  taskTemplateKey          String   @map("task_template_key")
+  requestedTaskTemplateKey String   @map("requested_task_template_key")
+  taskTemplateId           String   @map("task_template_id")
+  taskTemplateVersion      Int      @map("task_template_version")
+  templateFallbackUsed     Boolean  @default(false) @map("template_fallback_used")
+  templateFallbackReason   String?  @map("template_fallback_reason")
+  riskLevel                String   @map("risk_level")
+  hasScheduleConflict      Boolean  @default(false) @map("has_schedule_conflict")
+  requiresManualReview     Boolean  @default(false) @map("requires_manual_review")
+  suggestedAdminRole       String   @default("ADMIN") @map("suggested_admin_role")
+  tags                     Json?
+  reasonCodes              Json?    @map("reason_codes")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
 
   @@index([bookingReference])
   @@index([eventCategoryKey])
@@ -1056,6 +1258,7 @@ model Contract {
   sendAttempts       ContractSendAttempt[]
 
   @@index([bookingId])
+  @@index([templateId])
   @@index([bookingReference])
   @@index([clientEmail])
   @@index([contractStatus])
@@ -1147,35 +1350,51 @@ model ContractSendAttempt {
 }
 
 model DashboardTask {
-  id              String                @id @default(cuid())
-  title           String
-  description     String?               @db.Text
-  taskDate        DateTime              @map("task_date")
-  taskTime        String?               @map("task_time")
-  priority        DashboardTaskPriority @default(MEDIUM)
-  status          DashboardTaskStatus   @default(PENDING)
-  assignedTo      String?               @map("assigned_to")
-  assignedToRole  String?               @map("assigned_to_role")
-  relatedModule   String?               @map("related_module")
-  relatedRecordId String?               @map("related_record_id")
-  bookingReference String?              @map("booking_reference")
-  category        String?
-  source          DashboardTaskSource   @default(MANUAL)
-  workflowName    String?               @map("workflow_name")
-  workflowExecutionId String?           @map("workflow_execution_id")
-  orderIndex      Int                   @default(0) @map("order_index")
-  taskTemplateKey String?               @map("task_template_key")
-  activationStatus String?              @default("active") @map("activation_status")
-  isActive        Boolean               @default(true) @map("is_active")
-  isEditable      Boolean               @default(true) @map("is_editable")
-  startedAt       DateTime?             @map("started_at")
-  reminderOption  String?               @map("reminder_option")
-  createdBy       String?               @map("created_by")
-  completedBy     String?               @map("completed_by")
-  completedAt     DateTime?             @map("completed_at")
-  createdAt       DateTime              @default(now()) @map("created_at")
-  updatedAt       DateTime              @updatedAt @map("updated_at")
+  id                     String                    @id @default(cuid())
+  title                  String
+  description            String?                   @db.Text
+  taskDate               DateTime                  @map("task_date")
+  taskTime               String?                   @map("task_time")
+  priority               DashboardTaskPriority     @default(MEDIUM)
+  status                 DashboardTaskStatus       @default(PENDING)
+  assignedTo             String?                   @map("assigned_to")
+  assignedToRole         String?                   @map("assigned_to_role")
+  relatedModule          String?                   @map("related_module")
+  relatedRecordId        String?                   @map("related_record_id")
+  bookingReference       String?                   @map("booking_reference")
+  category               String?
+  source                 DashboardTaskSource       @default(MANUAL)
+  workflowName           String?                   @map("workflow_name")
+  workflowExecutionId    String?                   @map("workflow_execution_id")
+  orderIndex             Int                       @default(0) @map("order_index")
+  taskTemplateKey        String?                   @map("task_template_key")
+  taskTemplateId         String?                   @map("task_template_id")
+  taskTemplate           TaskTemplate?             @relation(fields: [taskTemplateId], references: [id], onDelete: SetNull)
+  taskTemplateVersion    Int?                      @map("task_template_version")
+  templateItemId         String?                   @map("template_item_id")
+  templateItem           TaskTemplateItem?         @relation(fields: [templateItemId], references: [id], onDelete: SetNull)
+  templateItemKey        String?                   @map("template_item_key") @db.VarChar(80)
+  templateSnapshot       Json?                     @map("template_snapshot")
+  templateSyncState      TaskTemplateSyncState     @default(SYNCED) @map("template_sync_state")
+  manualOverrideAt       DateTime?                 @map("manual_override_at")
+  manualOverrideBy       String?                   @map("manual_override_by")
+  templateContentHash    String?                   @map("template_content_hash") @db.VarChar(64)
+  templateMigrationRunId String?                   @map("template_migration_run_id")
+  templateMigrationRun   TaskTemplateMigrationRun? @relation(fields: [templateMigrationRunId], references: [id], onDelete: SetNull)
+  isHighRisk             Boolean                   @default(false) @map("is_high_risk")
+  activationStatus       String?                   @default("active") @map("activation_status")
+  isActive               Boolean                   @default(true) @map("is_active")
+  isEditable             Boolean                   @default(true) @map("is_editable")
+  startedAt              DateTime?                 @map("started_at")
+  reminderOption         String?                   @map("reminder_option")
+  createdBy              String?                   @map("created_by")
+  completedBy            String?                   @map("completed_by")
+  completedAt            DateTime?                 @map("completed_at")
+  createdAt              DateTime                  @default(now()) @map("created_at")
+  updatedAt              DateTime                  @updatedAt @map("updated_at")
 
+  @@unique([relatedRecordId, workflowExecutionId, title])
+  @@unique([relatedRecordId, templateItemId, orderIndex])
   @@index([taskDate])
   @@index([status])
   @@index([priority])
@@ -1185,13 +1404,18 @@ model DashboardTask {
   @@index([category])
   @@index([workflowExecutionId])
   @@index([taskTemplateKey])
+  @@index([taskTemplateKey, taskTemplateVersion])
+  @@index([taskTemplateId])
+  @@index([templateItemId])
+  @@index([templateItemKey])
+  @@index([templateSyncState])
+  @@index([templateMigrationRunId])
   @@index([activationStatus])
   @@index([isActive])
   @@index([relatedRecordId, orderIndex])
   @@index([relatedModule, relatedRecordId])
   @@index([relatedRecordId, workflowExecutionId])
   @@index([taskDate, status])
-  @@unique([relatedRecordId, workflowExecutionId, title])
   @@map("dashboard_tasks")
 }
 
@@ -1345,4 +1569,344 @@ model N8nWorkflowLog {
   @@index([relatedModule, relatedRecordId])
   @@index([createdAt, status])
   @@map("n8n_workflow_logs")
+}
+
+model OrchestrationRateLimit {
+  id              String   @id
+  scope           String   @db.VarChar(120)
+  clientKey       String   @map("client_key") @db.VarChar(64)
+  windowStartedAt DateTime @map("window_started_at")
+  requestCount    Int      @default(1) @map("request_count")
+  expiresAt       DateTime @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([expiresAt])
+  @@index([scope, clientKey])
+  @@map("orchestration_rate_limits")
+}
+
+model GalleryCollection {
+  id              String        @id @default(cuid())
+  name            String
+  slug            String        @unique
+  description     String?       @db.Text
+  eventCategoryId String?       @map("event_category_id")
+  displayOrder    Int           @default(0) @map("display_order")
+  isActive        Boolean       @default(true) @map("is_active")
+  createdBy       String?       @map("created_by")
+  updatedBy       String?       @map("updated_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  items           ContentItem[]
+
+  @@index([displayOrder])
+  @@index([eventCategoryId])
+  @@map("gallery_collections")
+}
+
+model ContentItem {
+  id              String             @id @default(cuid())
+  type            ContentType
+  slug            String
+  title           String
+  collectionId    String?            @map("collection_id")
+  collection      GalleryCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  eventCategoryId String?            @map("event_category_id")
+  displayOrder    Int                @default(0) @map("display_order")
+  createdBy       String?            @map("created_by")
+  updatedBy       String?            @map("updated_by")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  versions        ContentVersion[]
+
+  @@unique([type, slug])
+  @@index([type, displayOrder])
+  @@index([collectionId])
+  @@index([eventCategoryId])
+  @@map("content_items")
+}
+
+model ContentVersion {
+  id            String            @id @default(cuid())
+  contentItemId String            @map("content_item_id")
+  contentItem   ContentItem       @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  versionNumber Int               @map("version_number")
+  status        PublicationStatus @default(DRAFT)
+  payload       Json
+  changeSummary String?           @map("change_summary") @db.Text
+  internalNotes String?           @map("internal_notes") @db.Text
+  publishAt     DateTime?         @map("publish_at")
+  publishedAt   DateTime?         @map("published_at")
+  expiresAt     DateTime?         @map("expires_at")
+  approvedAt    DateTime?         @map("approved_at")
+  approvedBy    String?           @map("approved_by")
+  publishedBy   String?           @map("published_by")
+  archivedAt    DateTime?         @map("archived_at")
+  createdBy     String?           @map("created_by")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([contentItemId, versionNumber])
+  @@index([status, publishAt])
+  @@index([status, expiresAt])
+  @@map("content_versions")
+}
+
+model MediaAsset {
+  id               String           @id @default(cuid())
+  provider         String           @default("supabase") @db.VarChar(40)
+  bucket           String           @db.VarChar(120)
+  objectPath       String           @map("object_path") @db.Text
+  checksum         String           @db.VarChar(64)
+  mimeType         String           @map("mime_type") @db.VarChar(120)
+  originalFilename String           @map("original_filename") @db.VarChar(255)
+  byteSize         Int              @map("byte_size")
+  width            Int?
+  height           Int?
+  status           MediaAssetStatus @default(DRAFT)
+  publicUrl        String?          @map("public_url") @db.Text
+  trashEligibleAt  DateTime?        @map("trash_eligible_at")
+  createdBy        String?          @map("created_by")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@unique([bucket, objectPath])
+  @@index([checksum])
+  @@index([status, trashEligibleAt])
+  @@map("media_assets")
+}
+
+model KnowledgeDocument {
+  id          String                     @id @default(cuid())
+  title       String
+  slug        String                     @unique
+  type        KnowledgeDocumentType
+  accessLevel KnowledgeAccessLevel       @default(PUBLIC) @map("access_level")
+  createdBy   String?                    @map("created_by")
+  updatedBy   String?                    @map("updated_by")
+  createdAt   DateTime                   @default(now()) @map("created_at")
+  updatedAt   DateTime                   @updatedAt @map("updated_at")
+  versions    KnowledgeDocumentVersion[]
+
+  @@index([accessLevel])
+  @@map("knowledge_documents")
+}
+
+model KnowledgeDocumentVersion {
+  id               String            @id @default(cuid())
+  documentId       String            @map("document_id")
+  document         KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber    Int               @map("version_number")
+  status           PublicationStatus @default(DRAFT)
+  extractedText    String?           @map("extracted_text") @db.Text
+  sourceObjectPath String?           @map("source_object_path") @db.Text
+  sourceChecksum   String?           @map("source_checksum") @db.VarChar(64)
+  changeSummary    String?           @map("change_summary") @db.Text
+  publishAt        DateTime?         @map("publish_at")
+  publishedAt      DateTime?         @map("published_at")
+  expiresAt        DateTime?         @map("expires_at")
+  approvedAt       DateTime?         @map("approved_at")
+  approvedBy       String?           @map("approved_by")
+  publishedBy      String?           @map("published_by")
+  createdBy        String?           @map("created_by")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  sources          KnowledgeSource[]
+
+  @@unique([documentId, versionNumber])
+  @@index([status, publishAt])
+  @@map("knowledge_document_versions")
+}
+
+model KnowledgeIndexGeneration {
+  id                 String               @id @default(cuid())
+  generation         Int                  @unique
+  modelIdentifier    String               @map("model_identifier") @db.VarChar(120)
+  embeddingDimension Int                  @default(768) @map("embedding_dimension")
+  status             KnowledgeIndexStatus @default(PENDING)
+  isActive           Boolean              @default(false) @map("is_active")
+  validatedAt        DateTime?            @map("validated_at")
+  activatedAt        DateTime?            @map("activated_at")
+  safeError          String?              @map("safe_error") @db.Text
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  sources            KnowledgeSource[]
+
+  @@index([status, isActive])
+  @@map("knowledge_index_generations")
+}
+
+model KnowledgeSource {
+  id                String                    @id @default(cuid())
+  documentVersionId String?                   @map("document_version_id")
+  documentVersion   KnowledgeDocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  indexGenerationId String                    @map("index_generation_id")
+  indexGeneration   KnowledgeIndexGeneration  @relation(fields: [indexGenerationId], references: [id], onDelete: Cascade)
+  resourceType      String                    @map("resource_type") @db.VarChar(60)
+  resourceId        String                    @map("resource_id")
+  resourceVersion   Int?                      @map("resource_version")
+  sourcePath        String?                   @map("source_path") @db.VarChar(255)
+  title             String
+  sourceChecksum    String                    @map("source_checksum") @db.VarChar(64)
+  accessLevel       KnowledgeAccessLevel      @default(PUBLIC) @map("access_level")
+  publishedAt       DateTime                  @map("published_at")
+  expiresAt         DateTime?                 @map("expires_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  chunks            KnowledgeChunk[]
+
+  @@unique([indexGenerationId, resourceType, resourceId])
+  @@index([documentVersionId])
+  @@index([indexGenerationId, accessLevel])
+  @@index([publishedAt, expiresAt])
+  @@map("knowledge_sources")
+}
+
+model KnowledgeChunk {
+  id              String                      @id @default(cuid())
+  sourceId        String                      @map("source_id")
+  source          KnowledgeSource             @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  chunkIndex      Int                         @map("chunk_index")
+  heading         String?                     @db.Text
+  content         String                      @db.Text
+  tokenCount      Int                         @map("token_count")
+  contentChecksum String                      @map("content_checksum") @db.VarChar(64)
+  searchText      String                      @map("search_text") @db.Text
+  embedding       Unsupported("vector(768)")?
+  createdAt       DateTime                    @default(now()) @map("created_at")
+
+  @@unique([sourceId, chunkIndex])
+  @@index([sourceId])
+  @@index([contentChecksum])
+  @@map("knowledge_chunks")
+}
+
+model CommandCenterJob {
+  id             String                 @id @default(cuid())
+  type           CommandCenterJobType
+  resourceType   String                 @map("resource_type") @db.VarChar(80)
+  resourceId     String                 @map("resource_id")
+  status         CommandCenterJobStatus @default(QUEUED)
+  scheduledAt    DateTime               @default(now()) @map("scheduled_at")
+  leaseOwner     String?                @map("lease_owner") @db.VarChar(120)
+  leaseExpiresAt DateTime?              @map("lease_expires_at")
+  attemptCount   Int                    @default(0) @map("attempt_count")
+  maxAttempts    Int                    @default(5) @map("max_attempts")
+  idempotencyKey String                 @unique @map("idempotency_key") @db.VarChar(160)
+  payload        Json?
+  result         Json?
+  safeError      String?                @map("safe_error") @db.Text
+  completedAt    DateTime?              @map("completed_at")
+  createdBy      String?                @map("created_by")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, scheduledAt])
+  @@index([leaseExpiresAt])
+  @@index([resourceType, resourceId])
+  @@map("command_center_jobs")
+}
+
+model AssistantConversation {
+  id              String                 @id @default(cuid())
+  publicReference String                 @unique @map("public_reference") @db.VarChar(80)
+  actorType       AssistantActorType     @map("actor_type")
+  actorReference  String?                @map("actor_reference") @db.VarChar(160)
+  bookingId       String?                @map("booking_id")
+  locale          String?                @db.VarChar(20)
+  sourcePage      String?                @map("source_page") @db.VarChar(255)
+  expiresAt       DateTime               @map("expires_at")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  interactions    AssistantInteraction[]
+
+  @@index([actorType, actorReference])
+  @@index([bookingId])
+  @@index([expiresAt])
+  @@map("assistant_conversations")
+}
+
+model AssistantInteraction {
+  id               String                  @id @default(cuid())
+  conversationId   String                  @map("conversation_id")
+  conversation     AssistantConversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  traceReference   String                  @unique @map("trace_reference") @db.VarChar(80)
+  status           AssistantResponseStatus
+  answerMode       String                  @map("answer_mode") @db.VarChar(80)
+  redactedQuestion String?                 @map("redacted_question") @db.Text
+  redactedAnswer   String?                 @map("redacted_answer") @db.Text
+  intentPlan       Json?                   @map("intent_plan")
+  citationMetadata Json?                   @map("citation_metadata")
+  toolMetadata     Json?                   @map("tool_metadata")
+  providerModel    String?                 @map("provider_model") @db.VarChar(120)
+  latencyMs        Int?                    @map("latency_ms")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  feedback         AssistantFeedback[]
+
+  @@index([conversationId, createdAt])
+  @@index([status, createdAt])
+  @@map("assistant_interactions")
+}
+
+model AssistantFeedback {
+  id            String               @id @default(cuid())
+  interactionId String               @map("interaction_id")
+  interaction   AssistantInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  rating        Int
+  correction    String?              @db.Text
+  escalation    Boolean              @default(false)
+  submittedBy   String?              @map("submitted_by") @db.VarChar(160)
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  @@index([interactionId])
+  @@index([rating, createdAt])
+  @@map("assistant_feedback")
+}
+
+model ClientAccessGrant {
+  id              String    @id @default(cuid())
+  publicReference String    @unique @map("public_reference") @db.VarChar(80)
+  bookingId       String    @map("booking_id")
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  contactChannel  String    @map("contact_channel") @db.VarChar(20)
+  contactHash     String    @map("contact_hash") @db.VarChar(64)
+  codeHash        String    @map("code_hash") @db.VarChar(64)
+  grantTokenHash  String?   @unique @map("grant_token_hash") @db.VarChar(64)
+  codeExpiresAt   DateTime  @map("code_expires_at")
+  grantExpiresAt  DateTime? @map("grant_expires_at")
+  verifiedAt      DateTime? @map("verified_at")
+  revokedAt       DateTime? @map("revoked_at")
+  attemptCount    Int       @default(0) @map("attempt_count")
+  ipAddress       String?   @map("ip_address") @db.VarChar(100)
+  userAgent       String?   @map("user_agent") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([bookingId, codeExpiresAt])
+  @@index([grantExpiresAt])
+  @@index([revokedAt])
+  @@map("client_access_grants")
+}
+
+model TaskTemplateMigrationRun {
+  id               String                      @id @default(cuid())
+  publicReference  String                      @unique @map("public_reference") @db.VarChar(80)
+  sourceTemplateId String                      @map("source_template_id")
+  targetTemplateId String                      @map("target_template_id")
+  status           TaskTemplateMigrationStatus @default(PREVIEWED)
+  previewPayload   Json                        @map("preview_payload")
+  applyPayload     Json?                       @map("apply_payload")
+  idempotencyKey   String?                     @unique @map("idempotency_key") @db.VarChar(160)
+  resultPayload    Json?                       @map("result_payload")
+  safeError        String?                     @map("safe_error") @db.Text
+  createdBy        String                      @map("created_by")
+  appliedBy        String?                     @map("applied_by")
+  appliedAt        DateTime?                   @map("applied_at")
+  createdAt        DateTime                    @default(now()) @map("created_at")
+  updatedAt        DateTime                    @updatedAt @map("updated_at")
+  tasks            DashboardTask[]
+
+  @@index([sourceTemplateId, targetTemplateId])
+  @@index([status, createdAt])
+  @@map("task_template_migration_runs")
 }

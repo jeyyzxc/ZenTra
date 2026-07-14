@@ -16,7 +16,7 @@ const menuItems = [
   { name: 'Services and Packages', path: '/admin/services', imageIcon: '/services.png', superadminOnly: true },
   { name: 'Inquiries', path: '/admin/inquiries', imageIcon: '/inquiries.png' },
   { name: 'Testimonies', path: '/admin/testimonies', flaticonClass: 'fi fi-rr-comment-quote' },
-  { name: 'Support Center', path: '/admin/support', imageIcon: '/support.png' },
+  { name: 'ZENTRA Command Center', path: '/admin/command-center', imageIcon: '/support.png' },
   { name: 'Reports & Analytics', path: '/admin/reports', imageIcon: '/reports.png' },
   { name: 'System Logs', path: '/admin/audit', imageIcon: '/audit.png' },
   { name: 'Team', path: '/admin/team', flaticonClass: 'fi fi-rr-users', superadminOnly: true },
@@ -111,7 +111,7 @@ export default function AdminSidebar({
       {/* Navigation Links - Scrollbar Hidden */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-6 flex flex-col gap-2 px-3 no-scrollbar">
         {visibleMenuItems.map((item) => {
-          const isActive = pathname === item.path;
+          const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`);
           return (
             <Link key={item.path} href={item.path}>
               <div 

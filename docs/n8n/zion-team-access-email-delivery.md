@@ -112,13 +112,15 @@ Map fields directly from the webhook payload:
 | Subject | `={{ $json.subject }}` |
 | Text | `={{ $json.text }}` |
 
+In the email node's **Options**, set **Append n8n Attribution** to **off**. This option is enabled by default in supported n8n email nodes and otherwise adds the `This email was sent automatically with n8n` footer after the system-provided message body.
+
 If your email provider requires HTML, generate a simple HTML body from `text`, but do not add workflow details:
 
 ```js
 {{ String($json.text ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replace(/\n/g, '<br>') }}
 ```
 
-Do not add n8n branding, execution IDs, webhook URLs, secrets, admin notes, or internal logs to the message body.
+Do not add n8n branding, execution IDs, webhook URLs, secrets, admin notes, or internal logs to the message body. Apply the same disabled attribution option to every email-sending branch added to this workflow.
 
 ## 6. Required response behavior
 

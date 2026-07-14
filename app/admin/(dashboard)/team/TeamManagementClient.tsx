@@ -390,14 +390,22 @@ function SecurityActionDialog({
             <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-[#A3B19B]">
               Reason
             </span>
-            <textarea
-              value={reason}
-              onChange={(event) => onReasonChange(event.target.value)}
-              rows={4}
-              maxLength={500}
-              className="w-full resize-none rounded-xl border border-[#D6B53B]/30 bg-white px-3 py-3 text-sm font-medium text-gray-900 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all duration-300 hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 focus:border-[#D6B53B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:focus:border-[#D6B53B] dark:focus:bg-[#1a1f18]"
-              required
-            />
+            <span className="group/reason relative block">
+              <textarea
+                value={reason}
+                onChange={(event) => onReasonChange(event.target.value)}
+                rows={4}
+                maxLength={500}
+                className="peer team-reason-textarea min-h-24 w-full resize-none rounded-xl border border-[#D6B53B]/30 bg-white px-3 py-3 pr-10 text-sm font-medium text-gray-900 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-300 hover:border-[#D6B53B]/50 hover:bg-[#FFF2DB]/30 focus:border-[#D6B53B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6B53B]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:focus:border-[#D6B53B] dark:focus:bg-[#1a1f18]"
+                required
+              />
+              <div className="pointer-events-none absolute bottom-3 right-2 z-10 text-[#B99A2E]/50 transition-colors duration-300 group-hover/reason:text-[#D6B53B]/70 peer-focus:text-[#D6B53B] dark:text-[#D6B53B]/50">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M9 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+            </span>
           </label>
         )}
 
@@ -406,7 +414,7 @@ function SecurityActionDialog({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-[#A3B19B] dark:hover:bg-white/5 dark:hover:text-white"
+            className="rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-[#A3B19B] dark:hover:bg-red-500/10 dark:hover:text-red-400"
           >
             Cancel
           </button>

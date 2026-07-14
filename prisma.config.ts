@@ -12,6 +12,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Schema changes must use a direct/session connection. The application
+    // runtime can independently use Supavisor transaction mode through
+    // DATABASE_URL when deployed to Vercel.
+    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"],
   },
 });

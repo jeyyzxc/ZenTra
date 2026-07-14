@@ -713,7 +713,7 @@ export default function InquiryForm({
               rows={4}
               className={`${commonInputClasses(Boolean(fieldErrors.message))} resize-none`}
             />
-            <div className="pointer-events-none absolute bottom-4 right-4 text-neutral-400/60 transition-colors group-hover/input:text-[#D4AF37]/70 peer-focus:text-[#D4AF37]">
+            <div className="pointer-events-none absolute bottom-3 right-2 text-neutral-400/60 transition-colors group-hover/input:text-[#D4AF37]/70 peer-focus:text-[#D4AF37]">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <path d="M9 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>

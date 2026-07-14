@@ -13,8 +13,14 @@ import {
   TriggerSource,
   UserStatus,
 } from '@prisma/client';
-import { assertStrongPassword } from '@/lib/password-policy';
 import { createAuditLog, systemAuditActor } from '@/lib/audit';
+import {
+  PASSWORD_SECURITY_USER_SELECT,
+  archiveCurrentPassword,
+  assertPasswordIsFresh,
+  assertPasswordUpdateNotLocked,
+  validatePasswordUpdate,
+} from '@/lib/password-security';
 import { prisma } from '@/lib/prisma';
 
 export const INVITATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -531,9 +537,75 @@ export async function completePasswordWithToken(input: {
     throw new Error('This link is invalid.');
   }
 
-  assertStrongPassword(input.newPassword);
   const tokenHash = hashAccessSecret(tokenValue);
   const now = new Date();
+
+  const candidate = await prisma.accountToken.findFirst({
+    where: {
+      tokenHash,
+      tokenType: input.tokenType,
+    },
+    include: {
+      user: {
+        select: {
+          ...PASSWORD_SECURITY_USER_SELECT,
+          username: true,
+          email: true,
+          fullName: true,
+          role: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!candidate) {
+    throw new Error('This link is invalid.');
+  }
+
+  if (candidate.usedAt) {
+    throw new Error('This link has already been used.');
+  }
+
+  if (candidate.expiresAt.getTime() <= now.getTime()) {
+    await prisma.$transaction(async (transaction) => {
+      await transaction.accountToken.updateMany({
+        where: {
+          id: candidate.id,
+          usedAt: null,
+        },
+        data: { usedAt: now },
+      });
+
+      if (
+        input.tokenType === AccountTokenType.INVITATION &&
+        candidate.user.status === UserStatus.PENDING_SETUP
+      ) {
+        await transaction.user.update({
+          where: { id: candidate.userId },
+          data: { status: UserStatus.INVITATION_EXPIRED },
+        });
+      }
+
+      if (input.tokenType === AccountTokenType.PASSWORD_RESET) {
+        await transaction.user.update({
+          where: { id: candidate.userId },
+          data: { status: UserStatus.RESET_EXPIRED },
+        });
+      }
+    });
+
+    throw new Error('This link has expired.');
+  }
+
+  if (
+    candidate.user.status === UserStatus.DISABLED ||
+    candidate.user.status === UserStatus.LOCKED
+  ) {
+    throw new Error('This account cannot be updated right now.');
+  }
+
+  await validatePasswordUpdate(candidate.userId, input.newPassword);
 
   const result = await prisma.$transaction(
     async (transaction) => {
@@ -545,7 +617,7 @@ export async function completePasswordWithToken(input: {
         include: {
           user: {
             select: {
-              id: true,
+              ...PASSWORD_SECURITY_USER_SELECT,
               username: true,
               email: true,
               fullName: true,
@@ -594,7 +666,16 @@ export async function completePasswordWithToken(input: {
         throw new Error('This account cannot be updated right now.');
       }
 
+      assertPasswordUpdateNotLocked(token.user, now);
+      await assertPasswordIsFresh(input.newPassword, token.user);
+
       const passwordHash = await bcrypt.hash(input.newPassword, 12);
+      await archiveCurrentPassword(
+        transaction,
+        token.userId,
+        token.user.passwordHash,
+      );
+
       const updatedUser = await transaction.user.update({
         where: { id: token.userId },
         data: {
@@ -602,6 +683,8 @@ export async function completePasswordWithToken(input: {
           status: UserStatus.ACTIVE,
           mustChangePassword: false,
           lastPasswordChangedAt: now,
+          passwordChangeAttemptCount: 0,
+          passwordChangeLockedUntil: null,
         },
         select: {
           id: true,

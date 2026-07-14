@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import BackgroundSlideshow from '@/components/shared/BackgroundSlideshow';
+
+const LOGIN_MESSAGE_AUTO_HIDE_MS = 5000;
 
 export default function AdminLoginForm() {
   const [email, setEmail] = useState('');
@@ -15,6 +18,18 @@ export default function AdminLoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setError('');
+    }, LOGIN_MESSAGE_AUTO_HIDE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [error]);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -2,20 +2,16 @@ import React from 'react';
 import Link from 'next/link';
 import { Star, Leaf, CalendarCheck, Award, ShieldCheck, Clock } from 'lucide-react';
 
-import SubpageHero from '@/components/client/SubpageHero';
+import PublicSubpageShell from '@/components/client/PublicSubpageShell';
 import TestimonialSection from '@/components/client/TestimonialSection';
 import ImageSlideshow from '@/components/client/ImageSlideshow';
 import FadeIn from '@/components/shared/FadeIn';
 import AnimatedNumber from '@/components/shared/AnimatedNumber';
+import AnimatedDivider from '@/components/shared/AnimatedDivider';
 
 export default function AboutPage() {
   return (
-    <main className="flex flex-col min-h-screen bg-transparent relative overflow-hidden">
-      <SubpageHero
-        title="The Experience"
-        subtitle="Experience the art of effortless celebration. We combine premium spaces with meticulous management to deliver a flawless experience."
-        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
-      />
+    <PublicSubpageShell heroKey="about" className="overflow-hidden">
 
       <div className="w-full relative z-10 bg-transparent pb-6">
 
@@ -170,7 +166,7 @@ export default function AboutPage() {
         {/* Grand CTA */}
         <section className="max-w-4xl mx-auto px-4 pt-6 pb-12 flex flex-col items-center text-center">
           <FadeIn direction="up" className="flex flex-col items-center">
-            <div className="w-20 h-1 bg-[#D6B53B] mb-4"></div>
+            <AnimatedDivider delay={300} className="w-32 h-1 bg-[#D6B53B] mb-4" />
             <h2 className="text-5xl md:text-7xl font-sahitya text-[#1a1f18] mb-6 leading-tight">
               Ready to Bring Your<br/>Vision to Life?
             </h2>
@@ -185,6 +181,6 @@ export default function AboutPage() {
         </section>
 
       </div>
-    </main>
+    </PublicSubpageShell>
   );
 }

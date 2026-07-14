@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import SubpageHero from '@/components/client/SubpageHero';
+import { connection } from 'next/server';
+import PublicSubpageShell from '@/components/client/PublicSubpageShell';
 import ClientFeatureUnavailable from '@/components/client/ClientFeatureUnavailable';
 import { getClientFeatureAvailability } from '@/lib/system-settings';
 import TestimoniesClient from './TestimoniesClient';
@@ -10,16 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default async function TestimoniesPage() {
+  await connection();
   const testimonyAvailability = await getClientFeatureAvailability('publicTestimonies');
   const submissionAvailability = await getClientFeatureAvailability('testimonySubmissions');
 
   return (
-    <main className="min-h-screen bg-transparent">
-      <SubpageHero
-        title="Client Testimonies"
-        subtitle="Read real experiences from clients who celebrated their special events with Zion Events Place."
-        imageSrc="https://images.unsplash.com/photo-1507504031003-b417219a0fde?q=80&w=2070&auto=format&fit=crop"
-      />
+    <PublicSubpageShell heroKey="testimonies">
       {testimonyAvailability.enabled ? (
         <TestimoniesClient allowSubmissions={submissionAvailability.enabled} disabledMessage={submissionAvailability.message} />
       ) : (
@@ -28,6 +25,6 @@ export default async function TestimoniesPage() {
           message={testimonyAvailability.message}
         />
       )}
-    </main>
+    </PublicSubpageShell>
   );
 }

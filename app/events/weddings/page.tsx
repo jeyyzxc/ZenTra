@@ -3,17 +3,15 @@ import PackageLayout from '@/components/booking/PackageLayout';
 export default function WeddingsPage() {
   return (
     <PackageLayout
-      title="Weddings"
-      subtitle="Celebrate your love in a setting as beautiful as your story."
-      heroImage="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
+      heroKey="weddings"
       contentBlocks={[
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Begin your celebration in a setting that can move naturally from a heartfelt ceremony to a polished reception. Zion's adaptable spaces give every part of your wedding room to feel intentional.",
           imageSrc: "/zion/684222572_17948428422152473_4013856636383990076_n.jpg",
           imagePosition: 'right'
         },
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Shape the day around your own story with thoughtful styling, meaningful traditions, and spaces where your guests can gather comfortably and celebrate alongside you.",
           imageSrc: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'left'
         }

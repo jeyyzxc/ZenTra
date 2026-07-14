@@ -1,6 +1,7 @@
 import { AccountTokenType } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getRequestContext } from '@/lib/audit';
+import { passwordSecurityErrorDetails } from '@/lib/password-security';
 import { completePasswordWithToken } from '@/lib/team-access';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,12 @@ export async function POST(request: Request) {
       message: 'Your team account has been activated successfully.',
     });
   } catch (error) {
+    const securityError = passwordSecurityErrorDetails(error);
+
+    if (securityError) {
+      return NextResponse.json(securityError.body, { status: securityError.status });
+    }
+
     const message = error instanceof Error ? error.message : 'Unable to set up this account.';
     
     let code = 'SETUP_ERROR';

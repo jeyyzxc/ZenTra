@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin();
-    return Response.json(await getAdminFaqPage(new URL(request.url)));
+    const actor = await requireAdmin();
+    return Response.json(await getAdminFaqPage(new URL(request.url), actor.role === 'SUPERADMIN'));
   } catch (error) {
     return supportErrorResponse(error, 'Unable to load support FAQ entries.');
   }

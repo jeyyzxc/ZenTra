@@ -13,6 +13,8 @@ import {
   EmailType,
   EventStatus,
   N8nWorkflowStatus,
+  NotificationPriority,
+  NotificationType,
   PaymentSummaryStatus,
   Prisma,
   RelatedModule,
@@ -33,6 +35,11 @@ import {
   validateTimeRange,
 } from '@/lib/booking-validation';
 import { prisma } from '@/lib/prisma';
+import { taskTemplateKeyForCategory } from '@/services/event-category';
+import {
+  recordTemplateFallback,
+  resolvePublishedTaskTemplate,
+} from '@/services/task-template';
 import { attachPackageSnapshotToBooking } from '@/lib/services-packages';
 import {
   buildBookingReceiptEmail,
@@ -43,6 +50,7 @@ import {
   type BookingCategorizationInput,
   type BookingCategorizationResult,
 } from './booking-categorization.service';
+import { enforceOrchestrationRateLimit } from './orchestration-rate-limit.service';
 
 type JsonObject = Record<string, unknown>;
 
@@ -152,6 +160,7 @@ export type EmailResultInput = {
 
 export type BookingEmailStatusUpdateInput = {
   bookingId: string;
+  bookingReference: string;
   emailStatus: unknown;
   emailType: unknown;
   lastEmailSentAt?: unknown;
@@ -756,6 +765,11 @@ function categorizationFromContext(
     packageCategory: context.packageCategory,
     packageTier: context.packageTier,
     taskTemplateKey: context.taskTemplateKey,
+    requestedTaskTemplateKey: context.requestedTaskTemplateKey,
+    taskTemplateId: context.taskTemplateId,
+    taskTemplateVersion: context.taskTemplateVersion,
+    templateFallbackUsed: context.templateFallbackUsed,
+    templateFallbackReason: context.templateFallbackReason,
     riskLevel: safeRiskLevel(context.riskLevel),
     hasScheduleConflict: context.hasScheduleConflict,
     requiresManualReview: context.requiresManualReview,
@@ -766,6 +780,10 @@ function categorizationFromContext(
 }
 
 function categorizationDbData(result: BookingCategorizationResult, bookingReference: string) {
+  if (!result.taskTemplateId || !result.taskTemplateVersion) {
+    throw new BookingRequestError('Booking task template resolution is incomplete.', 503);
+  }
+
   return {
     bookingReference,
     eventCategory: result.eventCategory,
@@ -773,6 +791,11 @@ function categorizationDbData(result: BookingCategorizationResult, bookingRefere
     packageCategory: result.packageCategory,
     packageTier: result.packageTier,
     taskTemplateKey: result.taskTemplateKey,
+    requestedTaskTemplateKey: result.requestedTaskTemplateKey,
+    taskTemplateId: result.taskTemplateId,
+    taskTemplateVersion: result.taskTemplateVersion,
+    templateFallbackUsed: result.templateFallbackUsed,
+    templateFallbackReason: result.templateFallbackReason,
     riskLevel: result.riskLevel,
     hasScheduleConflict: result.hasScheduleConflict,
     requiresManualReview: result.requiresManualReview,
@@ -889,6 +912,7 @@ type BookingCategorizationSourceRecord = {
   bookingReference: string;
   eventType: string;
   eventCategoryName: string | null;
+  eventCategoryId: string | null;
   packageId: string | null;
   packageSelected: string | null;
   guestCount: number;
@@ -950,7 +974,33 @@ async function persistBookingCategorization(input: {
   conflicts: unknown[];
   writeTimeline?: boolean;
 }) {
-  const result = categorizeBooking(bookingCategorizationInput(input.booking, input.conflicts));
+  const ruleResult = categorizeBooking(bookingCategorizationInput(input.booking, input.conflicts));
+  const category = input.booking.eventCategoryId
+    ? await input.transaction.eventCategory.findUnique({
+        where: { id: input.booking.eventCategoryId },
+        select: { name: true, categoryKey: true },
+      })
+    : null;
+  const eventCategory = category?.name ?? ruleResult.eventCategory;
+  const eventCategoryKey = category?.categoryKey ?? ruleResult.eventCategoryKey;
+  const requestedTaskTemplateKey = category
+    ? taskTemplateKeyForCategory(category.categoryKey)
+    : ruleResult.requestedTaskTemplateKey;
+  const resolution = await resolvePublishedTaskTemplate(
+    requestedTaskTemplateKey,
+    input.transaction,
+  );
+  const result: BookingCategorizationResult = {
+    ...ruleResult,
+    eventCategory,
+    eventCategoryKey,
+    taskTemplateKey: resolution.templateKey,
+    requestedTaskTemplateKey: resolution.requestedTemplateKey,
+    taskTemplateId: resolution.taskTemplateId,
+    taskTemplateVersion: resolution.taskTemplateVersion,
+    templateFallbackUsed: resolution.templateFallbackUsed,
+    templateFallbackReason: resolution.templateFallbackReason,
+  };
   const data = categorizationDbData(result, input.booking.bookingReference);
 
   await input.transaction.bookingOrchestrationContext.upsert({
@@ -961,6 +1011,17 @@ async function persistBookingCategorization(input: {
     },
     update: data,
   });
+
+  if (result.templateFallbackUsed) {
+    await recordTemplateFallback({
+      db: input.transaction,
+      bookingId: input.booking.id,
+      bookingReference: input.booking.bookingReference,
+      eventCategoryKey: result.eventCategoryKey,
+      requestedTemplateKey: result.requestedTaskTemplateKey,
+      appliedTemplateKey: result.taskTemplateKey,
+    });
+  }
 
   if (input.writeTimeline !== false) {
     await input.transaction.bookingTimeline.create({
@@ -973,6 +1034,11 @@ async function persistBookingCategorization(input: {
         metadata: {
           eventCategoryKey: result.eventCategoryKey,
           taskTemplateKey: result.taskTemplateKey,
+          requestedTaskTemplateKey: result.requestedTaskTemplateKey,
+          taskTemplateId: result.taskTemplateId,
+          taskTemplateVersion: result.taskTemplateVersion,
+          templateFallbackUsed: result.templateFallbackUsed,
+          templateFallbackReason: result.templateFallbackReason,
           riskLevel: result.riskLevel,
           requiresManualReview: result.requiresManualReview,
           reasonCodes: result.reasonCodes,
@@ -1783,6 +1849,7 @@ export async function changeBookingStatus(input: {
   const shouldActivateTasks = isBookingApprovedOrActive(input.newStatus) &&
     !isBookingApprovedOrActive(booking.status);
 
+  let activatedTaskCount = 0;
   const updated = await prisma.$transaction(async (transaction) => {
     const next = await transaction.booking.update({
       where: { id: booking.id },
@@ -1796,8 +1863,6 @@ export async function changeBookingStatus(input: {
         ...(input.n8nExecutionId ? { n8nExecutionId: input.n8nExecutionId } : {}),
       },
     });
-
-    let activatedTaskCount = 0;
 
     if (shouldActivateTasks) {
       const activation = await transaction.dashboardTask.updateMany({
@@ -1862,6 +1927,20 @@ export async function changeBookingStatus(input: {
             },
           },
         });
+
+        await transaction.notification.create({
+          data: {
+            title: 'Booking task list activated',
+            message: `${activatedTaskCount} task(s) for ${next.bookingReference} are now active.`,
+            type: NotificationType.TASK,
+            priority: NotificationPriority.HIGH,
+            relatedModule: 'bookings',
+            relatedRecordId: next.id,
+            createdFor: null,
+            createdBy: input.actor.id ?? input.actor.name,
+            source: 'booking_approval',
+          },
+        });
       }
     }
 
@@ -1886,6 +1965,8 @@ export async function changeBookingStatus(input: {
     previousValues: { status: booking.status },
     newValues: { status: input.newStatus },
     metadata: {
+      event: shouldActivateTasks ? 'BOOKING_TASK_LIST_ACTIVATED' : 'BOOKING_STATUS_CHANGED',
+      activatedTaskCount,
       reason,
       overrideReason: input.overrideReason?.trim() ?? null,
     },
@@ -2302,6 +2383,7 @@ export async function updateBookingEmailStatus(
   data: BookingEmailStatusUpdateInput,
 ): Promise<BookingEmailStatusUpdateResult> {
   const bookingId = requireText(data.bookingId, 'bookingId');
+  const bookingReference = requireText(data.bookingReference, 'bookingReference');
   const emailStatus = parseBookingEmailStatus(data.emailStatus);
   const emailType = parseBookingEmailType(data.emailType);
   const workflowExecutionId = parseWorkflowExecutionId(data.workflowExecutionId);
@@ -2325,6 +2407,10 @@ export async function updateBookingEmailStatus(
 
   if (!existing) {
     throw new BookingRequestError('Booking not found.', 404);
+  }
+
+  if (existing.bookingReference !== bookingReference) {
+    throw new BookingRequestError('Booking reference does not match the booking record.', 403);
   }
 
   const updated = await prisma.$transaction(async (transaction) => {
@@ -2595,9 +2681,15 @@ export async function getBookingDetailsForOrchestration(input: {
   bookingId: string;
   request: Request;
   auditEndpoint?: string;
+  rateLimitScope?: string;
 }): Promise<OrchestrationBookingDetailsResponse | null> {
   const bookingId = requireText(input.bookingId, 'bookingId');
   const headers = requireBookingDetailsHeaders(input.request);
+  await enforceOrchestrationRateLimit({
+    request: input.request,
+    scope: input.rateLimitScope ?? 'booking-details-read',
+    limit: 240,
+  });
   const booking = await prisma.booking.findFirst({
     where: {
       id: bookingId,
@@ -2676,6 +2768,7 @@ export async function getBookingReceiptEmailForOrchestration(input: {
   const details = await getBookingDetailsForOrchestration({
     ...input,
     auditEndpoint: '/api/orchestration/bookings/:bookingId/receipt-email',
+    rateLimitScope: 'booking-receipt-email-read',
   });
 
   if (!details) {
@@ -2720,7 +2813,10 @@ export function requireBookingOrchestrationKey(request: Request) {
   }
 }
 
-export function requireN8nWorkflowHeaders(request: Request) {
+export function requireN8nWorkflowHeaders(
+  request: Request,
+  expectedWorkflow = BOOKING_CREATED_WORKFLOW_NAME,
+) {
   const source = optionalText(request.headers.get('x-zion-source'))?.toLowerCase();
   const workflow = optionalText(request.headers.get('x-zion-workflow'));
 
@@ -2728,11 +2824,25 @@ export function requireN8nWorkflowHeaders(request: Request) {
     throw new BookingRequestError('Invalid orchestration source.', 401);
   }
 
-  if (workflow !== BOOKING_CREATED_WORKFLOW_NAME) {
+  if (workflow !== expectedWorkflow) {
     throw new BookingRequestError('Invalid orchestration workflow.', 401);
   }
 
   return { source, workflow };
+}
+
+export function requireBookingReferenceHeader(request: Request, expected?: string | null) {
+  const bookingReference = optionalText(request.headers.get('x-zion-booking-reference'));
+
+  if (!bookingReference) {
+    throw new BookingRequestError('Missing booking reference header.', 400);
+  }
+
+  if (expected && bookingReference !== expected.trim()) {
+    throw new BookingRequestError('Booking reference header does not match the request.', 403);
+  }
+
+  return bookingReference;
 }
 
 export function parseBookingStatus(value: unknown) {

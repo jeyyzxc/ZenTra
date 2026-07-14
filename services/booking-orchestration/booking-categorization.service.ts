@@ -20,6 +20,11 @@ export type BookingCategorizationResult = {
   packageCategory: string;
   packageTier: string;
   taskTemplateKey: string;
+  requestedTaskTemplateKey: string;
+  taskTemplateId: string | null;
+  taskTemplateVersion: number | null;
+  templateFallbackUsed: boolean;
+  templateFallbackReason: string | null;
   riskLevel: 'low' | 'medium' | 'high';
   hasScheduleConflict: boolean;
   requiresManualReview: boolean;
@@ -238,6 +243,11 @@ export function categorizeBooking(
     packageCategory,
     packageTier,
     taskTemplateKey: category.taskTemplateKey,
+    requestedTaskTemplateKey: category.taskTemplateKey,
+    taskTemplateId: null,
+    taskTemplateVersion: null,
+    templateFallbackUsed: false,
+    templateFallbackReason: null,
     riskLevel,
     hasScheduleConflict,
     requiresManualReview: riskLevel !== 'low',

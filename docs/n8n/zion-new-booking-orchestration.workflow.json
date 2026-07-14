@@ -205,7 +205,9 @@
         "emailFormat": "both",
         "text": "={{ $json.email.text }}",
         "html": "={{ $json.email.html }}",
-        "options": {}
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "08a-send-client-booking-receipt-email",
       "name": "08A. Send Client Booking Receipt Email",
@@ -216,7 +218,7 @@
         -220
       ],
       "notesInFlow": true,
-      "notes": "Configure SMTP/email credentials after importing. Do not add n8n footers or workflow IDs to this email."
+      "notes": "Configure SMTP/email credentials after importing. Keep Append n8n Attribution disabled and do not add workflow IDs to this email."
     },
     {
       "parameters": {
@@ -236,6 +238,10 @@
             {
               "name": "x-zion-workflow",
               "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
             },
             {
               "name": "content-type",
@@ -277,6 +283,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -298,14 +308,75 @@
     },
     {
       "parameters": {
-        "jsCode": "const source = $('05. Create Structured Booking Summary').first().json;\nconst booking = source.booking;\nconst categorization = source.categorization ?? {};\nconst templateKey = categorization.taskTemplateKey || 'general_event_standard';\nconst due = (days) => new Date(Date.now() + days * 86400000).toISOString();\nconst mk = (title, category, priority = 'medium', dueOffset = 1) => ({ title, category, priority, dueOffset });\nconst base = [mk('Review submitted booking details', 'booking_review', 'high', 1), mk('Verify event date and schedule availability', 'schedule_review', 'high', 1), mk('Confirm selected package inclusions', 'package_review', 'medium', 2), mk('Check payment and down payment requirements', 'payment_review', 'medium', 2), mk('Prepare client confirmation requirements', 'client_confirmation', 'medium', 3)];\nconst additions = { wedding_standard: [mk('Coordinate ceremony/reception requirements', 'event_requirements'), mk('Confirm motif, layout, and styling details', 'styling'), mk('Prepare supplier coordination checklist', 'supplier_coordination'), mk('Confirm food, guest count, and program timeline', 'program_food'), mk('Prepare final event coordination checklist', 'final_coordination')], birthday_debut_standard: [mk('Confirm theme and program flow', 'program_flow'), mk('Review setup, decorations, and stage requirements', 'styling'), mk('Confirm food and guest count', 'program_food'), mk('Prepare event host/program coordination checklist', 'program_coordination'), mk('Prepare final event coordination checklist', 'final_coordination')], christening_standard: [mk('Confirm ceremony and reception schedule', 'event_requirements'), mk('Review family/guest seating needs', 'seating'), mk('Confirm food and guest count', 'program_food'), mk('Prepare styling and setup requirements', 'styling'), mk('Prepare final event coordination checklist', 'final_coordination')], corporate_group_standard: [mk('Confirm company/group event requirements', 'event_requirements'), mk('Review technical needs such as sound, projector, and program flow', 'technical_requirements'), mk('Confirm food and guest count', 'program_food'), mk('Prepare logistics and supplier coordination checklist', 'supplier_coordination'), mk('Prepare final event coordination checklist', 'final_coordination')], general_event_standard: [mk('Confirm event requirements', 'event_requirements'), mk('Review setup and package inclusions', 'package_review'), mk('Confirm food and guest count', 'program_food'), mk('Prepare logistics checklist', 'logistics'), mk('Prepare final event coordination checklist', 'final_coordination')] };\nconst selected = additions[templateKey] || additions.general_event_standard;\nconst tasks = [...base, ...selected].map((task, index) => ({ orderIndex: index + 1, title: task.title, description: `${task.title} for booking ${booking.booking_reference}.`, priority: task.priority, status: 'pending', activationStatus: 'pending_booking_approval', isActive: false, isEditable: true, category: task.category, dueDate: due(task.dueOffset), assignedToRole: 'ADMIN', taskTemplateKey: templateKey }));\nreturn [{ json: { relatedModule: 'booking', relatedRecordId: booking.booking_id, bookingReference: booking.booking_reference, source: 'n8n_workflow', workflowName: 'Zion - New Booking Orchestration', workflowExecutionId: String($execution.id), eventType: booking.event_type, clientName: booking.client_name, categorization, tasks } }];"
+        "jsCode": "const source = $('05. Create Structured Booking Summary').first().json;\nconst booking = source.booking;\nconst categorization = source.categorization ?? {};\nconst requestedTemplateKey = categorization.requestedTaskTemplateKey || categorization.taskTemplateKey;\nif (!requestedTemplateKey || !booking.booking_id || !booking.booking_reference) throw new Error('Booking template request metadata is incomplete.');\nreturn [{ json: { ...source, taskTemplateRequest: { requestedTemplateKey, bookingId: booking.booking_id, bookingReference: booking.booking_reference, eventCategoryKey: categorization.eventCategoryKey } } }];"
       },
-      "id": "11a-generate-admin-to-do-list",
-      "name": "11A. Generate Admin To-Do List",
+      "id": "11a-prepare-task-template-request",
+      "name": "11A. Prepare Task Template Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         700,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') + '/api/orchestration/task-templates/' + encodeURIComponent($json.taskTemplateRequest.requestedTemplateKey) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-secret",
+              "value": "={{ $env.BACKEND_ORCHESTRATION_SECRET }}"
+            },
+            {
+              "name": "x-zion-source",
+              "value": "n8n"
+            },
+            {
+              "name": "x-zion-workflow",
+              "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $json.taskTemplateRequest.bookingReference }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12a-fetch-active-task-template",
+      "name": "12A. Fetch Active Task Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nconst request = $('11A. Prepare Task Template Request').first().json.taskTemplateRequest;\nif (payload.success !== true || !payload.template) throw new Error(payload.error || 'Backend task template response was not successful.');\nconst template = payload.template;\nif (!template.id || !template.templateKey || !Number.isInteger(template.version) || !Array.isArray(template.tasks) || template.tasks.length === 0) throw new Error('Task template response is incomplete.');\nif (template.requestedTemplateKey !== request.requestedTemplateKey) throw new Error('Task template request key mismatch.');\nconst orders = new Set();\nfor (const task of template.tasks) {\n  if (!task.templateItemId || !task.itemKey || !Number.isInteger(task.orderIndex) || task.orderIndex < 1 || !task.title || !task.priority || !task.assignedToRole) throw new Error('Task template contains an invalid task.');\n  if (orders.has(task.orderIndex)) throw new Error('Task template contains duplicate order values.');\n  orders.add(task.orderIndex);\n}\nreturn [{ json: { template, taskTemplateRequest: request } }];"
+      },
+      "id": "13a-validate-task-template-response",
+      "name": "13A. Validate Task Template Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('05. Create Structured Booking Summary').first().json;\nconst booking = source.booking;\nconst fetched = $('13A. Validate Task Template Response').first().json;\nconst template = fetched.template;\nconst eventDate = new Date(`${booking.event_date}T23:59:59+08:00`);\nif (Number.isNaN(eventDate.getTime())) throw new Error('Booking event date is invalid.');\nconst now = new Date();\nconst earliest = new Date(now.getTime() + 86400000);\nconst availableMs = Math.max(eventDate.getTime() - earliest.getTime(), 0);\nconst calculateDueDate = (task, index, count) => {\n  let due;\n  if (Number.isInteger(task.dueOffsetDays) && task.dueOffsetDays >= 0) due = new Date(eventDate.getTime() - task.dueOffsetDays * 86400000);\n  else due = new Date(earliest.getTime() + availableMs * ((index + 1) / Math.max(count, 1)));\n  if (due > eventDate) due = new Date(eventDate);\n  const isHighRisk = due < earliest;\n  if (isHighRisk) due = new Date(Math.min(earliest.getTime(), eventDate.getTime()));\n  return { dueDate: due.toISOString(), isHighRisk };\n};\nconst tasks = template.tasks.map((task, index) => {\n  const due = calculateDueDate(task, index, template.tasks.length);\n  return { orderIndex: task.orderIndex, title: task.title, description: `${task.description || task.title} Booking: ${booking.booking_reference}.`, priority: task.priority, status: 'pending', activationStatus: 'pending_booking_approval', isActive: false, isEditable: true, category: task.category || 'operations', dueDate: due.dueDate, isHighRisk: due.isHighRisk, assignedToRole: task.assignedToRole, taskTemplateId: template.id, taskTemplateKey: template.templateKey, taskTemplateVersion: template.version, templateItemId: task.templateItemId, itemKey: task.itemKey };\n});\nconst categorization = { ...source.categorization, requestedTaskTemplateKey: template.requestedTemplateKey, taskTemplateKey: template.templateKey, taskTemplateId: template.id, taskTemplateVersion: template.version, templateFallbackUsed: template.isFallback, templateFallbackReason: template.fallbackReason };\nreturn [{ json: { relatedModule: 'booking', relatedRecordId: booking.booking_id, bookingReference: booking.booking_reference, source: 'n8n_workflow', workflowName: 'Zion - New Booking Orchestration', workflowExecutionId: String($execution.id), eventType: booking.event_type, clientName: booking.client_name, categorization, tasks } }];"
+      },
+      "id": "14a-prepare-booking-admin-to-do-list",
+      "name": "14A. Prepare Booking-Specific Admin To-Do List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
         -220
       ]
     },
@@ -329,6 +400,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $json.bookingReference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -339,25 +414,25 @@
         "jsonBody": "={{ $json }}",
         "options": {}
       },
-      "id": "12a-save-admin-to-do-list",
-      "name": "12A. Save Admin To-Do List",
+      "id": "15a-save-admin-to-do-list",
+      "name": "15A. Save Admin To-Do List",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        940,
+        1660,
         -220
       ]
     },
     {
       "parameters": {
-        "jsCode": "const taskPayload = $('11A. Generate Admin To-Do List').first().json;\nconst saveResult = $input.first().json;\nconst createdCount = saveResult.data?.createdCount ?? saveResult.createdCount ?? taskPayload.tasks.length;\nreturn [{ json: { type: 'NEW_BOOKING_TASK_LIST_CREATED', priority: 'HIGH', title: `New booking received: ${taskPayload.bookingReference}`, message: `A new ${taskPayload.eventType} booking was submitted. The admin To-Do list has been generated and is waiting for booking approval.`, relatedModule: 'BOOKING', relatedRecordId: taskPayload.relatedRecordId, bookingReference: taskPayload.bookingReference, audience: ['SUPERADMIN', 'ADMIN'], payload: { bookingSummary: { bookingReference: taskPayload.bookingReference, clientName: taskPayload.clientName, eventType: taskPayload.eventType }, categorization: taskPayload.categorization, taskCount: createdCount, tasksPreview: taskPayload.tasks.slice(0, 5).map((task) => ({ orderIndex: task.orderIndex, title: task.title, category: task.category })) } } }];"
+        "jsCode": "const taskPayload = $('14A. Prepare Booking-Specific Admin To-Do List').first().json;\nconst saveResult = $input.first().json;\nconst createdCount = saveResult.data?.createdCount ?? saveResult.createdCount ?? taskPayload.tasks.length;\nconst fallbackNote = taskPayload.categorization.templateFallbackUsed ? ` General template fallback was used because ${taskPayload.categorization.requestedTaskTemplateKey} is not published.` : '';\nreturn [{ json: { type: 'NEW_BOOKING_TASK_LIST_CREATED', priority: taskPayload.categorization.templateFallbackUsed ? 'HIGH' : 'MEDIUM', title: `New booking received: ${taskPayload.bookingReference}`, message: `A new ${taskPayload.eventType} booking was submitted. The admin To-Do list is waiting for booking approval.${fallbackNote}`, relatedModule: 'BOOKING', relatedRecordId: taskPayload.relatedRecordId, bookingReference: taskPayload.bookingReference, audience: ['SUPERADMIN', 'ADMIN'], payload: { bookingSummary: { bookingReference: taskPayload.bookingReference, clientName: taskPayload.clientName, eventType: taskPayload.eventType }, categorization: taskPayload.categorization, taskCount: createdCount, tasksPreview: taskPayload.tasks.slice(0, 5).map((task) => ({ orderIndex: task.orderIndex, title: task.title, category: task.category, isHighRisk: task.isHighRisk })) } } }];"
       },
-      "id": "13a-prepare-admin-notification-payload",
-      "name": "13A. Prepare Admin Notification Payload",
+      "id": "16a-prepare-admin-notification-payload",
+      "name": "16A. Prepare Admin Notification Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1180,
+        1900,
         -220
       ]
     },
@@ -381,6 +456,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -391,12 +470,12 @@
         "jsonBody": "={{ $json }}",
         "options": {}
       },
-      "id": "14a-create-admin-notification",
-      "name": "14A. Create Admin Notification",
+      "id": "17a-create-admin-notification",
+      "name": "17A. Create Admin Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1420,
+        2140,
         -220
       ]
     },
@@ -420,6 +499,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -427,15 +510,15 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, automationStatus: 'COMPLETED', workflowResult: { structuredSummaryCreated: true, receiptEmailSent: true, emailLogSaved: true, emailStatusUpdated: true, taskListCreated: true, adminNotificationCreated: true, tasksActivated: false, activationReason: 'pending_admin_approval' }, n8nWorkflowId: 'Zion - New Booking Orchestration', n8nExecutionId: String($execution.id) } }}",
+        "jsonBody": "={{ { bookingReference: $('05. Create Structured Booking Summary').first().json.booking.booking_reference, automationStatus: 'COMPLETED', workflowResult: { structuredSummaryCreated: true, receiptEmailSent: true, emailLogSaved: true, emailStatusUpdated: true, taskTemplateFetched: true, taskTemplateValidated: true, taskTemplateId: $('14A. Prepare Booking-Specific Admin To-Do List').first().json.categorization.taskTemplateId, taskTemplateKey: $('14A. Prepare Booking-Specific Admin To-Do List').first().json.categorization.taskTemplateKey, taskTemplateVersion: $('14A. Prepare Booking-Specific Admin To-Do List').first().json.categorization.taskTemplateVersion, templateFallbackUsed: $('14A. Prepare Booking-Specific Admin To-Do List').first().json.categorization.templateFallbackUsed, taskListCreated: true, adminNotificationCreated: true, tasksActivated: false, activationReason: 'pending_admin_approval' }, n8nWorkflowId: 'Zion - New Booking Orchestration', n8nExecutionId: String($execution.id) } }}",
         "options": {}
       },
-      "id": "15a-save-successful-workflow-result",
-      "name": "15A. Save Successful Workflow Result",
+      "id": "18a-save-successful-workflow-result",
+      "name": "18A. Save Successful Workflow Result",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1660,
+        2380,
         -220
       ]
     },
@@ -447,12 +530,12 @@
           "responseCode": 200
         }
       },
-      "id": "16a-return-booking-orchestration-success",
-      "name": "16A. Return Booking Orchestration Success",
+      "id": "19a-return-booking-orchestration-success",
+      "name": "19A. Return Booking Orchestration Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1900,
+        2620,
         -220
       ]
     },
@@ -474,6 +557,10 @@
             {
               "name": "x-zion-workflow",
               "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
             },
             {
               "name": "content-type",
@@ -515,6 +602,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -554,6 +645,10 @@
               "value": "Zion - New Booking Orchestration"
             },
             {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
+            },
+            {
               "name": "content-type",
               "value": "application/json"
             }
@@ -591,6 +686,10 @@
             {
               "name": "x-zion-workflow",
               "value": "Zion - New Booking Orchestration"
+            },
+            {
+              "name": "x-zion-booking-reference",
+              "value": "={{ $('05. Create Structured Booking Summary').first().json.booking.booking_reference }}"
             },
             {
               "name": "content-type",
@@ -748,62 +847,95 @@
       "main": [
         [
           {
-            "node": "11A. Generate Admin To-Do List",
+            "node": "11A. Prepare Task Template Request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "11A. Generate Admin To-Do List": {
+    "11A. Prepare Task Template Request": {
       "main": [
         [
           {
-            "node": "12A. Save Admin To-Do List",
+            "node": "12A. Fetch Active Task Template",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "12A. Save Admin To-Do List": {
+    "12A. Fetch Active Task Template": {
       "main": [
         [
           {
-            "node": "13A. Prepare Admin Notification Payload",
+            "node": "13A. Validate Task Template Response",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "13A. Prepare Admin Notification Payload": {
+    "13A. Validate Task Template Response": {
       "main": [
         [
           {
-            "node": "14A. Create Admin Notification",
+            "node": "14A. Prepare Booking-Specific Admin To-Do List",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "14A. Create Admin Notification": {
+    "14A. Prepare Booking-Specific Admin To-Do List": {
       "main": [
         [
           {
-            "node": "15A. Save Successful Workflow Result",
+            "node": "15A. Save Admin To-Do List",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "15A. Save Successful Workflow Result": {
+    "15A. Save Admin To-Do List": {
       "main": [
         [
           {
-            "node": "16A. Return Booking Orchestration Success",
+            "node": "16A. Prepare Admin Notification Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "16A. Prepare Admin Notification Payload": {
+      "main": [
+        [
+          {
+            "node": "17A. Create Admin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17A. Create Admin Notification": {
+      "main": [
+        [
+          {
+            "node": "18A. Save Successful Workflow Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "18A. Save Successful Workflow Result": {
+      "main": [
+        [
+          {
+            "node": "19A. Return Booking Orchestration Success",
             "type": "main",
             "index": 0
           }

@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
+import { AuditAction, AuditStatus } from '@prisma/client';
 import {
   requireBookingOrchestrationKey,
+  enforceOrchestrationRateLimit,
   requireN8nWorkflowHeaders,
 } from '@/services/booking-orchestration';
 import {
   DashboardService,
   type AdminTodoBulkCreateInput,
 } from '@/lib/dashboard-service';
+import { createAuditLog, errorMetadata, systemAuditActor } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +58,25 @@ export async function POST(request: Request) {
     requireN8nWorkflowHeaders(request);
 
     const body = await readJsonBody(request);
+    const bookingReferenceHeader = request.headers.get('x-zion-booking-reference')?.trim();
+
+    if (!bookingReferenceHeader) {
+      const error = new Error('Missing booking reference header.') as Error & { status: number };
+      error.status = 400;
+      throw error;
+    }
+
+    if (typeof body.bookingReference !== 'string' || body.bookingReference.trim() !== bookingReferenceHeader) {
+      const error = new Error('Booking reference header does not match the request body.') as Error & { status: number };
+      error.status = 403;
+      throw error;
+    }
+
+    await enforceOrchestrationRateLimit({
+      request,
+      scope: 'booking-task-bulk-create',
+    });
+
     const data = await DashboardService.bulkCreateAdminTodoList(body);
 
     return NextResponse.json({
@@ -62,11 +84,26 @@ export async function POST(request: Request) {
       message: 'Admin To-Do List created successfully.',
       data: {
         createdCount: data.createdCount,
+        existingCount: data.existingCount,
+        duplicateCount: data.duplicateCount,
         bookingReference: data.bookingReference,
         taskIds: data.taskIds,
       },
     }, { status: data.createdCount > 0 ? 201 : 200 });
   } catch (error) {
+    await createAuditLog({
+      ...systemAuditActor(),
+      action: AuditAction.ERROR,
+      module: 'Dashboard',
+      description: 'Booking task-list creation failed.',
+      status: AuditStatus.FAILED,
+      metadata: {
+        event: 'BOOKING_TASK_LIST_CREATION_FAILED',
+        bookingReference: request.headers.get('x-zion-booking-reference'),
+        ...errorMetadata(error),
+      },
+    });
+
     if (
       error instanceof Error &&
       'status' in error &&

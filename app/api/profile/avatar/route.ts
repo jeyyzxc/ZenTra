@@ -1,19 +1,21 @@
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { AuditAction, AuditStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import { adminDisplayName, requireAdmin } from '@/lib/authorization';
+import { getObjectStorage } from '@/lib/object-storage';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const AVATAR_PUBLIC_PATH = '/uploads/avatars';
-const AVATAR_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'avatars');
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const AVATAR_VALIDATION_MESSAGE = 'File must be a JPEG, PNG, or WebP image under 2 MB.';
+
+function avatarBucket() {
+  return process.env.SUPABASE_PROFILE_MEDIA_BUCKET?.trim() || 'profile-media';
+}
 
 type AvatarExtension = 'jpg' | 'png' | 'webp';
 
@@ -96,41 +98,27 @@ async function prepareAvatarFile(file: File) {
   };
 }
 
-function avatarPathToDiskPath(profileImage: string | null | undefined) {
-  if (!profileImage?.startsWith(`${AVATAR_PUBLIC_PATH}/`)) {
+function avatarObjectPath(profileImage: string | null | undefined) {
+  if (!profileImage) return null;
+  try {
+    const url = new URL(profileImage);
+    const marker = `/storage/v1/object/public/${encodeURIComponent(avatarBucket())}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex === -1) return null;
+    return url.pathname
+      .slice(markerIndex + marker.length)
+      .split('/')
+      .map(decodeURIComponent)
+      .join('/');
+  } catch {
     return null;
   }
-
-  const fileName = path.posix.basename(profileImage);
-
-  if (!fileName || fileName === '.' || fileName === '..') {
-    return null;
-  }
-
-  return path.join(AVATAR_UPLOAD_DIR, fileName);
 }
 
 async function removeAvatarFile(profileImage: string | null | undefined) {
-  const diskPath = avatarPathToDiskPath(profileImage);
-
-  if (!diskPath) {
-    return;
-  }
-
-  try {
-    await unlink(diskPath);
-  } catch (error) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      error.code === 'ENOENT'
-    ) {
-      return;
-    }
-
-    throw error;
-  }
+  const objectPath = avatarObjectPath(profileImage);
+  if (!objectPath) return;
+  await getObjectStorage().remove({ bucket: avatarBucket(), objectPaths: [objectPath] });
 }
 
 function revalidateProfileSurfaces() {
@@ -142,6 +130,9 @@ function revalidateProfileSurfaces() {
 export async function POST(request: Request) {
   let actor: Awaited<ReturnType<typeof requireAdmin>>;
   let newProfileImage: string | null = null;
+  let newObjectPath: string | null = null;
+  let previousProfileImage: string | null | undefined;
+  let profileUpdated = false;
 
   try {
     actor = await requireAdmin();
@@ -165,22 +156,27 @@ export async function POST(request: Request) {
     if (!previous) {
       return NextResponse.json({ error: 'Your account no longer exists.' }, { status: 404 });
     }
+    previousProfileImage = previous.profileImage;
 
     const { buffer, extension } = await prepareAvatarFile(file);
-    const fileName = `${actor.id}-${Date.now()}.${extension}`;
-    const diskPath = path.join(AVATAR_UPLOAD_DIR, fileName);
-    newProfileImage = `${AVATAR_PUBLIC_PATH}/${fileName}`;
-
-    await mkdir(AVATAR_UPLOAD_DIR, { recursive: true });
-    await writeFile(diskPath, buffer);
+    newObjectPath = `avatars/${actor.id}/${Date.now()}-${randomUUID()}.${extension}`;
+    await getObjectStorage().upload({
+      bucket: avatarBucket(),
+      objectPath: newObjectPath,
+      data: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer,
+      mimeType: file.type,
+    });
+    newProfileImage = getObjectStorage().publicUrl({
+      bucket: avatarBucket(),
+      objectPath: newObjectPath,
+    });
 
     const updated = await prisma.user.update({
       where: { id: actor.id },
       data: { profileImage: newProfileImage },
       select: { profileImage: true },
     });
-
-    await removeAvatarFile(previous.profileImage);
+    profileUpdated = true;
 
     await createAuditLog({
       ...auditActor(actor),
@@ -194,12 +190,32 @@ export async function POST(request: Request) {
       metadata: { targetUserId: actor.id },
     });
 
+    // Storage cleanup is best-effort after the database mutation and its audit
+    // record succeed. A transient delete failure must not break the new URL.
+    await removeAvatarFile(previous.profileImage).catch(() => undefined);
+
     revalidateProfileSurfaces();
 
     return NextResponse.json({ profileImage: updated.profileImage });
   } catch (error) {
-    if (newProfileImage) {
-      await removeAvatarFile(newProfileImage).catch(() => undefined);
+    if (profileUpdated && previousProfileImage !== undefined) {
+      try {
+        await prisma.user.update({
+          where: { id: actor.id },
+          data: { profileImage: previousProfileImage },
+        });
+        profileUpdated = false;
+      } catch {
+        // Keep the uploaded object when compensation fails so the current
+        // database URL remains valid for recovery.
+      }
+    }
+
+    if (newObjectPath && !profileUpdated) {
+      await getObjectStorage().remove({
+        bucket: avatarBucket(),
+        objectPaths: [newObjectPath],
+      }).catch(() => undefined);
     }
 
     await createAuditLog({

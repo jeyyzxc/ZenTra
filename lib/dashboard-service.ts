@@ -16,12 +16,15 @@ import {
   Prisma,
   Role,
   SyncStatus,
+  TaskTemplateSyncState,
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { auditActor, createAuditLog, systemAuditActor } from '@/lib/audit';
 import { adminFirstName, type CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
 import { getEnabledNotificationTypes } from '@/lib/system-settings';
+import { calculateBookingTaskDueDate } from '@/services/booking-orchestration/booking-task-snapshot.service';
+import { templateTaskContentHash } from '@/services/task-template/task-content';
 
 const ACTIVE_EVENT_STATUSES = [
   BookingStatus.CONFIRMED,
@@ -235,6 +238,11 @@ export type AdminTodoTaskInput = {
   isEditable?: unknown;
   category?: unknown;
   taskTemplateKey?: unknown;
+  taskTemplateId?: unknown;
+  taskTemplateVersion?: unknown;
+  templateItemId?: unknown;
+  itemKey?: unknown;
+  isHighRisk?: unknown;
   dueDate?: unknown;
   assignedToRole?: unknown;
 };
@@ -255,6 +263,8 @@ export type AdminTodoBulkCreateInput = {
 export type AdminTodoBulkCreateResult = {
   bookingReference: string;
   createdCount: number;
+  existingCount: number;
+  duplicateCount: number;
   taskIds: string[];
 };
 
@@ -449,6 +459,11 @@ function parseAdminTodoTasks(value: unknown) {
       isEditable: parseOptionalBoolean(record.isEditable, true),
       category: requiredText(record.category, `tasks[${index}].category`).toLowerCase(),
       taskTemplateKey: trimText(record.taskTemplateKey),
+      taskTemplateId: requiredText(record.taskTemplateId, `tasks[${index}].taskTemplateId`),
+      taskTemplateVersion: parseAdminTodoOrderIndex(record.taskTemplateVersion, index),
+      templateItemId: requiredText(record.templateItemId, `tasks[${index}].templateItemId`),
+      itemKey: trimText(record.itemKey),
+      isHighRisk: parseOptionalBoolean(record.isHighRisk, false),
       dueDate: parseAdminTodoDueDate(record.dueDate, index),
       assignedToRole: requiredText(record.assignedToRole, `tasks[${index}].assignedToRole`).toUpperCase(),
     };
@@ -459,7 +474,7 @@ function uniqueAdminTodoTasks(tasks: ReturnType<typeof parseAdminTodoTasks>) {
   const seenKeys = new Set<string>();
 
   return tasks.filter((task) => {
-    const key = `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`;
+    const key = `${task.templateItemId}|${task.orderIndex}`;
 
     if (seenKeys.has(key)) {
       return false;
@@ -547,7 +562,7 @@ function parseAdminTodoDueDate(value: unknown, index: number) {
     throw new DashboardServiceError(`tasks[${index}].dueDate must be a valid date.`);
   }
 
-  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  return parsed;
 }
 
 function normalizeTaskRelatedModule(value: unknown) {
@@ -1755,6 +1770,12 @@ export class DashboardService {
       );
     }
 
+    if (previous.templateItemKey) {
+      data.templateSyncState = TaskTemplateSyncState.CUSTOMIZED;
+      data.manualOverrideAt = new Date();
+      data.manualOverrideBy = actor.id;
+    }
+
     const next = await prisma.dashboardTask.update({
       where: { id },
       data,
@@ -1795,6 +1816,11 @@ export class DashboardService {
           status: DashboardTaskStatus.COMPLETED,
           completedAt: new Date(),
           completedBy: actor.id,
+          ...(previous.templateItemKey ? {
+            templateSyncState: TaskTemplateSyncState.LOCKED,
+            manualOverrideAt: new Date(),
+            manualOverrideBy: actor.id,
+          } : {}),
         },
       });
       let completedBooking: {
@@ -1852,6 +1878,7 @@ export class DashboardService {
                 statusChangeReason: 'All activated admin tasks were completed.',
                 lastWorkflowResult: 'Booking workflow completed after all activated admin tasks were completed.',
                 lastSyncedAt: new Date(),
+                completedAt: new Date(),
               },
               select: {
                 id: true,
@@ -1875,6 +1902,20 @@ export class DashboardService {
             });
 
             completedBooking = nextBooking;
+
+            await transaction.notification.create({
+              data: {
+                title: 'Booking workflow completed',
+                message: `All operational tasks for ${booking.bookingReference} are complete.`,
+                type: NotificationType.TASK,
+                priority: NotificationPriority.HIGH,
+                relatedModule: 'bookings',
+                relatedRecordId: booking.id,
+                createdFor: null,
+                createdBy: actor.id,
+                source: 'booking_task_completion',
+              },
+            });
           }
         }
       }
@@ -1898,6 +1939,14 @@ export class DashboardService {
         status: task.status,
         completedAt: task.completedAt?.toISOString(),
       },
+      metadata: {
+        event: 'BOOKING_TASK_COMPLETED',
+        bookingReference: task.bookingReference,
+        taskTemplateId: task.taskTemplateId,
+        taskTemplateKey: task.taskTemplateKey,
+        taskTemplateVersion: task.taskTemplateVersion,
+        templateItemId: task.templateItemId,
+      },
     });
 
     if (completedBooking) {
@@ -1908,6 +1957,7 @@ export class DashboardService {
         description: `Completed booking workflow for ${completedBooking.bookingReference}.`,
         status: AuditStatus.SUCCESS,
         metadata: {
+          event: 'BOOKING_WORKFLOW_COMPLETED',
           bookingId: completedBooking.id,
           bookingReference: completedBooking.bookingReference,
           n8nExecutionId: completedBooking.n8nExecutionId,
@@ -1925,13 +1975,29 @@ export class DashboardService {
       throw new DashboardServiceError('Agenda task not found.', 404);
     }
 
-    await prisma.dashboardTask.delete({ where: { id } });
+    if (previous.templateItemKey) {
+      await prisma.dashboardTask.update({
+        where: { id },
+        data: {
+          status: DashboardTaskStatus.CANCELLED,
+          isActive: false,
+          activationStatus: 'cancelled_by_admin',
+          templateSyncState: TaskTemplateSyncState.LOCKED,
+          manualOverrideAt: new Date(),
+          manualOverrideBy: actor.id,
+        },
+      });
+    } else {
+      await prisma.dashboardTask.delete({ where: { id } });
+    }
 
     await createAuditLog({
       ...auditActor(actor),
       action: AuditAction.DELETE,
       module: 'Dashboard',
-      description: `Deleted dashboard agenda task "${previous.title}".`,
+        description: previous.templateItemKey
+          ? `Cancelled template-generated dashboard task "${previous.title}".`
+          : `Deleted dashboard agenda task "${previous.title}".`,
       status: AuditStatus.SUCCESS,
       previousValues: {
         taskId: previous.id,
@@ -2071,6 +2137,14 @@ export class DashboardService {
       categorization.taskTemplateKey,
       'categorization.taskTemplateKey',
     );
+    const bulkTaskTemplateId = requiredText(
+      categorization.taskTemplateId,
+      'categorization.taskTemplateId',
+    );
+    const bulkTaskTemplateVersion = parseAdminTodoOrderIndex(
+      categorization.taskTemplateVersion,
+      0,
+    );
 
     if (source !== 'n8n_workflow') {
       throw new DashboardServiceError('source must be n8n_workflow.');
@@ -2088,11 +2162,48 @@ export class DashboardService {
         id: true,
         bookingReference: true,
         status: true,
+        eventDate: true,
+        orchestrationContext: true,
       },
     });
 
     if (!booking) {
       throw new DashboardServiceError('Booking not found.', 404);
+    }
+
+    if (booking.bookingReference !== bookingReference) {
+      throw new DashboardServiceError('Booking reference does not match the booking record.', 403);
+    }
+
+    const context = booking.orchestrationContext;
+
+    if (
+      !context ||
+      context.taskTemplateId !== bulkTaskTemplateId ||
+      context.taskTemplateKey !== bulkTaskTemplateKey ||
+      context.taskTemplateVersion !== bulkTaskTemplateVersion
+    ) {
+      throw new DashboardServiceError('Task template metadata does not match the booking context.', 403);
+    }
+
+    const templateItems = await prisma.taskTemplateItem.findMany({
+      where: { taskTemplateId: context.taskTemplateId },
+    });
+    const templateItemsById = new Map(templateItems.map((item) => [item.id, item]));
+
+    for (const task of tasks) {
+      const templateItem = templateItemsById.get(task.templateItemId);
+
+      if (
+        !templateItem ||
+        task.taskTemplateId !== context.taskTemplateId ||
+        task.taskTemplateVersion !== context.taskTemplateVersion ||
+        task.taskTemplateKey !== context.taskTemplateKey ||
+        task.orderIndex !== templateItem.orderIndex
+        || (task.itemKey && task.itemKey !== templateItem.itemKey)
+      ) {
+        throw new DashboardServiceError('A task does not match the resolved booking template.', 403);
+      }
     }
 
     const resolvedBookingReference = booking.bookingReference || bookingReference;
@@ -2101,15 +2212,19 @@ export class DashboardService {
     const taskTitles = tasks.map((task) => task.title);
     const taskOrderIndexes = tasks.map((task) => task.orderIndex);
     const existingTasks = await prisma.$queryRaw<Array<{
+      id: string;
       title: string;
       orderIndex: number;
       taskTemplateKey: string | null;
+      templateItemId: string | null;
       workflowExecutionId: string | null;
     }>>`
       SELECT
+        "id",
         "title",
         "order_index" AS "orderIndex",
         "task_template_key" AS "taskTemplateKey",
+        "template_item_id" AS "templateItemId",
         "workflow_execution_id" AS "workflowExecutionId"
       FROM "dashboard_tasks"
       WHERE "related_record_id" = ${relatedRecordId}
@@ -2119,7 +2234,7 @@ export class DashboardService {
             AND "title" IN (${Prisma.join(taskTitles)})
           )
           OR (
-            "task_template_key" = ${bulkTaskTemplateKey}
+            "template_item_id" IN (${Prisma.join(tasks.map((task) => task.templateItemId))})
             AND "order_index" IN (${Prisma.join(taskOrderIndexes)})
           )
         )
@@ -2129,31 +2244,43 @@ export class DashboardService {
       .filter((task) => task.workflowExecutionId === workflowExecutionId)
       .map((task) => `${task.title.toLowerCase()}|${task.orderIndex}|${task.taskTemplateKey ?? ''}`));
     const existingTemplateOrderKeys = new Set(existingTasks
-      .filter((task) => task.taskTemplateKey === bulkTaskTemplateKey)
-      .map((task) => `${task.taskTemplateKey}|${task.orderIndex}`));
+      .filter((task) => Boolean(task.templateItemId))
+      .map((task) => `${task.templateItemId}|${task.orderIndex}`));
     const tasksToCreate = tasks.filter((task) => {
       const taskTemplateKey = task.taskTemplateKey ?? bulkTaskTemplateKey;
       const executionKey = `${task.title.toLowerCase()}|${task.orderIndex}|${taskTemplateKey ?? ''}`;
-      const templateOrderKey = `${taskTemplateKey}|${task.orderIndex}`;
+      const templateOrderKey = `${task.templateItemId}|${task.orderIndex}`;
 
       return !existingExecutionKeys.has(executionKey) &&
         !existingTemplateOrderKeys.has(templateOrderKey);
     });
 
-    if (tasksToCreate.length === 0) {
-      return {
-        bookingReference: resolvedBookingReference,
-        createdCount: 0,
-        taskIds: [],
-      };
-    }
-
     const createdTaskIds = await prisma.$transaction(async (transaction) => {
       const taskIds: string[] = [];
+      let highRiskTaskCount = 0;
 
       for (const task of tasksToCreate) {
         const taskId = randomUUID();
         const taskTemplateKey = task.taskTemplateKey ?? bulkTaskTemplateKey;
+        const templateItem = templateItemsById.get(task.templateItemId)!;
+        const templateContentHash = templateTaskContentHash({
+          itemKey: templateItem.itemKey,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          assignedToRole: task.assignedToRole,
+          category: task.category,
+          dueOffsetDays: templateItem.dueOffsetDays,
+        });
+        const dueDateResult = calculateBookingTaskDueDate({
+          eventDate: booking.eventDate,
+          requestedDueDate: task.dueDate,
+          dueOffsetDays: templateItem.dueOffsetDays,
+          orderIndex: task.orderIndex,
+          taskCount: templateItems.length,
+        });
+        const operationalDueDate = dueDateResult.dueDate;
+        const isHighRisk = task.isHighRisk || dueDateResult.isHighRisk;
         const activationStatus = shouldActivateTasks ? 'active' : 'pending_booking_approval';
         const isActive = shouldActivateTasks ? true : false;
         const startedAt = shouldActivateTasks ? new Date() : null;
@@ -2177,6 +2304,14 @@ export class DashboardService {
           "workflow_execution_id",
           "order_index",
           "task_template_key",
+          "task_template_id",
+          "task_template_version",
+          "template_item_id",
+          "template_item_key",
+          "template_snapshot",
+          "template_sync_state",
+          "template_content_hash",
+          "is_high_risk",
           "activation_status",
           "is_active",
           "is_editable",
@@ -2190,7 +2325,7 @@ export class DashboardService {
           ${taskId},
           ${task.title},
           ${task.description},
-          ${task.dueDate},
+          ${operationalDueDate},
           ${null},
           ${task.priority}::"DashboardTaskPriority",
           ${task.status}::"DashboardTaskStatus",
@@ -2205,6 +2340,33 @@ export class DashboardService {
           ${workflowExecutionId},
           ${task.orderIndex},
           ${taskTemplateKey},
+          ${context.taskTemplateId},
+          ${context.taskTemplateVersion},
+          ${task.templateItemId},
+          ${templateItem.itemKey},
+          ${JSON.stringify({
+            taskTemplateId: context.taskTemplateId,
+            taskTemplateKey: context.taskTemplateKey,
+            taskTemplateVersion: context.taskTemplateVersion,
+            requestedTaskTemplateKey: context.requestedTaskTemplateKey,
+            templateFallbackUsed: context.templateFallbackUsed,
+            templateFallbackReason: context.templateFallbackReason,
+            templateItemId: templateItem.id,
+            itemKey: templateItem.itemKey,
+            orderIndex: task.orderIndex,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            assignedToRole: task.assignedToRole,
+            category: task.category,
+            isRequired: templateItem.isRequired,
+            dueOffsetDays: templateItem.dueOffsetDays,
+            dueDate: operationalDueDate.toISOString(),
+            isHighRisk,
+          })}::jsonb,
+          ${'SYNCED'}::"TaskTemplateSyncState",
+          ${templateContentHash},
+          ${isHighRisk},
           ${activationStatus},
           ${isActive},
           ${task.isEditable},
@@ -2214,11 +2376,12 @@ export class DashboardService {
           NOW(),
           NOW()
         )
-        ON CONFLICT ("related_record_id", "workflow_execution_id", "title") DO NOTHING
+        ON CONFLICT DO NOTHING
         RETURNING "id"
       `;
 
         taskIds.push(...rows.map((row) => row.id));
+        if (rows.length > 0 && isHighRisk) highRiskTaskCount += rows.length;
       }
 
       if (taskIds.length > 0) {
@@ -2235,14 +2398,47 @@ export class DashboardService {
               taskIds,
               activationStatus: shouldActivateTasks ? 'active' : 'pending_booking_approval',
               taskTemplateKey: bulkTaskTemplateKey,
+              taskTemplateId: context.taskTemplateId,
+              taskTemplateVersion: context.taskTemplateVersion,
+              requestedTaskTemplateKey: context.requestedTaskTemplateKey,
+              templateFallbackUsed: context.templateFallbackUsed,
+              highRiskTaskCount,
             },
           },
         });
+
+        if (highRiskTaskCount > 0) {
+          await transaction.notification.create({
+            data: {
+              title: 'High-risk booking task deadlines',
+              message: `${highRiskTaskCount} task deadline(s) for ${resolvedBookingReference} required operational adjustment. Review them immediately.`,
+              type: NotificationType.TASK,
+              priority: NotificationPriority.CRITICAL,
+              relatedModule: 'bookings',
+              relatedRecordId: booking.id,
+              createdFor: null,
+              createdBy: 'n8n_workflow',
+              source: 'booking_task_due_date',
+            },
+          });
+        }
       }
 
       return taskIds;
     });
     const createdCount = createdTaskIds.length;
+    const finalTasks = await prisma.dashboardTask.findMany({
+      where: {
+        relatedRecordId,
+        templateItemId: { in: tasks.map((task) => task.templateItemId) },
+        orderIndex: { in: taskOrderIndexes },
+      },
+      select: { id: true },
+      orderBy: { orderIndex: 'asc' },
+    });
+    const taskIds = finalTasks.map((task) => task.id);
+    const existingCount = Math.max(taskIds.length - createdCount, 0);
+    const duplicateCount = Math.max(tasks.length - createdCount, 0);
 
     if (createdCount > 0) {
       await createAuditLog({
@@ -2254,6 +2450,7 @@ export class DashboardService {
         metadata: {
           module: 'admin_tasks',
           action: 'admin_todo_list_created',
+          event: 'BOOKING_TASK_LIST_CREATED',
           bookingReference: resolvedBookingReference,
           taskCount: createdCount,
           source: 'n8n_workflow',
@@ -2261,6 +2458,29 @@ export class DashboardService {
           workflowExecutionId,
           relatedRecordId,
           taskIds: createdTaskIds,
+          taskTemplateId: context.taskTemplateId,
+          taskTemplateKey: context.taskTemplateKey,
+          taskTemplateVersion: context.taskTemplateVersion,
+          templateFallbackUsed: context.templateFallbackUsed,
+        },
+      });
+    }
+
+    if (duplicateCount > 0) {
+      await createAuditLog({
+        ...systemAuditActor(),
+        action: AuditAction.READ,
+        module: 'Dashboard',
+        description: `Prevented ${duplicateCount} duplicate booking task(s) for ${resolvedBookingReference}.`,
+        status: AuditStatus.INFO,
+        metadata: {
+          event: 'BOOKING_TASK_DUPLICATE_PREVENTED',
+          bookingReference: resolvedBookingReference,
+          duplicateCount,
+          workflowExecutionId,
+          taskTemplateId: context.taskTemplateId,
+          taskTemplateKey: context.taskTemplateKey,
+          taskTemplateVersion: context.taskTemplateVersion,
         },
       });
     }
@@ -2268,7 +2488,9 @@ export class DashboardService {
     return {
       bookingReference: resolvedBookingReference,
       createdCount,
-      taskIds: createdTaskIds,
+      existingCount,
+      duplicateCount,
+      taskIds,
     };
   }
 

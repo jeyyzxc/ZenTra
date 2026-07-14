@@ -3,17 +3,15 @@ import PackageLayout from '@/components/booking/PackageLayout';
 export default function ChristmasPartyPage() {
   return (
     <PackageLayout
-      title="Christmas Parties"
-      subtitle="Toasts, traditions, and holiday cheer. Create unforgettable seasonal memories with those who matter most."
-      heroImage="https://images.unsplash.com/photo-1544252636-f0270b2ed65f?q=80&w=2070&auto=format&fit=crop"
+      heroKey="christmasParty"
       contentBlocks={[
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Bring your team, family, or community together in a festive setting made for shared meals, year-end recognition, and genuine holiday connection.",
           imageSrc: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?q=80&w=2069&auto=format&fit=crop",
           imagePosition: 'right'
         },
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Create an easy flow from dinner and presentations to games and dancing, with flexible spaces that help the evening feel both polished and joyful.",
           imageSrc: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'left'
         }

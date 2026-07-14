@@ -1,19 +1,14 @@
 import React from 'react';
 import { MapPin, Share2 } from 'lucide-react';
 
-import SubpageHero from '@/components/client/SubpageHero';
+import PublicSubpageShell from '@/components/client/PublicSubpageShell';
 import SupportFaqPreview from '@/components/client/SupportFaqPreview';
 import SocialLinks from '@/components/layout/SocialLinks';
 import InquiryForm from './InquiryForm';
 
 export default function ContactPage() {
   return (
-    <main className="flex flex-col min-h-screen bg-transparent relative">
-      <SubpageHero
-        title="Get in Touch"
-        subtitle="Seamless events start here. Reach out to secure your date or inquire about our exclusive packages."
-        imageSrc="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
-      />
+    <PublicSubpageShell heroKey="contact">
 
       <div className="w-full relative z-10 bg-transparent pt-12 pb-20">
         <div className="max-w-6xl mx-auto px-6">
@@ -179,6 +174,6 @@ export default function ContactPage() {
 
         </div>
       </div>
-    </main>
+    </PublicSubpageShell>
   );
 }

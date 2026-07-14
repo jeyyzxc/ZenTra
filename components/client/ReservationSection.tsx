@@ -1000,9 +1000,9 @@ export default function ReservationSection() {
                       onChange={(event) => setField('message', event.target.value)}
                       onBlur={() => validateField('message')}
                       rows={4}
-                      className={`peer w-full resize-none rounded-3xl border ${inputSurfaceClass(Boolean(fieldErrors.message))} px-5 py-3 font-sans text-sm text-neutral-900 shadow-sm backdrop-blur-md transition-all duration-300 placeholder:text-neutral-500/70 hover:border-[#FDEB9E]/50 hover:bg-[#FFF2DB]/50 hover:shadow-sm focus:border-[#D4AF37] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/10`}
+                      className={`peer w-full resize-none rounded-2xl border ${inputSurfaceClass(Boolean(fieldErrors.message))} px-5 py-3 font-sans text-sm text-neutral-900 shadow-sm backdrop-blur-md transition-all duration-300 placeholder:text-neutral-500/70 hover:border-[#FDEB9E]/50 hover:bg-[#FFF2DB]/50 hover:shadow-sm focus:border-[#D4AF37] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/10`}
                     ></textarea>
-                    <div className="pointer-events-none absolute bottom-4 right-4 text-neutral-400/60 transition-colors group-hover/input:text-[#D4AF37]/70 peer-focus:text-[#D4AF37]">
+                    <div className="pointer-events-none absolute bottom-3 right-2 text-neutral-400/60 transition-colors group-hover/input:text-[#D4AF37]/70 peer-focus:text-[#D4AF37]">
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         <path d="M9 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

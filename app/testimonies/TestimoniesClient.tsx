@@ -464,7 +464,7 @@ export default function TestimoniesClient({
                 </span>
                 <span className="flex-1">
                   <span className="block text-sm font-bold text-[#1a1f18]">Optional event photo</span>
-                  <span className="mt-1 block text-xs text-neutral-500">{photo ? photo.name : 'JPG, PNG, or WebP up to 5 MB'}</span>
+                  <span className="mt-1 block text-xs text-neutral-500">{photo ? photo.name : 'JPG, PNG, or WebP up to 4 MB'}</span>
                 </span>
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} className="sr-only" />
               </label>

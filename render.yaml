@@ -1,0 +1,98 @@
+# Production-oriented Render Blueprint for n8n only. The Next.js application is
+# deployed to Vercel and its application database/files live in Supabase.
+services:
+  - type: web
+    name: zentra-n8n
+    runtime: image
+    region: singapore
+    plan: standard
+    numInstances: 1
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 120
+    image:
+      # Keep this pinned. Upgrade only after exporting and testing every workflow.
+      url: docker.io/n8nio/n8n:2.28.1
+    envVars:
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: zentra-n8n-db
+          property: database
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: zentra-n8n-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: zentra-n8n-db
+          property: port
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: zentra-n8n-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: zentra-n8n-db
+          property: password
+      - key: DB_POSTGRESDB_SCHEMA
+        value: public
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: false
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_PROXY_HOPS
+        value: 1
+      - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+        value: true
+      - key: N8N_RUNNERS_ENABLED
+        value: true
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: false
+      - key: N8N_PERSONALIZATION_ENABLED
+        value: false
+      - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
+        # Existing audited workflows read non-credential configuration from $env.
+        value: false
+      - key: GENERIC_TIMEZONE
+        value: Asia/Manila
+      - key: TZ
+        value: Asia/Manila
+      - key: EXECUTIONS_DATA_PRUNE
+        value: true
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: 336
+      - key: EXECUTIONS_DATA_PRUNE_MAX_COUNT
+        value: 10000
+      - key: WEBHOOK_URL
+        sync: false
+      - key: N8N_EDITOR_BASE_URL
+        sync: false
+      - key: ZION_BACKEND_URL
+        sync: false
+      - key: BACKEND_ORCHESTRATION_SECRET
+        sync: false
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
+      - key: BOOKING_ORCHESTRATION_API_KEY
+        sync: false
+      - key: ZION_EMAIL_FROM
+        sync: false
+      - key: ZION_SUPPORT_EMAIL
+        sync: false
+      - key: ZION_SUPPORT_PHONE
+        sync: false
+      - key: ZION_SOCIAL_LINK
+        sync: false
+
+databases:
+  - name: zentra-n8n-db
+    databaseName: n8n
+    user: n8n
+    region: singapore
+    plan: basic-256mb
+    postgresMajorVersion: 17
+    diskSizeGB: 5
+    ipAllowList: []

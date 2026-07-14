@@ -181,7 +181,7 @@ export default function ServicesImageUploadField({
             </p>
           ) : (
             <p className="font-sans text-xs font-medium text-gray-500 dark:text-[#A3B19B]">
-              Click anywhere in this container or drop an image here. JPG, PNG, or WebP. Maximum 5 MB.
+              Click anywhere in this container or drop an image here. JPG, PNG, or WebP. Maximum 4 MB.
             </p>
           )}
         </div>

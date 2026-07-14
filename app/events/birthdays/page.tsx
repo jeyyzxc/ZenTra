@@ -3,17 +3,15 @@ import PackageLayout from '@/components/booking/PackageLayout';
 export default function BirthdaysPage() {
   return (
     <PackageLayout
-      title="Birthdays"
-      subtitle="Honoring your milestones with style, laughter, and a celebration that is uniquely you."
-      heroImage="https://images.unsplash.com/photo-1530103862676-de8892bc952f?q=80&w=2070&auto=format&fit=crop"
+      heroKey="birthdays"
       contentBlocks={[
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Build a birthday celebration around the person at its center, from a playful themed gathering to an elegant milestone dinner with everyone who matters.",
           imageSrc: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'right'
         },
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Zion's flexible spaces make room for dining, entertainment, portraits, and unhurried time together, all within one memorable setting.",
           imageSrc: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'left'
         }

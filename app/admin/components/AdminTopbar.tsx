@@ -212,6 +212,7 @@ export default function AdminTopbar({
     if (pathname.includes('/payments')) return 'Payment & History';
     if (pathname.includes('/calendar')) return 'Calendar & Availability';
     if (pathname.includes('/services')) return 'Services, Packages & Content';
+    if (pathname.includes('/command-center')) return 'ZENTRA Command Center';
     if (pathname.includes('/testimonies')) return 'Testimony Management';
     if (pathname.includes('/support')) return 'Support Center';
     if (pathname.includes('/reports')) return 'Reports & Analytics';

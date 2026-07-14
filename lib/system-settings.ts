@@ -39,8 +39,6 @@ export class ClientFeatureDisabledError extends SystemSettingsError {
   }
 }
 
-let settingsTableReady = false;
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -154,34 +152,7 @@ export function normalizeSystemSettings(input: unknown): SystemSettings {
   };
 }
 
-async function ensureSettingsTable() {
-  if (settingsTableReady) {
-    return;
-  }
-
-  await prisma.$executeRaw`
-    CREATE TABLE IF NOT EXISTS "system_settings" (
-      "id" TEXT NOT NULL,
-      "settings" JSONB NOT NULL DEFAULT '{}'::jsonb,
-      "updated_by" TEXT,
-      "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT "system_settings_pkey" PRIMARY KEY ("id")
-    )
-  `;
-
-  await prisma.$executeRaw`
-    INSERT INTO "system_settings" ("id", "settings")
-    VALUES (${SETTINGS_ROW_ID}, ${JSON.stringify(DEFAULT_SYSTEM_SETTINGS)}::jsonb)
-    ON CONFLICT ("id") DO NOTHING
-  `;
-
-  settingsTableReady = true;
-}
-
 async function readSettingsRow(): Promise<SettingsRow | null> {
-  await ensureSettingsTable();
-
   const rows = await prisma.$queryRaw<SettingsRow[]>`
     SELECT "settings", "updated_by", "updated_at"
     FROM "system_settings"

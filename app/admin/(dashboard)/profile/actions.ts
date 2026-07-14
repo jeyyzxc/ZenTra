@@ -6,7 +6,14 @@ import { revalidatePath } from 'next/cache';
 import { auditActor, createAuditLog, errorMetadata } from '@/lib/audit';
 import { adminDisplayName, requireAdmin } from '@/lib/authorization';
 import { normalizeAdminAddressInput } from '@/lib/admin-address-options';
-import { assertStrongPassword } from '@/lib/password-policy';
+import {
+  PASSWORD_SECURITY_USER_SELECT,
+  archiveCurrentPassword,
+  assertPasswordIsFresh,
+  assertPasswordUpdateNotLocked,
+  registerFailedPasswordUpdate,
+  validatePasswordUpdate,
+} from '@/lib/password-security';
 import { prisma } from '@/lib/prisma';
 import type {
   AdminProfile,
@@ -225,29 +232,42 @@ export async function changeOwnPassword(
       throw new Error('New password and confirmation do not match.');
     }
 
-    assertStrongPassword(data.newPassword);
-
     const user = await prisma.user.findUnique({
       where: { id: actor.id },
-      select: { passwordHash: true },
+      select: PASSWORD_SECURITY_USER_SELECT,
     });
 
     if (!user?.passwordHash || !(await bcrypt.compare(data.currentPassword, user.passwordHash))) {
-      throw new Error('Current password is incorrect.');
+      await registerFailedPasswordUpdate(actor.id, 'Current password is incorrect.');
     }
 
-    if (await bcrypt.compare(data.newPassword, user.passwordHash)) {
-      throw new Error('New password must be different from your current password.');
-    }
+    await validatePasswordUpdate(actor.id, data.newPassword);
 
-    await prisma.user.update({
-      where: { id: actor.id },
-      data: {
-        passwordHash: await bcrypt.hash(data.newPassword, 12),
-        status: UserStatus.ACTIVE,
-        mustChangePassword: false,
-        lastPasswordChangedAt: new Date(),
-      },
+    await prisma.$transaction(async (transaction) => {
+      const currentUser = await transaction.user.findUnique({
+        where: { id: actor.id },
+        select: PASSWORD_SECURITY_USER_SELECT,
+      });
+
+      if (!currentUser?.passwordHash) {
+        throw new Error('This account no longer has a password configured.');
+      }
+
+      assertPasswordUpdateNotLocked(currentUser);
+      await assertPasswordIsFresh(data.newPassword, currentUser);
+      await archiveCurrentPassword(transaction, actor.id, currentUser.passwordHash);
+
+      await transaction.user.update({
+        where: { id: actor.id },
+        data: {
+          passwordHash: await bcrypt.hash(data.newPassword, 12),
+          status: UserStatus.ACTIVE,
+          mustChangePassword: false,
+          lastPasswordChangedAt: new Date(),
+          passwordChangeAttemptCount: 0,
+          passwordChangeLockedUntil: null,
+        },
+      });
     });
 
     await createAuditLog({

@@ -7,19 +7,24 @@ interface FadeInProps {
   delay?: number;
   className?: string;
   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
+  once?: boolean;
 }
 
-export default function FadeIn({ children, delay = 0, className = '', direction = 'up' }: FadeInProps) {
+export default function FadeIn({ children, delay = 0, className = '', direction = 'up', once = false }: FadeInProps) {
   const [isVisible, setIsVisible] = useState(false);
   const domRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-          if (domRef.current) observer.unobserve(domRef.current);
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            if (once && domRef.current) observer.unobserve(domRef.current);
+          } else if (!once) {
+            setIsVisible(false);
+          }
+        });
       },
       { rootMargin: '0px 0px -100px 0px', threshold: 0.1 }
     );

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import SubpageHero from '@/components/client/SubpageHero';
+import { publicPageHeroes } from '@/config/public-page-heroes';
 import Step1EventType from './Step1EventType';
 import Step2Date from './Step2Date';
 import Step3Theme from './Step3Theme';
@@ -87,9 +88,6 @@ export default function BookFlow() {
     nextStep();
   };
 
-  // Constants for design
-  const totalSteps = 9; // Not counting generating/result for the progress bar
-
   // Custom headers per step
   const stepHeaders: Record<number, { title: string; subtitle: string }> = {
     1: { title: "What are we celebrating?", subtitle: "Tell us what we're celebrating." },
@@ -135,30 +133,7 @@ export default function BookFlow() {
   if (step === 11) {
     return (
       <div className="w-full flex flex-col animate-[fadeIn_0.5s_ease-out]">
-        <SubpageHero
-          slides={[
-            {
-              title: "Craft Your Legacy at Zion",
-              subtitle: "Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured.",
-              imageSrc: "/zion/475432722_17894220468152473_3402569861204614886_n.jpg"
-            },
-            {
-              title: "A Venue Beyond Compare",
-              subtitle: "Experience breathtaking views and unparalleled elegance. Let Zion be the canvas for your most cherished memories.",
-              imageSrc: "/zion/476060128_17894980743152473_185156717656488658_n.jpg"
-            },
-            {
-              title: "Where Moments Become Timeless",
-              subtitle: "From intimate gatherings to grand celebrations, our dedicated team curates every detail to perfection, ensuring a seamless experience.",
-              imageSrc: "/zion/652801058_17941061265152473_780514116733355264_n.jpg"
-            },
-            {
-              title: "Celebrate Life's Milestones",
-              subtitle: "Create unforgettable memories surrounded by the beauty and elegance of Zion Events Place.",
-              imageSrc: "/zion/659085357_17944398867152473_7164489881428293506_n.jpg"
-            }
-          ]}
-        />
+        <SubpageHero slides={publicPageHeroes.book} />
         <div className="w-full relative z-10 bg-[#FDFCEE] min-h-screen">
           {renderStep()}
         </div>
@@ -166,36 +141,10 @@ export default function BookFlow() {
     );
   }
 
-  // Calculate progress bar width (Steps 1-9)
-  const progressPercent = step <= 9 ? (step / totalSteps) * 100 : 100;
-
   return (
     <div className="flex flex-col w-full">
       {step <= 9 && (
-        <SubpageHero
-          slides={[
-            {
-              title: "Craft Your Legacy at Zion",
-              subtitle: "Every great event starts with a plan. Share your details with us, and our team will review your preferences to ensure every moment at Zion is perfectly captured.",
-              imageSrc: "/zion/475432722_17894220468152473_3402569861204614886_n.jpg"
-            },
-            {
-              title: "A Venue Beyond Compare",
-              subtitle: "Experience breathtaking views and unparalleled elegance. Let Zion be the canvas for your most cherished memories.",
-              imageSrc: "/zion/476060128_17894980743152473_185156717656488658_n.jpg"
-            },
-            {
-              title: "Where Moments Become Timeless",
-              subtitle: "From intimate gatherings to grand celebrations, our dedicated team curates every detail to perfection, ensuring a seamless experience.",
-              imageSrc: "/zion/652801058_17941061265152473_780514116733355264_n.jpg"
-            },
-            {
-              title: "Celebrate Life's Milestones",
-              subtitle: "Create unforgettable memories surrounded by the beauty and elegance of Zion Events Place.",
-              imageSrc: "/zion/659085357_17944398867152473_7164489881428293506_n.jpg"
-            }
-          ]}
-        />
+        <SubpageHero slides={publicPageHeroes.book} />
       )}
 
       <div className="w-full relative z-10 bg-transparent min-h-[80vh] flex flex-col items-center pt-8 pb-12 px-4 md:px-8">

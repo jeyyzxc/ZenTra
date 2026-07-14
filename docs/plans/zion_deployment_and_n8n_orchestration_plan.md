@@ -1,6 +1,12 @@
 # Deployment and n8n Orchestration Readiness Plan  
 ## Zion Events Place and Management System
 
+> **Archived architecture note:** this plan predates the current full-stack Next.js
+> implementation. Do not deploy a duplicate backend API to Render. Use the canonical
+> [`../deployment/vercel-supabase-render.md`](../deployment/vercel-supabase-render.md):
+> Vercel runs the full Next.js application, Supabase provides application data/storage,
+> and Render runs n8n only.
+
 ---
 
 ## 1. Overview

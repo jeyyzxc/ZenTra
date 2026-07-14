@@ -5,7 +5,9 @@ import {
   TriggerSource,
 } from '@prisma/client';
 import {
+  enforceOrchestrationRateLimit,
   requireBookingOrchestrationKey,
+  requireBookingReferenceHeader,
   requireN8nWorkflowHeaders,
 } from '@/services/booking-orchestration';
 import { dashboardCreated, dashboardError } from '@/lib/dashboard-api';
@@ -65,6 +67,36 @@ export async function POST(request: Request) {
     requireBookingOrchestrationKey(request);
     requireN8nWorkflowHeaders(request);
     const body = await request.json() as Record<string, unknown>;
+    const bookingReference = requireBookingReferenceHeader(request);
+    const relatedModule = enumValue(body.relatedModule, Object.values(RelatedModule), 'relatedModule');
+    const relatedRecordId = requiredText(body.relatedRecordId, 'relatedRecordId');
+
+    if (relatedModule !== RelatedModule.BOOKING) {
+      throw new DashboardServiceError('This workflow can only create booking email logs.', 403);
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: relatedRecordId, bookingReference },
+      select: { id: true },
+    });
+
+    if (!booking) {
+      throw new DashboardServiceError('Booking reference does not match the email-log booking.', 403);
+    }
+
+    await enforceOrchestrationRateLimit({
+      request,
+      scope: 'booking-email-log-write',
+    });
+
+    if (body.payloadSummary && typeof body.payloadSummary === 'object') {
+      const summaryReference = text((body.payloadSummary as Record<string, unknown>).bookingReference);
+
+      if (summaryReference && summaryReference !== bookingReference) {
+        throw new DashboardServiceError('Payload booking reference does not match the request header.', 403);
+      }
+    }
+
     const now = new Date();
     const status = emailLogStatus(body.status);
     const isSent = status === EmailStatus.SENT || status === EmailStatus.DELIVERED;
@@ -74,8 +106,8 @@ export async function POST(request: Request) {
         recipientEmail: requiredText(body.recipientEmail, 'recipientEmail').toLowerCase(),
         recipientName: text(body.recipientName),
         emailType: enumValue(body.emailType, Object.values(EmailType), 'emailType'),
-        relatedModule: enumValue(body.relatedModule, Object.values(RelatedModule), 'relatedModule'),
-        relatedRecordId: text(body.relatedRecordId),
+        relatedModule,
+        relatedRecordId,
         subject: requiredText(body.subject, 'subject'),
         triggerSource: enumValue(body.triggerSource, PRODUCTION_TRIGGER_SOURCES, 'triggerSource'),
         workflowName: text(body.workflowName),

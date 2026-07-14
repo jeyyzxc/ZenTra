@@ -1,5 +1,6 @@
 import { requireSuperAdmin } from '@/lib/authorization';
 import {
+  archiveEventCategory,
   getAdminEventCategory,
   handleServicesError,
   updateEventCategory,
@@ -15,6 +16,20 @@ export async function GET(
     await requireSuperAdmin();
     const { id } = await params;
     return Response.json({ data: await getAdminEventCategory(decodeURIComponent(id)) });
+  } catch (error) {
+    return handleServicesError(error);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const actor = await requireSuperAdmin();
+    const { id } = await params;
+    const category = await archiveEventCategory(decodeURIComponent(id), actor, request);
+    return Response.json({ data: category });
   } catch (error) {
     return handleServicesError(error);
   }

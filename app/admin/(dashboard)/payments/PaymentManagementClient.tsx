@@ -330,7 +330,7 @@ function ProofPicker({
       <label className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition hover:border-[#D6B53B] hover:bg-[#FDF5CC]/30 dark:hover:bg-[#D6B53B]/5 ${error ? 'border-red-300 bg-red-50/50 dark:border-red-500/30 dark:bg-red-500/5' : 'border-[#D6B53B]/30 bg-[#FDF5CC]/20 dark:bg-white/[0.02]'}`}>
         <UploadCloud className="h-8 w-8 text-[#D6B53B]" />
         <span className="mt-2 text-sm font-bold">{file ? 'Replace payment proof' : 'Upload receipt or payment proof'}</span>
-        <span className="mt-1 text-xs text-gray-400">JPG, JPEG, PNG, WEBP, or PDF · maximum 5 MB</span>
+        <span className="mt-1 text-xs text-gray-400">JPG, JPEG, PNG, WEBP, or PDF · maximum 4 MB</span>
         <input
           type="file"
           className="sr-only"

@@ -1,18 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { AuditAction, AuditStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { auditActor, createAuditLog, errorMetadata, getRequestContext } from '@/lib/audit';
 import { requireSuperAdmin } from '@/lib/authorization';
+import { getObjectStorage } from '@/lib/object-storage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const SERVICES_IMAGE_PUBLIC_PATH = '/uploads/services-packages';
-const SERVICES_IMAGE_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'services-packages');
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const IMAGE_VALIDATION_MESSAGE = 'Image must be a JPG, PNG, or WebP file under 5 MB.';
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const IMAGE_VALIDATION_MESSAGE = 'Image must be a JPG, PNG, or WebP file under 4 MB.';
+
+function publicContentBucket() {
+  return process.env.SUPABASE_PUBLIC_CONTENT_BUCKET?.trim() || 'public-content-media';
+}
 
 type ImageExtension = 'jpg' | 'png' | 'webp';
 type ImageTargetType = 'category' | 'package';
@@ -98,6 +99,7 @@ async function prepareImageFile(file: File) {
 
 export async function POST(request: Request) {
   let actor: Awaited<ReturnType<typeof requireSuperAdmin>>;
+  let uploadedObjectPath: string | null = null;
 
   try {
     actor = await requireSuperAdmin();
@@ -116,12 +118,17 @@ export async function POST(request: Request) {
 
     const { buffer, extension } = await prepareImageFile(file);
     const fileName = `${Date.now()}-${randomUUID()}-${cleanSegment(file.name)}.${extension}`;
-    const diskDirectory = path.join(SERVICES_IMAGE_UPLOAD_DIR, targetType);
-    const diskPath = path.join(diskDirectory, fileName);
-    const publicUrl = `${SERVICES_IMAGE_PUBLIC_PATH}/${targetType}/${fileName}`;
-
-    await mkdir(diskDirectory, { recursive: true });
-    await writeFile(diskPath, buffer);
+    uploadedObjectPath = `services/${targetType}/${fileName}`;
+    await getObjectStorage().upload({
+      bucket: publicContentBucket(),
+      objectPath: uploadedObjectPath,
+      data: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer,
+      mimeType: file.type,
+    });
+    const publicUrl = getObjectStorage().publicUrl({
+      bucket: publicContentBucket(),
+      objectPath: uploadedObjectPath,
+    });
 
     await createAuditLog({
       ...auditActor(actor),
@@ -142,6 +149,12 @@ export async function POST(request: Request) {
       },
     }, { status: 201 });
   } catch (error) {
+    if (uploadedObjectPath) {
+      await getObjectStorage().remove({
+        bucket: publicContentBucket(),
+        objectPaths: [uploadedObjectPath],
+      }).catch(() => undefined);
+    }
     await createAuditLog({
       ...auditActor(actor),
       action: AuditAction.FILE_UPLOAD,

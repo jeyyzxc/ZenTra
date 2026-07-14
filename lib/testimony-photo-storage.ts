@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
+const MAX_PHOTO_SIZE = 4 * 1024 * 1024;
 const PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export class TestimonyPhotoError extends Error {
@@ -15,7 +15,7 @@ export class TestimonyPhotoError extends Error {
 
 function storageConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/+$/, '');
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_TESTIMONY_PHOTOS_BUCKET || 'testimony-photos';
 
   if (!url || !serviceRoleKey) {
@@ -72,7 +72,7 @@ async function validatePhoto(file: File) {
   }
 
   if (file.size > MAX_PHOTO_SIZE) {
-    throw new TestimonyPhotoError('Event photo must not exceed 5 MB.');
+    throw new TestimonyPhotoError('Event photo must not exceed 4 MB.');
   }
 
   const signature = new Uint8Array((await file.slice(0, 16).arrayBuffer()));

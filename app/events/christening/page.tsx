@@ -3,17 +3,15 @@ import PackageLayout from '@/components/booking/PackageLayout';
 export default function ChristeningsPage() {
   return (
     <PackageLayout
-      title="Christenings"
-      subtitle="Welcoming a new blessing with grace and elegance. A timeless space for your family's first major milestone."
-      heroImage="https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=2070&auto=format&fit=crop"
+      heroKey="christening"
       contentBlocks={[
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Welcome your little one with a gathering that feels gentle, joyful, and centered on family. Zion offers a calm setting for sharing this meaningful first milestone.",
           imageSrc: "https://images.unsplash.com/photo-1473830394358-91588751b241?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'right'
         },
         {
-          text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+          text: "Create a warm reception with thoughtful details, comfortable spaces, and beautiful surroundings where every generation can celebrate together.",
           imageSrc: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop",
           imagePosition: 'left'
         }

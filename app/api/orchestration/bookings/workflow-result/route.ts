@@ -1,6 +1,8 @@
 import {
+  enforceOrchestrationRateLimit,
   parseAutomationStatus,
   requireBookingOrchestrationKey,
+  requireBookingReferenceHeader,
   requireN8nWorkflowHeaders,
   updateBookingAutomationStatus,
 } from '@/services/booking-orchestration';
@@ -13,6 +15,12 @@ export async function POST(request: Request) {
     requireBookingOrchestrationKey(request);
     requireN8nWorkflowHeaders(request);
     const body = await request.json() as Record<string, unknown>;
+    const bookingReference = typeof body.bookingReference === 'string' ? body.bookingReference : '';
+    requireBookingReferenceHeader(request, bookingReference);
+    await enforceOrchestrationRateLimit({
+      request,
+      scope: 'booking-workflow-result-write',
+    });
     const workflowResult = typeof body.workflowResult === 'string'
       ? body.workflowResult
       : body.workflowResult && typeof body.workflowResult === 'object'
@@ -20,7 +28,7 @@ export async function POST(request: Request) {
         : null;
 
     await updateBookingAutomationStatus({
-      bookingReference: typeof body.bookingReference === 'string' ? body.bookingReference : '',
+      bookingReference,
       automationStatus: parseAutomationStatus(body.automationStatus),
       workflowResult,
       n8nWorkflowId: typeof body.n8nWorkflowId === 'string' ? body.n8nWorkflowId : null,

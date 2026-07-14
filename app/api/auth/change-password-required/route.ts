@@ -11,7 +11,14 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
-import { assertStrongPassword } from '@/lib/password-policy';
+import {
+  PASSWORD_SECURITY_USER_SELECT,
+  archiveCurrentPassword,
+  assertPasswordIsFresh,
+  assertPasswordUpdateNotLocked,
+  passwordSecurityErrorDetails,
+  validatePasswordUpdate,
+} from '@/lib/password-security';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -39,9 +46,24 @@ export async function POST(request: Request) {
     const accountSessionId = session.user.accountSessionId;
     const body = await request.json() as { newPassword?: string };
     const newPassword = body.newPassword ?? '';
-    assertStrongPassword(newPassword);
 
     const now = new Date();
+    const scopedSession = await prisma.accountSession.findUnique({
+      where: { id: accountSessionId },
+    });
+
+    if (
+      !scopedSession ||
+      scopedSession.userId !== session.user.id ||
+      scopedSession.accessScope !== SessionAccessScope.PASSWORD_CHANGE_ONLY ||
+      scopedSession.revokedAt ||
+      scopedSession.expiresAt.getTime() <= now.getTime()
+    ) {
+      throw new Error('Temporary access has expired.');
+    }
+
+    await validatePasswordUpdate(session.user.id, newPassword);
+
     const updatedUser = await prisma.$transaction(
       async (transaction) => {
         const scopedSession = await transaction.accountSession.findUnique({
@@ -61,11 +83,10 @@ export async function POST(request: Request) {
         const user = await transaction.user.findUnique({
           where: { id: session.user.id },
           select: {
-            id: true,
+            ...PASSWORD_SECURITY_USER_SELECT,
             username: true,
             email: true,
             role: true,
-            passwordHash: true,
           },
         });
 
@@ -73,11 +94,12 @@ export async function POST(request: Request) {
           throw new Error('This account no longer exists.');
         }
 
-        if (user.passwordHash && await bcrypt.compare(newPassword, user.passwordHash)) {
-          throw new Error('New password must be different from your current password.');
-        }
+        assertPasswordUpdateNotLocked(user, now);
+        await assertPasswordIsFresh(newPassword, user);
 
         const passwordHash = await bcrypt.hash(newPassword, 12);
+        await archiveCurrentPassword(transaction, user.id, user.passwordHash);
+
         const updated = await transaction.user.update({
           where: { id: user.id },
           data: {
@@ -85,6 +107,8 @@ export async function POST(request: Request) {
             status: UserStatus.ACTIVE,
             mustChangePassword: false,
             lastPasswordChangedAt: now,
+            passwordChangeAttemptCount: 0,
+            passwordChangeLockedUntil: null,
           },
           select: {
             id: true,
@@ -138,6 +162,12 @@ export async function POST(request: Request) {
       message: 'Password changed successfully.',
     });
   } catch (error) {
+    const securityError = passwordSecurityErrorDetails(error);
+
+    if (securityError) {
+      return NextResponse.json(securityError.body, { status: securityError.status });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to change this password.' },
       { status: 400 },

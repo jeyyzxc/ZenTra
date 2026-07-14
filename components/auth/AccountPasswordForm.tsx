@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2, ShieldCheck, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
+
+const AUTH_NOTICE_AUTO_HIDE_MS = 10_000;
 
 type AccountPasswordFormProps = {
   endpoint: '/api/auth/setup-account' | '/api/auth/reset-password' | '/api/auth/change-password-required';
@@ -24,11 +26,13 @@ function PasswordField({
   id,
   label,
   value,
+  disabled,
   onChange,
 }: {
   id: string;
   label: string;
   value: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
@@ -41,8 +45,9 @@ function PasswordField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoComplete="new-password"
+        disabled={disabled}
         required
-        className="peer w-full border-b-2 border-gray-300 bg-transparent px-0 py-2.5 pr-10 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-all duration-300 ease-out focus:border-[#D6B53B] focus:outline-none"
+        className="peer w-full border-b-2 border-gray-300 bg-transparent px-0 py-2.5 pr-10 font-sans text-sm text-[#1a1f18] placeholder-transparent transition-all duration-300 ease-out focus:border-[#D6B53B] focus:outline-none disabled:cursor-not-allowed disabled:opacity-55"
         placeholder={label}
       />
       <label
@@ -54,6 +59,7 @@ function PasswordField({
       <button
         type="button"
         onClick={() => setVisible((current) => !current)}
+        disabled={disabled}
         className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer p-2 text-gray-400 transition-colors hover:text-[#D6B53B]"
         aria-label={visible ? `Hide ${label}` : `Show ${label}`}
       >
@@ -95,6 +101,28 @@ export default function AccountPasswordForm({
   const [notice, setNotice] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [lockSecondsRemaining, setLockSecondsRemaining] = useState(0);
+
+  useEffect(() => {
+    if (notice) {
+      const timer = setTimeout(() => {
+        setNotice(null);
+      }, AUTH_NOTICE_AUTO_HIDE_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [notice]);
+
+  useEffect(() => {
+    if (lockSecondsRemaining <= 0) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setLockSecondsRemaining((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [lockSecondsRemaining]);
 
   // Password Requirements Logic
   const hasLength = newPassword.length >= 12;
@@ -123,10 +151,15 @@ export default function AccountPasswordForm({
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
 
   const isAllValid = hasLength && hasUpper && hasLower && hasNumber && hasSpecial && noPersonal && passwordsMatch;
+  const isLocked = lockSecondsRemaining > 0;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice(null);
+
+    if (isLocked) {
+      return;
+    }
 
     if (!isAllValid) {
       setNotice({ type: 'error', message: 'Please fulfill all password requirements.' });
@@ -144,9 +177,27 @@ export default function AccountPasswordForm({
           newPassword,
         }),
       });
-      const payload = await response.json() as { message?: string; error?: string };
+      const payload = await response.json() as {
+        message?: string;
+        error?: string;
+        code?: string;
+        retryAfterSeconds?: number;
+        remainingAttempts?: number;
+      };
 
       if (!response.ok) {
+        if (
+          response.status === 429 &&
+          payload.code === 'PASSWORD_UPDATE_LOCKED' &&
+          payload.retryAfterSeconds
+        ) {
+          setLockSecondsRemaining(Math.max(1, Math.ceil(payload.retryAfterSeconds)));
+          setNewPassword('');
+          setConfirmPassword('');
+          setIsSubmitting(false);
+          return;
+        }
+
         throw new Error(payload.error || 'Unable to complete this action.');
       }
 
@@ -195,6 +246,16 @@ export default function AccountPasswordForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" aria-live="polite">
+      {isLocked && (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-5 text-amber-800"
+        >
+          Too many unsuccessful password attempts. Password updates are locked for{' '}
+          <span className="font-bold tabular-nums">{lockSecondsRemaining}s</span>.
+        </div>
+      )}
+
       {notice && (
         <div
           role={notice.type === 'error' ? 'alert' : 'status'}
@@ -212,12 +273,14 @@ export default function AccountPasswordForm({
         id="new-password"
         label="New Password"
         value={newPassword}
+        disabled={isSubmitting || isLocked}
         onChange={setNewPassword}
       />
       <PasswordField
         id="confirm-password"
         label="Confirm Password"
         value={confirmPassword}
+        disabled={isSubmitting || isLocked}
         onChange={setConfirmPassword}
       />
 
@@ -237,19 +300,20 @@ export default function AccountPasswordForm({
         <div className="mt-3 border-t border-gray-100 pt-3">
            <RequirementItem met={passwordsMatch} text="Passwords match" />
         </div>
+
       </div>
 
       <div className="pt-4">
         <button
           type="submit"
-          disabled={isSubmitting || !isAllValid}
+          disabled={isSubmitting || isLocked || !isAllValid}
           className="group relative w-full overflow-hidden rounded-xl py-3.5 shadow-[0_10px_20px_rgba(26,31,24,0.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_25px_rgba(214,181,59,0.25)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <div className="absolute inset-0 bg-[#1a1f18] transition-transform duration-500 ease-in-out group-hover:translate-x-full" />
           <div className="absolute inset-0 -translate-x-full bg-[#D6B53B] transition-transform duration-500 ease-in-out group-hover:translate-x-0" />
           <span className="relative z-10 flex items-center justify-center gap-2 font-sans text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors duration-300 group-hover:text-[#1a1f18]">
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isSubmitting ? loadingLabel : submitLabel}
+            {isLocked ? `TRY AGAIN IN ${lockSecondsRemaining}s` : isSubmitting ? loadingLabel : submitLabel}
           </span>
         </button>
       </div>

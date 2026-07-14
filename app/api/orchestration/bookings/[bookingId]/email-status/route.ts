@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import {
+  enforceOrchestrationRateLimit,
   requireBookingOrchestrationKey,
+  requireBookingReferenceHeader,
   requireN8nWorkflowHeaders,
   updateBookingEmailStatus,
 } from '@/services/booking-orchestration';
@@ -44,17 +46,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     requireBookingOrchestrationKey(request);
     requireN8nWorkflowHeaders(request);
 
+    const bookingReferenceHeader = requireBookingReferenceHeader(request);
+    await enforceOrchestrationRateLimit({
+      request,
+      scope: 'booking-email-status-write',
+    });
     const { bookingId } = await context.params;
     const body = await readJsonBody(request);
     const data = await updateBookingEmailStatus({
       bookingId: bookingId ?? '',
+      bookingReference: bookingReferenceHeader,
       emailStatus: body.emailStatus,
       emailType: body.emailType,
       lastEmailSentAt: body.lastEmailSentAt,
       workflowExecutionId: body.workflowExecutionId,
       emailLogReference: body.emailLogReference,
     });
-
     return NextResponse.json({
       success: true,
       message: 'Booking email status updated successfully.',

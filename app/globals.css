@@ -60,6 +60,10 @@ body {
   background-color: #E8D579;
 }
 
+.team-reason-textarea::-webkit-resizer {
+  background: transparent;
+}
+
 /* Custom Scrollbar for Events Submenu */
 .events-scrollbar {
   scrollbar-width: thin;

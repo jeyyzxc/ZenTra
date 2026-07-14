@@ -1,9 +1,7 @@
-import { requireAdmin } from '@/lib/authorization';
-import SupportCenterClient from './SupportCenterClient';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SupportCenterPage() {
-  const actor = await requireAdmin();
-  return <SupportCenterClient currentUserRole={actor.role} />;
+  redirect('/admin/command-center?workspace=assistant');
 }

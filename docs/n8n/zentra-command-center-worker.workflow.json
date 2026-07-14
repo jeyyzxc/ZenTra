@@ -1,0 +1,105 @@
+{
+  "name": "ZENTRA - Command Center Worker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "01-command-center-schedule",
+      "name": "01. Every Minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-520, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/command-center/jobs/claim",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-n8n-secret", "value": "={{ $env.BACKEND_ORCHESTRATION_SECRET }}" },
+            { "name": "x-zion-source", "value": "n8n" },
+            { "name": "x-zion-workflow", "value": "ZENTRA - Command Center Worker" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { workerId: `zentra-command-center-${$execution.id}`, limit: 20, leaseSeconds: 180 } }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "02-claim-command-center-jobs",
+      "name": "02. Claim Due Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-280, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success !== true || !Array.isArray(payload.data)) throw new Error(payload.error || 'Unable to claim Command Center jobs.');\nreturn payload.data.map((job) => ({ json: { ...job, workerId: `zentra-command-center-${$execution.id}` } }));"
+      },
+      "id": "03-split-command-center-jobs",
+      "name": "03. Split Claimed Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZION_BACKEND_URL.replace(/\\/+$/, '') }}/api/orchestration/command-center/jobs/{{ encodeURIComponent($json.id) }}/execute",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-n8n-secret", "value": "={{ $env.BACKEND_ORCHESTRATION_SECRET }}" },
+            { "name": "x-zion-source", "value": "n8n" },
+            { "name": "x-zion-workflow", "value": "ZENTRA - Command Center Worker" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { workerId: $json.workerId } }}",
+        "options": { "timeout": 120000 }
+      },
+      "id": "04-execute-command-center-job",
+      "name": "04. Execute Claimed Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "01. Every Minute": {
+      "main": [[{ "node": "02. Claim Due Jobs", "type": "main", "index": 0 }]]
+    },
+    "02. Claim Due Jobs": {
+      "main": [[{ "node": "03. Split Claimed Jobs", "type": "main", "index": 0 }]]
+    },
+    "03. Split Claimed Jobs": {
+      "main": [[{ "node": "04. Execute Claimed Job", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Manila"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "zentra" },
+    { "name": "command-center" },
+    { "name": "orchestration" }
+  ],
+  "active": false,
+  "versionId": "zentra-command-center-worker-2026-07-14"
+}
+

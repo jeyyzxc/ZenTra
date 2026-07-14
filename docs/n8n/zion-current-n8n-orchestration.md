@@ -1,6 +1,6 @@
 # Zion Current n8n Orchestration Architecture
 
-Last verified from the current codebase: 2026-07-03
+Last verified from the current codebase: 2026-07-12
 
 Setup note, 2026-07-05: use `docs/n8n/zion-new-booking-orchestration-final.md` and `docs/n8n/zion-new-booking-orchestration.workflow.json` for new setup and import. This file remains an architecture and historical handoff reference.
 
@@ -42,6 +42,7 @@ flowchart TD
   N8N --> EmailProvider["Email provider"]
   N8N --> EmailLogs["POST /api/orchestration/email-logs"]
   N8N --> EmailStatus["PATCH /api/orchestration/bookings/:id/email-status"]
+  N8N --> TemplateAPI["GET /api/orchestration/task-templates/:templateKey"]
   N8N --> Tasks["POST /api/orchestration/tasks/bulk-create"]
   EmailLogs --> DB
   EmailStatus --> DB
@@ -61,6 +62,7 @@ flowchart TD
 | `N8nWorkflowLog` table | Stores outbound/backend and inbound/callback workflow execution logs. |
 | `EmailLog` table | Stores automated email delivery attempts and outcomes. |
 | `DashboardTask` table | Stores n8n-generated admin To-Do items linked to bookings. |
+| `TaskTemplate` and `TaskTemplateItem` tables | Store immutable published versions and editable draft task definitions. |
 | `Notification` table | Stores admin/system notifications created by failed workflows or explicit notification callbacks. |
 
 ## 3. Required Environment Variables
@@ -115,6 +117,8 @@ Additional workflow identity headers used by the current booking flow:
 | `x-zion-idempotency-key` | Booking reference |
 | `x-zion-triggered-at` | Same timestamp as `triggered_at` in the body |
 | `x-zion-booking-reference` | Booking reference when n8n fetches booking details |
+
+All protected booking orchestration reads and writes are also subject to a PostgreSQL-backed per-credential rate limit. Credential material is hashed before the limiter key is stored; raw secrets are never persisted in rate-limit records.
 
 ## 5. Current Main Flow: New Booking Orchestration
 
@@ -373,7 +377,9 @@ n8n sends the email through its configured email node/provider using only the ba
 | HTML | `email.html` |
 | Text | `email.text` |
 
-n8n should not modify the email content to include internal workflow details.
+In every n8n email-sending node, open **Options** and set **Append n8n Attribution** to **off**. This must remain disabled for booking receipts, team-access messages, contract delivery, resends, payment reminders, and any future system email workflow.
+
+n8n should not modify the email content to include branding or internal workflow details.
 
 ### Step 8: n8n saves the email log
 
@@ -478,26 +484,19 @@ Backend behavior:
 7. Creates an audit log with previous and new email-status values.
 8. Returns the updated booking email status data.
 
-### Step 10: n8n generates the admin To-Do list
+### Step 10: n8n fetches the booking-pinned task template
 
-The current Step 4 flow generates admin To-Do tasks after the booking email status has been updated.
+n8n prepares the requested key from the persisted booking categorization and calls:
 
-The task-generation node uses verified booking data from the backend-prepared receipt email response, not the original minimal webhook payload.
+```text
+GET /api/orchestration/task-templates/:templateKey
+```
 
-The generated tasks include universal booking operations work:
+The request requires `x-n8n-secret`, `x-zion-source`, `x-zion-workflow`, and `x-zion-booking-reference`. The backend validates the booking orchestration context and returns the exact immutable published version selected when the booking was categorized. If the category-specific template was unavailable, the context and response identify the `general_event_standard` fallback and its reason.
 
-1. Review submitted booking details.
-2. Check calendar availability and schedule conflict.
-3. Verify selected package and guest count.
-4. Review client special requests.
-5. Prepare draft contract.
-6. Confirm payment instructions.
-7. Contact client for booking confirmation.
-8. Assign event handler or coordinator.
-9. Create event preparation checklist.
-10. Monitor payment deadline.
+### Step 11: n8n prepares booking-specific task copies
 
-The node also adds event-specific tasks for weddings, birthdays/debuts, christenings, Christmas/corporate/reunion events, and similar categories when matched by the event type.
+The workflow validates the template ID, key, version, non-empty task list, required item fields, and unique order values. It then copies the returned tasks for the booking. Template definitions are never generated or stored inside n8n.
 
 Each task must include:
 
@@ -509,9 +508,15 @@ status
 category
 dueDate
 assignedToRole
+taskTemplateId
+taskTemplateKey
+taskTemplateVersion
+templateItemId
 ```
 
-### Step 11: n8n saves the admin To-Do list
+Due dates use each template item's `dueOffsetDays` first, are capped at the Manila event deadline, and are flagged high-risk when the calculated date is already operationally invalid.
+
+### Step 12: n8n saves the admin To-Do list
 
 n8n calls:
 
@@ -525,6 +530,7 @@ Required headers:
 x-api-key: value_from_BOOKING_ORCHESTRATION_API_KEY
 x-zion-source: n8n
 x-zion-workflow: Zion - New Booking Orchestration
+x-zion-booking-reference: ZION-BKG-2026-000001
 content-type: application/json
 ```
 
@@ -540,6 +546,11 @@ Required body:
   "workflowExecutionId": "N8N_EXECUTION_ID",
   "eventType": "Wedding",
   "clientName": "Client Name",
+  "categorization": {
+    "taskTemplateId": "TASK_TEMPLATE_ID",
+    "taskTemplateKey": "wedding_standard",
+    "taskTemplateVersion": 2
+  },
   "tasks": []
 }
 ```
@@ -552,15 +563,17 @@ Backend behavior:
 4. Requires `source` to be `n8n_workflow`.
 5. Requires `workflowName` to be `Zion - New Booking Orchestration`.
 6. Requires a valid booking ID in `relatedRecordId`.
-7. Deduplicates task objects before insert.
-8. Prevents database duplicates with the unique key `relatedRecordId + workflowExecutionId + title`.
-9. Inserts new rows into `dashboard_tasks` with source `N8N_WORKFLOW`.
-10. Creates an audit log when at least one task is created.
-11. Returns `createdCount` and the booking reference.
+7. Validates every template ID, version, item ID, and order against the booking-pinned template.
+8. Deduplicates task objects before insert.
+9. Prevents task duplicates with `relatedRecordId + templateItemId + orderIndex` and execution-level protection.
+10. Stores copied values plus the immutable template snapshot on every `dashboard_tasks` row.
+11. Keeps tasks inactive until booking approval; backend approval activates them.
+12. Creates timeline and audit records when tasks are created.
+13. Returns `createdCount` and the booking reference.
 
-If the same workflow execution is submitted again, duplicate task titles for the same booking and execution are skipped.
+If the same workflow execution is submitted again, duplicate tasks are not inserted. The response returns the already-persisted task IDs together with `createdCount`, `existingCount`, and `duplicateCount`.
 
-### Step 12: n8n returns the final webhook response
+### Step 13: n8n notifies admins, saves the workflow result, and responds
 
 The current Step 4 documentation finishes with a Respond to Webhook node.
 
@@ -586,6 +599,7 @@ Because the backend webhook trigger waits for the n8n webhook response, this fin
 |---|---:|---|---|
 | `/api/orchestration/bookings/:bookingId/details` | GET | `x-n8n-secret` + workflow headers | Let n8n fetch verified booking details. |
 | `/api/orchestration/bookings/:bookingId/receipt-email` | GET | `x-n8n-secret` + workflow headers | Let n8n fetch backend-rendered receipt email payload. |
+| `/api/orchestration/task-templates/:templateKey` | GET | `x-n8n-secret` + workflow and booking headers | Return the booking-pinned immutable task template or recorded fallback. |
 | `/api/orchestration/email-logs` | POST | `x-api-key` | Save email delivery attempts from n8n. |
 | `/api/orchestration/bookings/:bookingId/email-status` | PATCH | `x-api-key` + workflow headers | Update booking email status after n8n email work. |
 | `/api/orchestration/tasks/bulk-create` | POST | `x-api-key` + workflow headers | Save the generated admin To-Do list for a booking. |
@@ -776,9 +790,15 @@ The implemented/documented current booking workflow should run in this order:
 10. `Send an Email`
 11. `HTTP Request - Save Zion Email Log`
 12. `HTTP Request - Update Booking Email Status`
-13. `Code - Generate Zion Admin To-Do List`
-14. `HTTP Request - Save Zion Admin To-Do List`
-15. `Respond to Webhook - Return Zion Booking Orchestration Success`
+13. `Code - Prepare Task Template Request`
+14. `HTTP Request - Fetch Active Task Template`
+15. `Code - Validate Task Template Response`
+16. `Code - Prepare Booking-Specific Admin To-Do List`
+17. `HTTP Request - Save Zion Admin To-Do List`
+18. `Code - Prepare Admin Notification Payload`
+19. `HTTP Request - Create Admin Notification`
+20. `HTTP Request - Save Successful Workflow Result`
+21. `Respond to Webhook - Return Zion Booking Orchestration Success`
 
 Optional additions supported by the backend:
 

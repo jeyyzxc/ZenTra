@@ -1,4 +1,4 @@
-import { requireSuperAdmin } from '@/lib/authorization';
+import { requireAdmin, requireSuperAdmin } from '@/lib/authorization';
 import {
   createEventCategory,
   getAdminEventCategories,
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    await requireSuperAdmin();
+    await requireAdmin();
     return Response.json({ data: await getAdminEventCategories() });
   } catch (error) {
     return handleServicesError(error);
