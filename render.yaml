@@ -1,11 +1,14 @@
-# Production-oriented Render Blueprint for n8n only. The Next.js application is
+# Temporary development Render Blueprint for n8n only. The Next.js application is
 # deployed to Vercel and its application database/files live in Supabase.
+#
+# Free Render resources sleep and the free PostgreSQL database expires after 30 days.
+# Upgrade both plans before enabling production automation.
 services:
   - type: web
     name: zentra-n8n
     runtime: image
     region: singapore
-    plan: standard
+    plan: free
     numInstances: 1
     healthCheckPath: /healthz
     maxShutdownDelaySeconds: 120
@@ -92,7 +95,6 @@ databases:
     databaseName: n8n
     user: n8n
     region: singapore
-    plan: basic-256mb
+    plan: free
     postgresMajorVersion: 17
-    diskSizeGB: 5
     ipAllowList: []

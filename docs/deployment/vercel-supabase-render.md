@@ -139,17 +139,20 @@ and orchestration configuration. It never returns credential values.
 
 ## 3. Render n8n setup
 
-The repository root contains `render.yaml`. It provisions:
+The repository root contains `render.yaml`. During development, it provisions:
 
-- one paid `standard` n8n web service in Singapore;
-- one private `basic-256mb` Render PostgreSQL database for n8n state;
+- one free n8n web service in Singapore;
+- one private free Render PostgreSQL database for n8n state;
 - n8n pinned to `2.28.1`;
 - health checks, execution pruning, timezone, encryption, and generated DB credentials.
 
-In Render, choose **New > Blueprint**, connect this repository, review the billable
-resources, and deploy. Free instances are suitable only for throwaway evaluation: free
-web services sleep when idle and free Render PostgreSQL expires, so they cannot run the
-one-minute Command Center scheduler reliably.
+In Render, choose **New > Blueprint**, connect this repository, confirm that both
+resources use the Free plan, and deploy. This is a temporary development environment:
+the web service sleeps when idle and free Render PostgreSQL expires after 30 days, so it
+cannot run the one-minute Command Center scheduler reliably. Export workflows and
+credentials before the database expires. Before production, change the web service to
+`standard`, change PostgreSQL to `basic-256mb`, restore `diskSizeGB: 5`, and review the
+current Render pricing before deploying the upgrade.
 
 Supply every `sync: false` value in the Blueprint form:
 
