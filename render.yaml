@@ -11,7 +11,6 @@ services:
     plan: free
     numInstances: 1
     healthCheckPath: /healthz
-    maxShutdownDelaySeconds: 120
     image:
       # Keep this pinned. Upgrade only after exporting and testing every workflow.
       url: docker.io/n8nio/n8n:2.28.1
