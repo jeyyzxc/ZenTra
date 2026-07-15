@@ -11,12 +11,10 @@ import {
   SupportFaqStatus,
 } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
-import { PDFParse } from 'pdf-parse';
-import * as mammoth from 'mammoth';
 import { auditActor, createAuditLog, getRequestContext } from '@/lib/audit';
 import type { CurrentAdmin } from '@/lib/authorization';
 import { prisma } from '@/lib/prisma';
-import { CommandCenterError } from '@/services/command-center';
+import { CommandCenterError } from '@/services/command-center/content.service';
 import { getLlmProvider } from './gemini-provider';
 
 const EMBEDDING_MODEL = () => process.env.GEMINI_EMBEDDING_MODEL?.trim() || 'gemini-embedding-001';
@@ -101,6 +99,7 @@ export function sanitizeKnowledgeText(value: string) {
 export async function extractKnowledgeFile(file: File) {
   const data = await file.arrayBuffer();
   if (file.type === 'application/pdf') {
+    const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: Buffer.from(data) });
     try {
       const result = await parser.getText();
@@ -112,6 +111,7 @@ export async function extractKnowledgeFile(file: File) {
     }
   }
   if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    const mammoth = await import('mammoth');
     const result = await mammoth.extractRawText({ buffer: Buffer.from(data) });
     const extracted = sanitizeKnowledgeText(result.value || '');
     if (!extracted) throw new CommandCenterError('No readable text was extracted from the DOCX file.', 422);

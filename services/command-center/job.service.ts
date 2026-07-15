@@ -11,7 +11,6 @@ import { revalidatePath } from 'next/cache';
 import { createAuditLog, errorMetadata, systemAuditActor } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { CommandCenterError, prepareContentPublicationPayload } from './content.service';
-import { buildKnowledgeIndex } from '@/services/smart-assistant/knowledge.service';
 
 const RETRY_MINUTES = [1, 5, 15, 15, 15] as const;
 const CANCELLABLE_JOB_STATUSES = new Set<CommandCenterJobStatus>([
@@ -239,6 +238,7 @@ async function projectIndexJob(job: { resourceType: string; resourceId: string }
   }
 
   if (job.resourceType === 'knowledge_generation') {
+    const { buildKnowledgeIndex } = await import('@/services/smart-assistant/knowledge.service');
     return buildKnowledgeIndex(job.resourceId);
   }
 

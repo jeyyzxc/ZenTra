@@ -1,8 +1,6 @@
 import { BookingRequestError } from '@/lib/booking-validation';
-import {
-  executeCommandCenterJob,
-  handleCommandCenterError,
-} from '@/services/command-center';
+import { handleCommandCenterError } from '@/services/command-center/content.service';
+import { executeCommandCenterJob } from '@/services/command-center/job.service';
 import {
   requireBackendOrchestrationSecret,
   requireN8nWorkflowHeaders,
