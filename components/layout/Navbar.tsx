@@ -91,7 +91,7 @@ export default function Navbar() {
         onClick={() => setIsMenuOpen((open) => !open)}
         type="button"
       >
-        <svg aria-hidden="true" className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {isMenuOpen ? (
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 18 18 6M6 6l12 12" />
           ) : (
@@ -112,12 +112,14 @@ export default function Navbar() {
 
       <div
         aria-hidden={!isMenuOpen}
-        className={`fixed right-0 top-0 z-[60] flex h-dvh w-full max-w-[22rem] flex-col overflow-hidden bg-gradient-to-br from-[#FBF4C4]/98 via-white/98 to-white/98 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(6rem,calc(env(safe-area-inset-top)+5rem))] shadow-[-20px_0_50px_-15px_rgba(0,0,0,0.16)] backdrop-blur-xl transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] sm:px-8 ${
+        aria-label="Primary navigation menu"
+        className={`fixed right-0 top-0 z-[60] flex h-dvh w-[90vw] max-w-[20rem] flex-col overflow-hidden bg-gradient-to-br from-[#FBF4C4]/98 via-white/98 to-white/98 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(5rem,calc(env(safe-area-inset-top)+4rem))] shadow-[-20px_0_50px_-15px_rgba(0,0,0,0.16)] backdrop-blur-xl transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] sm:w-full sm:max-w-[22rem] sm:px-7 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pt-[max(6rem,calc(env(safe-area-inset-top)+5rem))] ${
           isMenuOpen ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-full opacity-0'
         }`}
         id="primary-navigation-panel"
+        role="dialog"
       >
-        <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1 sm:gap-4">
+        <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 sm:gap-4">
           {menuItems.map((item, index) => {
             const hasSubItems = 'subItems' in item;
             const isExpanded = expandedItem === item.label;
@@ -140,7 +142,7 @@ export default function Navbar() {
                 <div className="flex w-full items-center justify-end gap-1">
                   <Link
                     href={item.href}
-                    className="py-2 text-right font-serif text-base font-medium uppercase tracking-[0.16em] text-neutral-900 transition-all duration-300 hover:-translate-x-1 hover:text-[#A88718] sm:text-lg sm:tracking-[0.2em]"
+                    className="py-1.5 text-right font-serif text-[0.95rem] font-medium uppercase tracking-[0.13em] text-neutral-900 transition-all duration-300 hover:-translate-x-1 hover:text-[#A88718] sm:py-2 sm:text-lg sm:tracking-[0.2em]"
                     onClick={closeMenu}
                     style={{ transitionDelay: `${isMenuOpen ? index * 35 : 0}ms` }}
                     tabIndex={isMenuOpen ? 0 : -1}
@@ -194,7 +196,7 @@ export default function Navbar() {
         </div>
 
         <Link
-          className="mt-5 flex min-h-12 items-center justify-center gap-3 border-[1.5px] border-neutral-900 bg-transparent px-6 py-3 text-center font-serif text-sm uppercase tracking-[0.25em] text-neutral-900 transition-all duration-500 hover:border-[#DFD48A] hover:bg-[#DFD48A] hover:shadow-[0_0_20px_rgba(223,212,138,0.4)]"
+          className="mt-4 flex min-h-12 items-center justify-center gap-3 border-[1.5px] border-neutral-900 bg-transparent px-5 py-3 text-center font-serif text-sm uppercase tracking-[0.22em] text-neutral-900 transition-all duration-500 hover:border-[#DFD48A] hover:bg-[#DFD48A] hover:shadow-[0_0_20px_rgba(223,212,138,0.4)] sm:mt-5 sm:px-6 sm:tracking-[0.25em]"
           href="/book"
           onClick={closeMenu}
           tabIndex={isMenuOpen ? 0 : -1}

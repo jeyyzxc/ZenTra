@@ -203,7 +203,41 @@
   }
 
   .galleryTile {
-    width: clamp(8.75rem, 42vw, 12rem);
+    width: clamp(12rem, 72vw, 17rem);
+  }
+
+  .galleryTrack {
+    animation-duration: 78s;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .eventCard:hover {
+    border-color: rgba(255, 255, 255, 0.38);
+    box-shadow:
+      0 18px 42px rgba(28, 25, 16, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    transform: translate3d(0, 0, 0);
+  }
+
+  .eventCard:hover::after {
+    transform: translateX(-120%) rotate(6deg);
+  }
+
+  .eventCard:hover .cardImage {
+    filter: saturate(1.02) contrast(1.04) brightness(0.96);
+    transform: scale(1.035);
+  }
+
+  .eventCard:hover .luxuryVeil {
+    opacity: 1;
+  }
+
+  .eventCard:hover .cardAction {
+    color: #fffdf8;
+    border-color: rgba(255, 255, 255, 0.44);
+    background: rgba(12, 16, 11, 0.36);
+    transform: translate3d(0, 0, 0);
   }
 }
 

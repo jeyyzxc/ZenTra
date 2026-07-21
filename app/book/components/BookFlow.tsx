@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SubpageHero from '@/components/client/SubpageHero';
 import { publicPageHeroes } from '@/config/public-page-heroes';
 import Step1EventType from './Step1EventType';
@@ -51,6 +51,25 @@ export default function BookFlow() {
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
   const goToStep = (s: number) => setStep(s);
   const [validationMessage, setValidationMessage] = useState('');
+  const workflowRef = useRef<HTMLDivElement>(null);
+  const previousStepRef = useRef(step);
+
+  useEffect(() => {
+    if (previousStepRef.current === step) {
+      return;
+    }
+
+    previousStepRef.current = step;
+    const animationFrame = window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      workflowRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [step]);
 
   const cancelBooking = () => {
     setFormData({
@@ -134,7 +153,7 @@ export default function BookFlow() {
     return (
       <div className="w-full flex flex-col animate-[fadeIn_0.5s_ease-out]">
         <SubpageHero slides={publicPageHeroes.book} />
-        <div className="w-full relative z-10 bg-[#FDFCEE] min-h-screen">
+        <div ref={workflowRef} id="booking-workflow" className="relative z-10 min-h-dvh w-full scroll-mt-4 bg-[#FDFCEE]">
           {renderStep()}
         </div>
       </div>
@@ -147,16 +166,16 @@ export default function BookFlow() {
         <SubpageHero slides={publicPageHeroes.book} />
       )}
 
-      <div className="w-full relative z-10 bg-transparent min-h-[80vh] flex flex-col items-center pt-8 pb-12 px-4 md:px-8">
+      <div ref={workflowRef} id="booking-workflow" className="relative z-10 flex min-h-[80dvh] w-full scroll-mt-4 flex-col items-center bg-transparent px-3 pb-10 pt-6 sm:px-4 sm:pb-12 sm:pt-8 md:px-8">
 
         {/* Header section (except step 10/11) */}
         {step !== 10 && (
-          <div className="text-center mb-6 max-w-4xl mx-auto px-4">
-            <h2 className="font-sahitya text-center text-4xl md:text-5xl text-[#2F3E32] mb-3">
+          <div className="mx-auto mb-5 max-w-4xl px-2 text-center sm:mb-6 sm:px-4">
+            <h2 className="mb-2 text-center font-sahitya text-[clamp(1.85rem,8vw,2.5rem)] leading-tight text-[#2F3E32] sm:mb-3 md:text-5xl">
               {currentHeader?.title}
             </h2>
             {currentHeader?.subtitle && (
-              <p className="font-sans tracking-wide font-medium text-center text-lg text-[#3A4B3C] mx-auto">
+              <p className="mx-auto text-center font-sans text-sm font-medium tracking-wide text-[#3A4B3C] sm:text-base md:text-lg">
                 {currentHeader.subtitle}
               </p>
             )}
@@ -165,7 +184,7 @@ export default function BookFlow() {
 
         {/* Progress Bar with Stations and Carpet Effect (only steps 1-9) */}
         {step <= 9 && (
-          <div className="w-full max-w-4xl mx-auto mb-10 mt-4 px-2 sm:px-6">
+          <div className="mx-auto mb-7 mt-3 w-full max-w-4xl px-1 sm:mb-10 sm:mt-4 sm:px-6" data-motion="decorative">
             <div className="relative flex items-center">
 
               {/* Background Track */}
@@ -212,7 +231,7 @@ export default function BookFlow() {
                   return (
                     <div key={stationStep} className="flex flex-col items-center">
                       <div
-                        className={`w-8 h-8 rounded-full border-[3px] flex items-center justify-center transition-all duration-500 ease-out ${
+                        className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all duration-500 ease-out sm:h-8 sm:w-8 sm:border-[3px] ${
                           isCurrent
                             ? 'bg-[#FDFCEE] border-[#D4A017] shadow-[0_0_20px_rgba(212,160,23,0.6)] scale-[1.3] ring-4 ring-[#D4A017]/20'
                             : isPassed
@@ -239,25 +258,26 @@ export default function BookFlow() {
         )}
 
         {/* Content Area */}
-        <div className={`w-full flex-grow flex flex-col justify-center mb-4 ${step === 1 ? 'max-w-[95%]' : 'max-w-5xl'}`}>
+        <div className={`mb-4 flex w-full flex-grow flex-col justify-center ${step === 1 ? 'max-w-[95%]' : 'max-w-5xl'}`}>
           {renderStep()}
         </div>
 
         {/* Navigation Buttons (only steps 1-9) */}
         {step > 1 && step <= 9 && (
-          <div className="flex flex-col items-center gap-4 mt-2">
+          <div className="mt-2 flex flex-col items-center gap-3 sm:gap-4">
             {validationMessage && (
               <p className="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
                 {validationMessage}
               </p>
             )}
-            <div className="flex gap-8 justify-center">
+            <div className="flex justify-center gap-5 sm:gap-8">
               {/* Back Button */}
               <button
+                aria-label="Previous step"
                 onClick={prevStep}
-                className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
+                className="touch-target flex h-12 w-12 items-center justify-center rounded-full border-2 border-black transition-all hover:bg-black/5 sm:h-16 sm:w-16 sm:border-[3px] sm:hover:scale-105"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="h-6 w-6 sm:h-8 sm:w-8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -267,9 +287,9 @@ export default function BookFlow() {
                 <button
                   onClick={advanceWithValidation}
                   aria-label="Next step"
-                  className="w-16 h-16 rounded-full border-[3px] border-black flex items-center justify-center transition-all hover:bg-black/5 hover:scale-105"
+                  className="touch-target flex h-12 w-12 items-center justify-center rounded-full border-2 border-black transition-all hover:bg-black/5 sm:h-16 sm:w-16 sm:border-[3px] sm:hover:scale-105"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="h-6 w-6 sm:h-8 sm:w-8">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface Props {
   nextStep: () => void;
@@ -38,10 +39,10 @@ export default function Step10Generating({ nextStep }: Props) {
   }, [currentTaskIndex, nextStep]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-16 flex flex-col items-center relative z-10">
+    <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-3 py-10 sm:px-4 sm:py-16" data-motion="decorative">
       
       {/* Dynamic luxury spinner or check */}
-      <div className="mb-16 relative w-36 h-36 flex items-center justify-center">
+      <div className="relative mb-10 flex h-28 w-28 items-center justify-center sm:mb-16 sm:h-36 sm:w-36">
         {isComplete ? (
            <div className="w-full h-full bg-gradient-to-br from-[#ECDD77] to-[#D4A017] rounded-full flex items-center justify-center shadow-[0_20px_40px_rgba(212,160,23,0.4)] transform transition-transform animate-[scaleIn_0.5s_ease-out]">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-[#1a1f18]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -57,7 +58,7 @@ export default function Step10Generating({ nextStep }: Props) {
             
             {/* Center Icon */}
             <div className="absolute z-10">
-              <img src="/zion-logo.png" alt="Zion" className="w-12 h-12 object-contain opacity-80 animate-pulse drop-shadow-md" />
+              <Image src="/zion-logo.png" alt="Zion" width={48} height={48} className="h-12 w-12 animate-pulse object-contain opacity-80 drop-shadow-md" />
             </div>
 
             {/* Background Glow */}
@@ -67,7 +68,7 @@ export default function Step10Generating({ nextStep }: Props) {
       </div>
 
       {/* Aligned List Container */}
-      <div className="w-full max-w-sm mx-auto flex flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-5 sm:gap-8">
         {loadingSteps.map((step, index) => {
           const isDone = index < currentTaskIndex;
           const isActive = index === currentTaskIndex;
@@ -76,12 +77,12 @@ export default function Step10Generating({ nextStep }: Props) {
           return (
             <div 
               key={index} 
-              className={`flex items-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] text-left ${
-                isPending ? 'opacity-30 translate-x-8 scale-95' : 'opacity-100 translate-x-0 scale-100'
-              } ${isActive ? 'scale-105' : ''}`}
+              className={`flex items-center gap-4 text-left transition-all duration-500 ease-out sm:gap-6 sm:duration-700 sm:ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                isPending ? 'translate-x-3 scale-[0.98] opacity-30 sm:translate-x-8 sm:scale-95' : 'translate-x-0 scale-100 opacity-100'
+              } ${isActive ? 'sm:scale-105' : ''}`}
             >
               {/* Status Circle */}
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 shadow-sm relative ${
+              <div className={`relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm transition-all duration-500 sm:h-12 sm:w-12 ${
                 isDone ? 'bg-gradient-to-br from-[#ECDD77] to-[#D4A017] text-[#1a1f18] shadow-[0_0_20px_rgba(212,160,23,0.3)]' : 
                 isActive ? 'bg-gradient-to-br from-[#2c3328] to-[#1a1f18] text-white shadow-[0_10px_25px_rgba(44,51,40,0.4)] ring-2 ring-[#D4A017] ring-offset-4 ring-offset-[#EAE5C3]' : 
                 'bg-white/50 backdrop-blur-sm border border-[#D2CB96]/60 text-transparent'
@@ -97,7 +98,7 @@ export default function Step10Generating({ nextStep }: Props) {
               </div>
 
               {/* Step Text */}
-              <span className={`font-serif text-2xl transition-all duration-500 ${
+              <span className={`min-w-0 font-serif text-xl leading-tight transition-all duration-500 sm:text-2xl ${
                 isDone ? 'text-[#3A4B3C] drop-shadow-sm' : 
                 isActive ? 'text-[#D4A017] font-semibold tracking-wide drop-shadow-md' : 
                 'text-[#3A4B3C]/50'

@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="absolute inset-0 w-full h-full bg-gradient-to-bl from-[#FBF4C4] via-white/0 to-transparent dark:from-[#111610] dark:via-[#0C100B]/0 dark:to-transparent"></div>
       </div>
 
-      <div className="relative z-10 w-full pt-8 pb-4 border-t border-neutral-900/10">
+      <div className="relative z-10 w-full border-t border-neutral-900/10 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-8 sm:pb-4">
       <div className="w-full mx-auto px-4 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-2">
 
@@ -77,9 +77,9 @@ export default function Footer() {
       </div>
 
       {/* Bottom Legal Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center pt-2 px-4 md:px-12 border-t border-neutral-900/10 text-neutral-900 text-sm md:text-base font-serif gap-4 mt-2">
+      <div className="mt-2 flex flex-col items-center justify-between gap-3 border-t border-neutral-900/10 px-4 pt-3 text-center font-serif text-sm text-neutral-900 sm:gap-4 md:flex-row md:px-12 md:text-left md:text-base">
         <p>© 2026 Zion Events Place. All rights reserved.</p>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-end">
           <Link href="/privacy" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Privacy Policy</Link>
           <Link href="/terms" className="relative transition-all duration-300 opacity-80 hover:opacity-100 hover:text-[#D4AF37] hover:drop-shadow-[0_0_4px_rgba(212,175,55,0.5)] after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">Terms of Service</Link>
         </div>

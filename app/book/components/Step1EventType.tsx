@@ -83,16 +83,18 @@ export default function Step1EventType({ data, updateData, nextStep }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-full px-4 pb-8">
+    <div className="mx-auto w-full max-w-full px-2 pb-8 sm:px-4">
       {/* Decorative background glow behind the grid */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(253,235,158,0.15),transparent_60%)] blur-3xl" />
 
-      <div className="flex flex-wrap justify-center gap-6 lg:gap-8">
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8">
         {eventCategories.map((event) => {
           const isSelected = data.eventCategoryId === event.id;
 
           return (
-            <div
+            <button
+              aria-pressed={isSelected}
+              data-touch-surface
               key={event.id}
               onClick={() => {
                 updateData({
@@ -103,10 +105,11 @@ export default function Step1EventType({ data, updateData, nextStep }: Props) {
                 // Slightly longer timeout to allow the luxurious animation to register
                 setTimeout(nextStep, 350);
               }}
-              className={`group relative overflow-hidden rounded-[2rem] h-[200px] w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.5rem)] cursor-pointer transition-all duration-300 ease-out border-2 ${
+              type="button"
+              className={`group relative h-[190px] w-full cursor-pointer overflow-hidden rounded-2xl border-2 text-left transition-all duration-300 ease-out sm:h-[200px] sm:w-[calc(50%-0.75rem)] sm:rounded-[2rem] lg:w-[calc(25%-1.5rem)] ${
                 isSelected
-                  ? 'border-[#FDEB9E] bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] scale-[1.02]'
-                  : 'border-transparent bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-white hover:shadow-[0_0_30px_rgba(255,255,255,0.8),0_0_50px_rgba(214,181,59,0.7),inset_0_0_15px_rgba(255,255,255,0.5)] hover:ring-4 hover:ring-[#FDEB9E]/50 hover:scale-[1.05] hover:z-50 hover:brightness-105'
+                  ? 'border-[#FDEB9E] bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] sm:scale-[1.02]'
+                  : 'border-transparent bg-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-white hover:shadow-[0_0_30px_rgba(255,255,255,0.8),0_0_50px_rgba(214,181,59,0.7),inset_0_0_15px_rgba(255,255,255,0.5)] hover:ring-4 hover:ring-[#FDEB9E]/50 md:hover:scale-[1.05] md:hover:z-50 md:hover:brightness-105'
               }`}
             >
               {/* Background Image with Slow Zoom on Hover */}
@@ -152,7 +155,7 @@ export default function Step1EventType({ data, updateData, nextStep }: Props) {
 
               {/* Subtle inner ring for glass effect */}
               <div className="pointer-events-none absolute inset-0 rounded-[2rem] border border-white/10" />
-            </div>
+            </button>
           );
         })}
       </div>

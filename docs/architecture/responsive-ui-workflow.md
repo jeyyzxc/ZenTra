@@ -31,6 +31,7 @@ Use the variables in `app/globals.css` instead of repeating page-specific values
 | `--layout-card-padding` | Fluid card and panel padding |
 | `--layout-touch-target` | Minimum interactive target (44px) |
 | `--layout-header-height` | Shared sticky-header offset |
+| `--layout-floating-control-*` | Shared size, safe-area inset, and content clearance for floating controls |
 
 ### Reusable primitives
 
@@ -106,6 +107,7 @@ Never compress a wide operational table until text and actions become unreadable
 
 - Mark decorative animated subtrees with `data-motion="decorative"`; the global reduced-motion rule will minimize them.
 - Loading/progress indicators may remain animated because they communicate state.
+- Avoid persistent hover transforms on coarse pointers; mobile cards must return to a stable resting state after a tap.
 - Avoid scroll-driven movement that makes controls leave the viewport on short mobile screens.
 - Validate blur, fixed backgrounds, and large shadows on physical mobile hardware; simplify expensive decoration at narrow widths if scrolling degrades.
 
@@ -113,6 +115,7 @@ Never compress a wide operational table until text and actions become unreadable
 
 - Use `dvh` for viewport-height UI. Do not use `h-screen` or raw `100vh`.
 - Use `env(safe-area-inset-*)` for fixed controls and edge-to-edge surfaces.
+- Fixed assistants and floating actions must use the shared floating-control tokens, remain a single compact control while closed, and leave clearance at terminal content such as the footer.
 - Prefer `w-full` and bounded max widths over `100vw`/`w-screen`, which can include scrollbar width and cause horizontal drift.
 
 ## Feature delivery workflow

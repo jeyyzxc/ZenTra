@@ -78,6 +78,17 @@ for (const contractClass of [
   }
 }
 
+for (const contractToken of [
+  '--layout-touch-target',
+  '--layout-floating-control-size',
+  '--layout-floating-control-inset',
+  '--layout-floating-control-clearance',
+]) {
+  if (!globalCss.includes(contractToken)) {
+    findings.push(`app/globals.css:1 Missing responsive contract token ${contractToken}.`);
+  }
+}
+
 if (findings.length > 0) {
   console.error('Responsive UI contract failed:\n');
   findings.forEach((finding) => console.error(`- ${finding}`));

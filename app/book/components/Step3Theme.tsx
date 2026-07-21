@@ -15,16 +15,19 @@ const themes = [
 
 export default function Step3Theme({ data, updateData }: Props) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 w-full max-w-4xl mx-auto px-4">
+    <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-4 px-2 sm:px-4 md:grid-cols-2 md:gap-10 lg:gap-16">
       {themes.map((theme) => {
         const isSelected = data.theme === theme.id;
         
         return (
-          <div 
+          <button
+            aria-pressed={isSelected}
+            data-touch-surface
             key={theme.id}
             onClick={() => updateData({ theme: theme.id })}
-            className={`relative rounded-[2rem] overflow-hidden aspect-[16/9] cursor-pointer transition-all duration-300 transform ${
-              isSelected ? 'scale-105 shadow-2xl ring-4 ring-[#4CAF50] ring-offset-4 ring-offset-[#EAE5C3]' : 'hover:scale-105 shadow-md hover:shadow-xl'
+            type="button"
+            className={`relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl text-left transition-all duration-300 sm:rounded-[2rem] ${
+              isSelected ? 'shadow-2xl ring-2 ring-[#4CAF50] ring-offset-2 ring-offset-[#EAE5C3] sm:scale-[1.02] sm:ring-4 sm:ring-offset-4' : 'shadow-md md:hover:scale-[1.03] md:hover:shadow-xl'
             }`}
           >
             {/* Background Image */}
@@ -38,7 +41,7 @@ export default function Step3Theme({ data, updateData }: Props) {
             
             {/* Text Content */}
             <div className="absolute inset-0 flex items-center justify-center p-4">
-              <h3 className="text-white text-3xl md:text-5xl font-sahitya text-center drop-shadow-lg">
+              <h3 className="text-center font-sahitya text-3xl text-white drop-shadow-lg md:text-5xl">
                 {theme.id.split(' ').map((word, i) => (
                   <React.Fragment key={i}>
                     {word}
@@ -50,13 +53,13 @@ export default function Step3Theme({ data, updateData }: Props) {
 
             {/* Selection Checkmark */}
             {isSelected && (
-              <div className="absolute top-4 right-4 bg-[#4CAF50] w-12 h-12 rounded-full flex items-center justify-center shadow-lg transform transition-transform scale-in">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <div className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#4CAF50] shadow-lg transition-transform sm:right-4 sm:top-4 sm:h-12 sm:w-12">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             )}
-          </div>
+          </button>
         );
       })}
     </div>

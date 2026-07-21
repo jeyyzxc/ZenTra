@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, MessageCircle, Send, X } from 'lucide-react';
+import Image from 'next/image';
 
 type Message = {
   id: string;
@@ -49,7 +50,6 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 
 export default function SmartGuide() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [lang, setLang] = useState<'en' | 'tl'>('en');
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -118,14 +118,14 @@ export default function SmartGuide() {
   }, [messages, isTyping, isOpen]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (isOpen && chatWindowRef.current && !chatWindowRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (isOpen) document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [isOpen]);
 
   const askAssistant = async (question: string) => {
@@ -176,25 +176,29 @@ export default function SmartGuide() {
     <>
       <div
         ref={chatWindowRef}
-        className={`public-smart-guide fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[200] flex h-[min(550px,calc(100dvh-1.5rem))] w-auto flex-col overflow-hidden rounded-[24px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-all duration-500 sm:inset-x-auto sm:bottom-[max(2rem,env(safe-area-inset-bottom))] sm:right-[max(2rem,env(safe-area-inset-right))] sm:h-[550px] sm:w-[380px] sm:rounded-[32px] ${
-          isOpen ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-16 scale-90 opacity-0'
+        aria-label="Zeni Smart Assistant"
+        aria-hidden={!isOpen}
+        className={`public-smart-guide fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[200] flex h-[min(70dvh,32rem)] max-h-[calc(100dvh-2rem)] w-auto flex-col overflow-hidden rounded-[20px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-[transform,opacity] duration-300 ease-out sm:inset-x-auto sm:bottom-[max(2rem,env(safe-area-inset-bottom))] sm:right-[max(2rem,env(safe-area-inset-right))] sm:h-[550px] sm:w-[380px] sm:rounded-[32px] ${
+          isOpen ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-8 scale-95 opacity-0'
         }`}
         data-motion="decorative"
+        inert={!isOpen}
+        role="dialog"
       >
-        <div className="relative flex items-center justify-between overflow-hidden border-b border-white/20 bg-gradient-to-r from-[#D4AF37] to-[#C5B358] p-4 shadow-md">
+        <div className="relative flex items-center justify-between overflow-hidden border-b border-white/20 bg-gradient-to-r from-[#D4AF37] to-[#C5B358] p-3 shadow-md sm:p-4">
           <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white opacity-20 blur-[50px]" />
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-md">
-              <img src="/zion-logo.png" alt="Zion Logo" className="h-6 w-6 object-contain brightness-0 opacity-85" />
-              <span className="absolute bottom-0 right-0 h-3 w-3 animate-pulse rounded-full border-2 border-white bg-[#00E676]" />
+          <div className="relative z-10 flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-white shadow-md sm:h-11 sm:w-11">
+              <Image src="/zion-logo.png" alt="Zion Logo" width={24} height={24} className="h-5 w-5 object-contain brightness-0 opacity-85 sm:h-6 sm:w-6" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#00E676] motion-safe:animate-pulse sm:h-3 sm:w-3" />
             </div>
-            <div>
-              <h3 className="font-serif text-lg font-bold leading-none tracking-wider text-white">Zeni</h3>
-              <p className="mt-1 font-sans text-[11px] font-bold uppercase tracking-[0.15em] text-white/90">Smart Assistant</p>
+            <div className="min-w-0">
+              <h3 className="font-serif text-base font-bold leading-none tracking-wider text-white sm:text-lg">Zeni</h3>
+              <p className="mt-1 truncate font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-white/90 sm:text-[11px] sm:tracking-[0.15em]">Smart Assistant</p>
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center gap-2">
+          <div className="relative z-10 flex shrink-0 items-center gap-1.5 sm:gap-2">
             <div className="flex rounded-full bg-white/10 p-0.5 shadow-inner">
               <button
                 type="button"
@@ -211,22 +215,22 @@ export default function SmartGuide() {
                 TL
               </button>
             </div>
-            <button type="button" onClick={() => setIsOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20">
+            <button aria-label="Close Smart Assistant" type="button" onClick={() => setIsOpen(false)} className="touch-target flex items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20">
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-gradient-to-b from-[#FAFAFA] to-white p-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto overscroll-contain bg-gradient-to-b from-[#FAFAFA] to-white p-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 sm:p-5">
           {messages.map((message, index) => (
             <div key={message.id} className={`flex flex-col gap-2 ${message.sender === 'user' ? 'items-end' : 'items-start'}`}>
               <div className="flex items-start">
                 {message.sender === 'zeni' && (
                   <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-white shadow-sm">
-                    <img src="/zion-logo.png" alt="Zeni" className="h-4 w-4 object-contain brightness-0 opacity-85" />
+                    <Image src="/zion-logo.png" alt="Zeni" width={16} height={16} className="h-4 w-4 object-contain brightness-0 opacity-85" />
                   </div>
                 )}
-                <div className={`max-w-[85%] rounded-[20px] p-4 text-left text-[15px] font-medium leading-relaxed shadow-sm ${
+                <div className={`max-w-[85%] rounded-[18px] p-3 text-left text-sm font-medium leading-relaxed shadow-sm sm:rounded-[20px] sm:p-4 sm:text-[15px] ${
                   message.sender === 'user'
                     ? 'rounded-tr-sm border border-[#D4AF37]/30 bg-gradient-to-l from-[#FAFAFA] to-white text-[#1A1A1A]'
                     : 'rounded-tl-sm border border-[#D4AF37]/30 bg-white text-[#1A1A1A]'
@@ -246,14 +250,14 @@ export default function SmartGuide() {
               </div>
 
               {index === 0 && suggestions.length > 0 && messages.length === 1 && !isTyping && (
-                <div className="ml-9 mt-1 flex flex-col gap-2">
+                <div className="ml-8 mt-1 flex max-w-[calc(100%-2rem)] flex-col gap-2 sm:ml-9">
                   <p className="text-left font-sans text-[12px] font-semibold text-neutral-500">{t.suggestedLabel}</p>
                   {suggestions.map((suggestion) => (
                     <button
                       key={suggestion.id}
                       type="button"
                       onClick={() => void handleSend(suggestion.question)}
-                      className="rounded-[20px] border border-[#D4AF37]/30 bg-white px-4 py-2 text-left font-sans text-[12px] font-medium text-[#1A1A1A] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#D4AF37] hover:bg-[#FAFAFA]"
+                      className="rounded-[18px] border border-[#D4AF37]/30 bg-white px-3 py-2 text-left font-sans text-[12px] font-medium leading-snug text-[#1A1A1A] shadow-sm transition-all hover:border-[#D4AF37] hover:bg-[#FAFAFA] sm:rounded-[20px] sm:px-4"
                     >
                       {suggestion.question}
                     </button>
@@ -266,7 +270,7 @@ export default function SmartGuide() {
           {isTyping && (
             <div className="flex items-center justify-start">
               <div className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-white shadow-sm">
-                <img src="/zion-logo.png" alt="Zeni" className="h-4 w-4 object-contain brightness-0 opacity-85" />
+                <Image src="/zion-logo.png" alt="Zeni" width={16} height={16} className="h-4 w-4 object-contain brightness-0 opacity-85" />
               </div>
               <div className="flex h-[38px] items-center gap-1.5 rounded-[20px] rounded-tl-sm border border-[#D4AF37]/30 bg-white px-4 py-3 shadow-sm">
                 <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#D4AF37] [animation-delay:-0.3s]" />
@@ -278,9 +282,9 @@ export default function SmartGuide() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-[#D4AF37]/30 bg-white p-3">
+        <div className="border-t border-[#D4AF37]/30 bg-white p-2 sm:p-3">
           <div className="flex items-center gap-2 rounded-full border border-[#D4AF37]/20 bg-[#FAFAFA] p-1.5 shadow-inner transition-all focus-within:border-[#D4AF37]/50 focus-within:bg-white">
-            <Bot className="ml-3 h-5 w-5 text-neutral-400" />
+            <Bot className="ml-2 hidden h-5 w-5 text-neutral-400 min-[340px]:block sm:ml-3" />
             <input
               type="text"
               value={input}
@@ -289,7 +293,7 @@ export default function SmartGuide() {
                 if (event.key === 'Enter') void handleSend(input);
               }}
               placeholder={t.placeholder}
-              className="flex-1 border-none bg-transparent px-2 py-2 font-sans text-[15px] font-medium text-[#1A1A1A] placeholder:text-[#1A1A1A]/50 focus:outline-none"
+              className="min-w-0 flex-1 border-none bg-transparent px-2 py-2 font-sans text-sm font-medium text-[#1A1A1A] placeholder:text-[#1A1A1A]/50 focus:outline-none sm:text-[15px]"
             />
             <button
               type="button"
@@ -304,56 +308,24 @@ export default function SmartGuide() {
       </div>
 
       <div
-        className={`public-smart-guide fixed z-[190] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-          isOpen ? 'pointer-events-none translate-y-10 scale-50 opacity-0' : 'pointer-events-auto opacity-100'
-        } ${isMinimized ? 'bottom-[max(2rem,env(safe-area-inset-bottom))] right-0 md:bottom-10' : 'bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))] md:bottom-8 md:right-8'}`}
+        className={`public-smart-guide fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-[max(0.75rem,env(safe-area-inset-right))] z-[190] transition-[transform,opacity] duration-300 ease-out md:bottom-8 md:right-8 ${
+          isOpen ? 'pointer-events-none translate-y-4 scale-75 opacity-0' : 'pointer-events-auto translate-y-0 scale-100 opacity-100'
+        }`}
         data-motion="decorative"
       >
-        {isMinimized ? (
-          <button
-            onClick={() => setIsMinimized(false)}
-            className="group relative flex h-16 w-12 items-center justify-start pl-2.5 rounded-l-2xl border border-r-0 border-[#D4AF37]/40 bg-white/90 backdrop-blur-md shadow-[-4px_4px_20px_rgba(212,175,55,0.15)] hover:-translate-x-2 transition-all duration-500 ease-out"
-            title="Show Smart Assistant"
-          >
-            <div className="relative">
-              <Bot className="h-6 w-6 text-[#D4AF37] opacity-80 group-hover:opacity-100 transition-opacity" />
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#00E676]" />
-            </div>
-            {/* Elegant glow effect on hover */}
-            <div className="absolute inset-0 rounded-l-2xl bg-gradient-to-l from-transparent to-[#D4AF37]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          </button>
-        ) : (
-          <div className="relative group">
-            {/* Hide/Minimize Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMinimized(true);
-              }}
-              className="absolute -left-3 -top-3 z-10 flex h-11 w-11 scale-90 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-white text-neutral-400 opacity-100 shadow-[0_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-100 hover:border-[#D4AF37]/60 hover:bg-[#FAFAFA] hover:text-[#D4AF37] sm:-left-1 sm:-top-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
-              title="Hide Assistant"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-
-            {/* Main FAB */}
-            <button
-              id="zeni-fab"
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsOpen(true);
-              }}
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/50 bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-[0_12px_30px_rgba(212,175,55,0.2)]"
-            >
-              <img src="/zion-logo.png" alt="Zion" className="h-8 w-8 object-contain brightness-0 opacity-85" />
-              <span className="absolute bottom-0.5 right-0.5 flex h-4 w-4">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-75" />
-                <span className="relative inline-flex h-4 w-4 rounded-full border-2 border-white bg-[#00E676]" />
-              </span>
-            </button>
-          </div>
-        )}
+        <button
+          aria-label="Open Zeni Smart Assistant"
+          id="zeni-fab"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsOpen(true);
+          }}
+          className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/50 bg-white shadow-[0_6px_20px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_26px_rgba(212,175,55,0.2)] sm:h-14 sm:w-14"
+        >
+          <Image src="/zion-logo.png" alt="" width={32} height={32} className="h-7 w-7 object-contain brightness-0 opacity-85 sm:h-8 sm:w-8" />
+          <span className="absolute bottom-0 right-0 inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-[#00E676] sm:h-4 sm:w-4" />
+        </button>
       </div>
     </>
   ) : null;

@@ -215,8 +215,8 @@ export default function ClientAvailabilityCalendar({
 
   if (availabilityDisabled.disabled) {
     return (
-      <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-6 px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>
-        <section className="relative w-full overflow-hidden rounded-[2rem] border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/90 to-white/70 p-8 text-center shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl lg:max-w-3xl">
+      <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-5 px-0 sm:gap-6 sm:px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>
+        <section className="relative w-full overflow-hidden rounded-3xl border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/90 to-white/70 p-5 text-center shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl sm:rounded-[2rem] sm:p-8 lg:max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8E7722]">Calendar Availability</p>
           <h3 className="mt-3 font-serif text-3xl font-medium text-[#2F3E32]">Booking Calendar Is Paused</h3>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#3A4B3C]/70">{availabilityDisabled.message}</p>
@@ -226,11 +226,11 @@ export default function ClientAvailabilityCalendar({
   }
 
   return (
-    <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-6 px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>
-      <section className="relative w-full overflow-hidden rounded-[2rem] border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/90 to-white/70 p-5 shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl transition-all duration-500 sm:p-6 md:p-8 lg:max-w-3xl">
+    <div className={cx('mx-auto flex w-full max-w-6xl flex-col items-stretch justify-center gap-5 px-0 sm:gap-6 sm:px-4', layout === 'horizontal' ? 'lg:flex-row lg:gap-8' : '', className)}>
+      <section className="relative w-full overflow-hidden rounded-3xl border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/90 to-white/70 p-4 shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl transition-all duration-500 sm:rounded-[2rem] sm:p-6 md:p-8 lg:max-w-3xl">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(214,181,59,0.15),transparent_40%),linear-gradient(135deg,rgba(255,255,255,0.4),transparent_50%)]" />
         <div className="relative z-10">
-          <div className="mb-6 flex items-center justify-between rounded-3xl border border-white/60 bg-white/50 px-5 py-4 shadow-sm backdrop-blur-md">
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-white/60 bg-white/50 px-3 py-3 shadow-sm backdrop-blur-md sm:mb-6 sm:rounded-3xl sm:px-5 sm:py-4">
             <button
               type="button"
               onClick={prevMonth}
@@ -246,7 +246,7 @@ export default function ClientAvailabilityCalendar({
               <ChevronLeft className="h-5 w-5" />
             </button>
 
-            <h3 className="text-center font-serif text-2xl font-medium text-[#2F3E32] sm:text-3xl md:text-4xl">
+            <h3 className="px-1 text-center font-serif text-xl font-medium text-[#2F3E32] min-[360px]:text-2xl sm:text-3xl md:text-4xl">
               {monthName} {year}
             </h3>
 
@@ -302,7 +302,7 @@ export default function ClientAvailabilityCalendar({
                   className={cx(
                     'group relative flex h-10 w-full flex-col items-center justify-center overflow-hidden rounded-2xl border text-sm font-medium transition-all duration-300 sm:h-12 sm:text-base md:h-14',
                     isSelected
-                      ? 'z-10 scale-105 border border-[#FDEB9E] bg-[#FDEB9E] text-[#1a1f18] shadow-[0_8px_20px_rgba(253,235,158,0.4)]'
+                      ? 'z-10 border border-[#FDEB9E] bg-[#FDEB9E] text-[#1a1f18] shadow-[0_8px_20px_rgba(253,235,158,0.4)] sm:scale-105'
                       : '',
                     !isSelected && !isBlocked
                       ? 'border-white/80 bg-white/60 text-black shadow-sm hover:-translate-y-0.5 hover:border-[#FDEB9E]/50 hover:bg-[#FFF2DB] hover:text-[#8E7722] hover:shadow-[0_8px_16px_rgba(214,181,59,0.1)]'
@@ -331,7 +331,7 @@ export default function ClientAvailabilityCalendar({
         </div>
       </section>
 
-      <aside className={cx("group relative flex w-full flex-col self-center overflow-hidden rounded-[2rem] border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/95 to-white/80 shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl transition-all duration-500 hover:shadow-[0_32px_80px_rgba(47,62,50,0.12)]", layout === 'horizontal' ? 'h-fit p-7 lg:max-w-[320px]' : 'mt-2 p-4 sm:p-5')}>
+      <aside className={cx("group relative flex w-full flex-col self-center overflow-hidden rounded-3xl border border-[#D6B53B]/30 bg-gradient-to-b from-[#FFFDF2]/95 to-white/80 shadow-[0_24px_60px_rgba(47,62,50,0.08)] backdrop-blur-xl transition-all duration-500 hover:shadow-[0_32px_80px_rgba(47,62,50,0.12)] sm:rounded-[2rem]", layout === 'horizontal' ? 'h-fit p-5 sm:p-7 lg:max-w-[320px]' : 'mt-2 p-4 sm:p-5')}>
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-transparent via-[#D6B53B]/40 to-transparent opacity-60" />
 
         <div className={cx("relative z-10 flex h-full", layout === 'horizontal' ? 'flex-col' : 'flex-col sm:flex-row items-center justify-between gap-4')}>
@@ -344,7 +344,7 @@ export default function ClientAvailabilityCalendar({
             </div>
           )}
 
-          <div className={cx("flex", layout === 'horizontal' ? 'mt-7 flex-col gap-3' : 'w-full flex-row flex-wrap justify-center gap-2 sm:gap-4')}>
+          <div className={cx("flex", layout === 'horizontal' ? 'mt-5 flex-col gap-2.5 sm:mt-7 sm:gap-3' : 'w-full flex-row flex-wrap justify-center gap-2 sm:gap-4')}>
             <div className="group flex cursor-default items-center gap-2 sm:gap-3.5 rounded-full border border-white/60 bg-white/50 px-3 sm:px-4 py-2 sm:py-3 shadow-[0_4px_12px_rgba(47,62,50,0.03)] backdrop-blur-md transition-all hover:bg-[#FFF2DB] hover:shadow-sm">
               <div className="h-3 sm:h-3.5 w-3 sm:w-3.5 shrink-0 rounded-full border border-[#D6B53B]/50 bg-white shadow-sm transition-colors group-hover:border-[#FDEB9E]/50 group-hover:bg-white" />
               <span className="text-xs sm:text-sm font-semibold tracking-wide text-black transition-colors group-hover:text-[#8E7722]">Available</span>

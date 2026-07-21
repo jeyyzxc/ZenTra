@@ -51,18 +51,21 @@ const budgetOptions = [
 
 export default function Step6Budget({ data, updateData }: Props) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mx-auto px-4">
+    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-4 px-2 sm:px-4 md:grid-cols-2 md:gap-6">
       {budgetOptions.map((option) => {
         const isSelected = data.budget === option.id;
         
         return (
-          <div 
+          <button
+            aria-pressed={isSelected}
+            data-touch-surface
             key={option.id}
             onClick={() => updateData({ budget: option.id })}
-            className={`relative rounded-3xl p-8 cursor-pointer transition-all duration-500 transform group overflow-hidden ${
+            type="button"
+            className={`group relative w-full cursor-pointer overflow-hidden rounded-2xl p-5 text-left transition-all duration-500 sm:rounded-3xl sm:p-7 md:p-8 ${
               isSelected 
-                ? 'bg-[#E5DCA5] scale-[1.02] shadow-2xl ring-[3px] ring-[#3A4B3C] ring-offset-4 ring-offset-[#EAE5C3]' 
-                : 'bg-white/40 hover:bg-[#F5F1DA] hover:scale-[1.03] shadow-md hover:shadow-xl border border-[#3A4B3C]/10'
+                ? 'bg-[#E5DCA5] shadow-2xl ring-2 ring-[#3A4B3C] ring-offset-2 ring-offset-[#EAE5C3] sm:scale-[1.01] sm:ring-[3px] sm:ring-offset-4'
+                : 'border border-[#3A4B3C]/10 bg-white/40 shadow-md hover:bg-[#F5F1DA] md:hover:scale-[1.02] md:hover:shadow-xl'
             }`}
           >
             {/* Background animated gradient for hover effect */}
@@ -70,22 +73,22 @@ export default function Step6Budget({ data, updateData }: Props) {
 
             <div className="relative z-10 flex flex-col items-center text-center h-full">
               {/* Icon Container */}
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 ${
-                isSelected ? 'bg-[#3A4B3C] text-[#EAE5C3] scale-110 shadow-lg' : 'bg-[#EAE5C3] text-[#3A4B3C] group-hover:bg-[#3A4B3C] group-hover:text-[#EAE5C3]'
+              <div className={`mb-4 flex h-13 w-13 items-center justify-center rounded-xl transition-all duration-500 sm:mb-6 sm:h-16 sm:w-16 sm:rounded-2xl ${
+                isSelected ? 'bg-[#3A4B3C] text-[#EAE5C3] shadow-lg sm:scale-110' : 'bg-[#EAE5C3] text-[#3A4B3C] group-hover:bg-[#3A4B3C] group-hover:text-[#EAE5C3]'
               }`}>
                 {option.icon}
               </div>
 
               {/* Text Content */}
-              <h3 className="text-[#3A4B3C] text-2xl font-serif mb-2 font-bold transition-colors">
+              <h3 className="mb-1.5 font-serif text-xl font-bold text-[#3A4B3C] transition-colors sm:mb-2 sm:text-2xl">
                 {option.title}
               </h3>
               
-              <div className={`font-sans text-xl font-bold mb-4 tracking-wide ${isSelected ? 'text-black' : 'text-[#3A4B3C]/80'}`}>
+              <div className={`mb-2 font-sans text-lg font-bold tracking-wide sm:mb-4 sm:text-xl ${isSelected ? 'text-black' : 'text-[#3A4B3C]/80'}`}>
                 {option.id}
               </div>
 
-              <p className="text-[#3A4B3C]/70 font-sans text-sm md:text-base leading-relaxed max-w-xs mt-auto">
+              <p className="mt-auto max-w-xs font-sans text-sm leading-relaxed text-[#3A4B3C]/70 md:text-base">
                 {option.description}
               </p>
             </div>
@@ -98,7 +101,7 @@ export default function Step6Budget({ data, updateData }: Props) {
                 </svg>
               </div>
             )}
-          </div>
+          </button>
         );
       })}
     </div>

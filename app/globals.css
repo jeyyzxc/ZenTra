@@ -18,6 +18,9 @@
   --layout-touch-target: 2.75rem;
   --layout-header-height: 5rem;
   --layout-radius: clamp(1rem, 0.85rem + 0.75vw, 1.75rem);
+  --layout-floating-control-size: 3rem;
+  --layout-floating-control-inset: max(0.75rem, env(safe-area-inset-bottom));
+  --layout-floating-control-clearance: calc(var(--layout-floating-control-size) + var(--layout-floating-control-inset) + 0.75rem);
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -172,6 +175,16 @@ html[data-public-menu-open="true"] .public-smart-guide {
   .responsive-actions > :where(button, a) {
     flex: 1 1 100%;
     justify-content: center;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  [data-touch-surface] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [data-touch-surface]:hover {
+    transform: none !important;
   }
 }
 

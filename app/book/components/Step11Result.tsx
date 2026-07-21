@@ -229,33 +229,33 @@ export default function Step11Result({
   };
 
   return (
-    <div className="w-full flex flex-col items-center bg-[#FDFCEE] pb-24 pt-16">
-      <div className="max-w-6xl mx-auto w-full px-4 md:px-8">
-        <h1 className="text-5xl md:text-6xl font-serif text-[#1a1f18] text-center mb-10 tracking-tight animate-[fadeInUp_0.6s_ease-out]">
+    <div className="flex w-full flex-col items-center bg-[#FDFCEE] pb-24 pt-10 sm:pt-16">
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-8">
+        <h1 className="mb-7 text-center font-serif text-3xl tracking-tight text-[#1a1f18] animate-[fadeInUp_0.6s_ease-out] sm:mb-10 sm:text-5xl md:text-6xl">
           The Signature Narrative
         </h1>
 
-        <div className="relative w-full h-[60vh] min-h-[500px] rounded-3xl overflow-hidden shadow-2xl mb-12 group animate-[fadeInUp_0.8s_ease-out]">
+        <div className="group relative mb-8 h-[50svh] min-h-[22rem] max-h-[34rem] w-full overflow-hidden rounded-2xl shadow-2xl animate-[fadeInUp_0.8s_ease-out] sm:mb-12 sm:min-h-[31.25rem] sm:rounded-3xl">
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] group-hover:scale-[1.03]"
             style={{ backgroundImage: `url("${selectedPackage?.packageImageUrl || heroImage}")` }}
           />
           <button
             onClick={() => goToStep(9)}
-            className="absolute bottom-6 right-6 px-6 py-3 bg-white/70 backdrop-blur-md rounded-[2rem] font-serif text-xl text-[#1a1f18] hover:bg-white transition-all shadow-lg flex items-center gap-2 border border-white/40"
+            className="absolute bottom-4 right-4 flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 font-serif text-base text-[#1a1f18] shadow-lg backdrop-blur-md transition-all hover:bg-white sm:bottom-6 sm:right-6 sm:px-6 sm:py-3 sm:text-xl"
           >
             Refine Plan
           </button>
         </div>
 
-        <div className="text-center max-w-4xl mx-auto mb-20 px-4 animate-[fadeInUp_1s_ease-out]">
-          <p className="font-serif italic text-2xl md:text-[28px] text-[#1a1f18] leading-relaxed">
+        <div className="mx-auto mb-12 max-w-4xl px-2 text-center animate-[fadeInUp_1s_ease-out] sm:mb-20 sm:px-4">
+          <p className="font-serif text-lg italic leading-relaxed text-[#1a1f18] sm:text-2xl md:text-[28px]">
             {dynamicNarrative}
           </p>
         </div>
 
-        <div className="mb-20 animate-[fadeInUp_1.2s_ease-out]">
-          <h2 className="font-serif italic text-4xl text-[#1a1f18] mb-10">
+        <div className="mb-12 animate-[fadeInUp_1.2s_ease-out] sm:mb-20">
+          <h2 className="mb-6 font-serif text-3xl italic text-[#1a1f18] sm:mb-10 sm:text-4xl">
             Available Packages
           </h2>
 
@@ -272,12 +272,13 @@ export default function Step11Result({
               No active packages are available for {data.eventType || 'this event'} right now.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
+            <div className="grid grid-cols-1 gap-5 px-0 sm:gap-8 sm:px-2 md:grid-cols-3">
               {packages.map((pkg, index) => (
                 <article
+                  data-touch-surface
                   key={pkg.id}
-                  className={`rounded-3xl overflow-hidden flex flex-col shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative group ${
-                    selectedPackageId === pkg.id ? 'ring-4 ring-[#D4A017] ring-offset-4' : ''
+                  className={`group relative flex flex-col overflow-hidden rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl sm:rounded-3xl md:hover:-translate-y-2 ${
+                    selectedPackageId === pkg.id ? 'ring-2 ring-[#D4A017] ring-offset-2 sm:ring-4 sm:ring-offset-4' : ''
                   }`}
                   style={{ animationDelay: `${1.2 + (index * 0.1)}s` }}
                 >
@@ -287,7 +288,7 @@ export default function Step11Result({
                     </div>
                   )}
 
-                  <div className="relative h-48 w-full overflow-hidden">
+                  <div className="relative h-44 w-full overflow-hidden sm:h-48">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                       style={{ backgroundImage: `url("${pkg.packageImageUrl || heroImage}")` }}
@@ -295,28 +296,30 @@ export default function Step11Result({
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
 
-                  <div className="bg-[#B19D31] py-5 text-center text-white text-[28px] font-serif tracking-wide border-b border-black/10 transition-colors duration-300 group-hover:brightness-110">
+                  <div className="border-b border-black/10 bg-[#B19D31] px-3 py-4 text-center font-serif text-2xl leading-tight tracking-wide text-white transition-colors duration-300 group-hover:brightness-110 sm:py-5 sm:text-[28px]">
                     {pkg.packageName}
                   </div>
 
-                  <div className="bg-[#C7B342] px-5 py-4 text-center text-white transition-colors duration-300 group-hover:brightness-110">
-                    <p className="text-[26px] font-serif tracking-wide">{money(pkg.price, pkg.currency)}</p>
+                  <div className="bg-[#C7B342] px-4 py-3 text-center text-white transition-colors duration-300 group-hover:brightness-110 sm:px-5 sm:py-4">
+                    <p className="font-serif text-2xl tracking-wide sm:text-[26px]">{money(pkg.price, pkg.currency)}</p>
                     <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-white/85">
                       {pkg.paxIncluded} pax included
                     </p>
                   </div>
-                  <div className="flex gap-2 bg-white p-4">
+                  <div className="grid grid-cols-2 gap-2 bg-white p-3 sm:p-4">
                     <button
+                      aria-pressed={selectedPackageId === pkg.id}
                       type="button"
                       onClick={() => setSelectedPackageId(pkg.id)}
-                      className="flex-1 rounded-full bg-[#1a1f18] px-4 py-2 text-sm font-bold text-white hover:bg-[#D4A017] hover:text-[#1a1f18]"
+                      className="min-h-11 rounded-full bg-[#1a1f18] px-3 py-2 text-sm font-bold leading-tight text-white hover:bg-[#D4A017] hover:text-[#1a1f18]"
                     >
                       {selectedPackageId === pkg.id ? 'Selected' : 'Select Package'}
                     </button>
                     <button
+                      aria-expanded={expandedPackage === pkg.id}
                       type="button"
                       onClick={() => setExpandedPackage(expandedPackage === pkg.id ? null : pkg.id)}
-                      className="rounded-full border border-[#1a1f18]/20 px-4 py-2 text-sm font-bold hover:bg-[#F5F1DA]"
+                      className="min-h-11 rounded-full border border-[#1a1f18]/20 px-3 py-2 text-sm font-bold leading-tight hover:bg-[#F5F1DA]"
                     >
                       View Package
                     </button>
@@ -342,7 +345,7 @@ export default function Step11Result({
           )}
         </div>
 
-        <div className="bg-[#DFD79D] rounded-[2rem] py-6 px-8 md:py-8 md:px-12 shadow-lg max-w-6xl mx-auto w-full flex flex-col md:flex-row gap-10 md:gap-16 animate-[fadeInUp_1.4s_ease-out]">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 rounded-3xl bg-[#DFD79D] px-5 py-6 shadow-lg animate-[fadeInUp_1.4s_ease-out] sm:rounded-[2rem] sm:px-8 sm:gap-10 md:flex-row md:gap-16 md:px-12 md:py-8">
           <div className="flex-1 flex flex-col justify-center space-y-4">
             {[
               ['Event', data.eventType || 'To be confirmed'],
@@ -354,22 +357,22 @@ export default function Step11Result({
               ['Package Price', selectedPackage ? money(selectedPackage.price, selectedPackage.currency) : 'TBD'],
               ['Reservation Fee', selectedPackage ? money(selectedPackage.reservationFee, selectedPackage.currency) : 'TBD'],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-end justify-between border-b-[2px] border-[#1a1f18]/30 pb-1.5 group/row transition-all duration-300 hover:border-[#1a1f18]">
-                <span className="text-xl font-serif text-[#1a1f18]/70 transition-colors group-hover/row:text-[#1a1f18]">{label}:</span>
-                <span className="max-w-[60%] truncate text-right text-2xl font-serif text-[#1a1f18]">{value}</span>
+              <div key={label} className="group/row grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-start gap-3 border-b-[2px] border-[#1a1f18]/30 pb-1.5 transition-all duration-300 hover:border-[#1a1f18]">
+                <span className="font-serif text-base text-[#1a1f18]/70 transition-colors group-hover/row:text-[#1a1f18] sm:text-xl">{label}:</span>
+                <span className="min-w-0 break-words text-right font-serif text-lg leading-snug text-[#1a1f18] sm:text-2xl">{value}</span>
               </div>
             ))}
           </div>
 
           <div className="flex-1 flex flex-col justify-center">
             <form className="space-y-3 flex flex-col" onSubmit={submitBooking}>
-              <input required value={client.fullName} onChange={(event) => setClient((current) => ({ ...current, fullName: event.target.value }))} type="text" className="w-full bg-white/60 backdrop-blur-sm px-6 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-white shadow-sm text-lg font-serif placeholder-[#1a1f18]/50 text-[#1a1f18] transition-all hover:bg-white/80 focus:bg-white" placeholder="Full Name" />
-              <input required value={client.email} onChange={(event) => setClient((current) => ({ ...current, email: event.target.value }))} type="email" className="w-full bg-white/60 backdrop-blur-sm px-6 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-white shadow-sm text-lg font-serif placeholder-[#1a1f18]/50 text-[#1a1f18] transition-all hover:bg-white/80 focus:bg-white" placeholder="Email Address" />
-              <input value={client.facebook} onChange={(event) => setClient((current) => ({ ...current, facebook: event.target.value }))} type="text" className="w-full bg-white/60 backdrop-blur-sm px-6 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-white shadow-sm text-lg font-serif placeholder-[#1a1f18]/50 text-[#1a1f18] transition-all hover:bg-white/80 focus:bg-white" placeholder="Facebook (optional)" />
-              <input required value={client.phone} onChange={(event) => setClient((current) => ({ ...current, phone: event.target.value }))} type="tel" className="w-full bg-white/60 backdrop-blur-sm px-6 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-white shadow-sm text-lg font-serif placeholder-[#1a1f18]/50 text-[#1a1f18] transition-all hover:bg-white/80 focus:bg-white" placeholder="Phone Number" />
+              <input required value={client.fullName} onChange={(event) => setClient((current) => ({ ...current, fullName: event.target.value }))} type="text" autoComplete="name" className="min-h-11 w-full rounded-full bg-white/60 px-4 py-2.5 font-serif text-base text-[#1a1f18] shadow-sm backdrop-blur-sm transition-all placeholder:text-[#1a1f18]/50 hover:bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:px-6 sm:text-lg" placeholder="Full Name" />
+              <input required value={client.email} onChange={(event) => setClient((current) => ({ ...current, email: event.target.value }))} type="email" autoComplete="email" inputMode="email" className="min-h-11 w-full rounded-full bg-white/60 px-4 py-2.5 font-serif text-base text-[#1a1f18] shadow-sm backdrop-blur-sm transition-all placeholder:text-[#1a1f18]/50 hover:bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:px-6 sm:text-lg" placeholder="Email Address" />
+              <input value={client.facebook} onChange={(event) => setClient((current) => ({ ...current, facebook: event.target.value }))} type="text" className="min-h-11 w-full rounded-full bg-white/60 px-4 py-2.5 font-serif text-base text-[#1a1f18] shadow-sm backdrop-blur-sm transition-all placeholder:text-[#1a1f18]/50 hover:bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:px-6 sm:text-lg" placeholder="Facebook (optional)" />
+              <input required value={client.phone} onChange={(event) => setClient((current) => ({ ...current, phone: event.target.value }))} type="tel" autoComplete="tel" inputMode="tel" className="min-h-11 w-full rounded-full bg-white/60 px-4 py-2.5 font-serif text-base text-[#1a1f18] shadow-sm backdrop-blur-sm transition-all placeholder:text-[#1a1f18]/50 hover:bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:px-6 sm:text-lg" placeholder="Phone Number" />
 
               <div className="flex flex-col items-center mt-4 gap-2 pt-1">
-                <button disabled={!selectedPackage || submission.status === 'submitting' || submission.status === 'success'} className="px-8 py-2.5 bg-[#BEB167] hover:bg-[#A89C5A] text-[#1a1f18] font-serif text-xl rounded-full transition-all shadow-[0_4px_10px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_15px_rgba(0,0,0,0.15)] hover:-translate-y-1 w-fit border border-black/10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
+                <button disabled={!selectedPackage || submission.status === 'submitting' || submission.status === 'success'} className="min-h-11 w-full rounded-full border border-black/10 bg-[#BEB167] px-6 py-2.5 font-serif text-lg text-[#1a1f18] shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-1 hover:bg-[#A89C5A] hover:shadow-[0_6px_15px_rgba(0,0,0,0.15)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit sm:px-8 sm:text-xl">
                   {submission.status === 'submitting' ? 'Submitting...' : 'Book This Package'}
                 </button>
                 <button type="button" onClick={cancelBooking} className="px-6 py-1.5 bg-[#EFE9CC]/80 hover:bg-white text-[#1a1f18] font-serif text-[15px] rounded-full transition-all border border-black/5 shadow-sm hover:-translate-y-0.5 active:scale-95">
