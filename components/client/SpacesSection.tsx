@@ -26,16 +26,16 @@ export default function SpacesSection() {
     <section className="bg-transparent w-full px-4 pt-12 pb-10 md:pt-16 md:pb-12 md:px-12">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex justify-center w-full overflow-hidden">
-          <div className="group relative flex items-center justify-center gap-4 md:gap-6 cursor-default">
+          <div className="group relative flex w-full min-w-0 items-center justify-center gap-3 md:gap-6 cursor-default" data-motion="decorative">
             {/* Left elegant fading line */}
-            <div className="h-[1.5px] w-12 md:w-24 bg-gradient-to-r from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-24 md:group-hover:w-48 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-48" />
 
-            <h2 className="font-serif text-neutral-900 text-2xl md:text-4xl uppercase tracking-[0.2em] transition-all duration-700 ease-out group-hover:text-[#D4AF37] group-hover:tracking-[0.3em] whitespace-nowrap">
+            <h2 className="shrink-0 text-center font-serif text-xl uppercase tracking-[0.14em] text-neutral-900 transition-colors duration-700 ease-out group-hover:text-[#D4AF37] min-[360px]:text-2xl md:text-4xl md:tracking-[0.2em]">
               OUR SPACES
             </h2>
 
             {/* Right elegant fading line */}
-            <div className="h-[1.5px] w-12 md:w-24 bg-gradient-to-l from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-24 md:group-hover:w-48 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-48" />
           </div>
         </div>
 
@@ -72,4 +72,3 @@ export default function SpacesSection() {
     </section>
   );
 }
-

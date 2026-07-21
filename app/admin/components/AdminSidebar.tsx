@@ -24,10 +24,14 @@ const menuItems = [
 
 export default function AdminSidebar({ 
   isCollapsed, 
+  isMobileOpen,
+  onMobileClose,
   onToggle,
   currentUserRole,
 }: { 
   isCollapsed: boolean; 
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
   onToggle: () => void;
   currentUserRole: Extract<Role, 'SUPERADMIN' | 'ADMIN'>;
 }) {
@@ -37,16 +41,28 @@ export default function AdminSidebar({
   );
 
   return (
-    <div 
-      className={`h-screen bg-gradient-to-b from-white to-[#FDF5CC]/20 dark:from-[#0C100B] dark:to-[#141A13] flex flex-col fixed left-0 top-0 border-r border-[#D6B53B]/20 dark:border-white/5 z-50 transition-colors duration-500 ease-in-out shadow-[4px_0_24px_rgba(214,181,59,0.05)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${
-        isCollapsed ? 'w-[80px]' : 'w-[80px] md:w-[280px]'
-      }`}
-    >
+    <>
+      <button
+        aria-label="Close admin navigation"
+        className={`fixed inset-0 z-[55] bg-black/45 backdrop-blur-[2px] transition-opacity duration-300 md:hidden ${
+          isMobileOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onMobileClose}
+        tabIndex={isMobileOpen ? 0 : -1}
+        type="button"
+      />
+      <aside
+        aria-label="Admin navigation"
+        className={`fixed left-0 top-0 z-[60] flex h-dvh w-[min(86vw,280px)] flex-col border-r border-[#D6B53B]/20 bg-gradient-to-b from-white to-[#FDF5CC]/20 shadow-[4px_0_24px_rgba(214,181,59,0.05)] transition-[width,transform,background-color] duration-300 ease-in-out dark:border-white/5 dark:from-[#0C100B] dark:to-[#141A13] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${
+          isMobileOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'
+        } ${isCollapsed ? 'md:w-[80px]' : 'md:w-[280px]'} md:visible md:translate-x-0`}
+        id="admin-navigation"
+      >
       {/* Logo & Hamburger area */}
-      <div className={`h-20 flex items-center border-b border-[#D6B53B]/10 dark:border-white/5 transition-all duration-300 px-3 md:px-5 ${isCollapsed ? 'justify-center' : 'justify-center md:justify-between'}`}>
+      <div className={`flex h-20 items-center justify-between border-b border-[#D6B53B]/10 px-5 transition-all duration-300 dark:border-white/5 ${isCollapsed ? 'md:justify-center md:px-3' : ''}`}>
         
         {/* Logo - Fades out and shrinks when collapsed */}
-        <div className={`flex items-center gap-3 transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'max-md:w-0 max-md:overflow-hidden max-md:opacity-0 md:w-auto md:opacity-100'}`}>
+        <div className={`flex items-center gap-3 transition-all duration-300 ${isCollapsed ? 'md:w-0 md:overflow-hidden md:opacity-0' : 'md:w-auto md:opacity-100'}`}>
           <div className="relative w-11 h-11 flex-shrink-0">
             <Image 
               src="/zion-logo.png" 
@@ -67,9 +83,18 @@ export default function AdminSidebar({
         </div>
 
         {/* Toggle Button / Collapsed Logo Area */}
+        <button
+          aria-label="Close admin navigation"
+          className="touch-target flex items-center justify-center rounded-full text-[#1a1f18] transition-colors hover:bg-[#D6B53B]/10 hover:text-[#BEA542] dark:text-[#A3B19B] dark:hover:bg-white/5 dark:hover:text-[#D6B53B] md:hidden"
+          onClick={onMobileClose}
+          type="button"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+
         <button 
           onClick={onToggle}
-          className={`group cursor-pointer flex-shrink-0 transition-all duration-300 flex items-center justify-center text-[#1a1f18] dark:text-[#A3B19B] hover:text-[#BEA542] dark:hover:text-[#D6B53B] focus:outline-none ${isCollapsed ? 'w-12 h-12 relative rounded-full hover:shadow-sm hover:bg-white/40 dark:hover:bg-white/5' : 'p-2 rounded-full hover:bg-[#D6B53B]/10 dark:hover:bg-white/5 hover:shadow-sm'}`}
+          className={`group hidden cursor-pointer flex-shrink-0 items-center justify-center text-[#1a1f18] transition-all duration-300 hover:text-[#BEA542] focus:outline-none dark:text-[#A3B19B] dark:hover:text-[#D6B53B] md:flex ${isCollapsed ? 'relative h-12 w-12 rounded-full hover:bg-white/40 hover:shadow-sm dark:hover:bg-white/5' : 'rounded-full p-2 hover:bg-[#D6B53B]/10 hover:shadow-sm dark:hover:bg-white/5'}`}
           aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {/* Expanded State: Left Panel Close Button */}
@@ -113,18 +138,18 @@ export default function AdminSidebar({
         {visibleMenuItems.map((item) => {
           const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`);
           return (
-            <Link key={item.path} href={item.path}>
+            <Link key={item.path} href={item.path} onClick={onMobileClose}>
               <div 
                 className={`flex items-center rounded-xl transition-all duration-200 group relative ${
                   isActive 
                     ? 'bg-gradient-to-r from-[#D6B53B]/10 dark:from-[#D6B53B]/20 to-transparent border-l-4 border-[#D6B53B] text-[#D6B53B]' 
                     : 'border-l-4 border-transparent hover:bg-gray-50 dark:hover:bg-white/5 text-gray-500 dark:text-[#A3B19B] hover:text-[#BEA542] dark:hover:text-[#D6B53B]'
-                } ${isCollapsed ? 'justify-center py-3 px-0' : 'justify-center px-0 py-3 md:justify-start md:px-4'}`}
+                } justify-start px-4 py-3 ${isCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'}`}
                 title={isCollapsed ? item.name : undefined}
               >
                 {item.imageIcon ? (
                   <div 
-                    className={`w-[22px] h-[22px] flex-shrink-0 transition-transform duration-300 bg-current ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${isCollapsed ? 'mr-0' : 'mr-0 md:mr-[14px]'}`}
+                    className={`mr-[14px] h-[22px] w-[22px] flex-shrink-0 bg-current transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${isCollapsed ? 'md:mr-0' : 'md:mr-[14px]'}`}
                     style={{
                       maskImage: `url('${item.imageIcon}'), url('${item.imageIcon}')`,
                       WebkitMaskImage: `url('${item.imageIcon}'), url('${item.imageIcon}')`,
@@ -137,16 +162,16 @@ export default function AdminSidebar({
                     }}
                   />
                 ) : (
-                  <i className={`${item.flaticonClass} text-xl flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${isCollapsed ? 'mr-0' : 'mr-0 md:mr-4'} flex items-center justify-center`}></i>
+                  <i className={`${item.flaticonClass} mr-4 flex flex-shrink-0 items-center justify-center text-xl transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${isCollapsed ? 'md:mr-0' : 'md:mr-4'}`}></i>
                 )}
                 
-                <span className={`font-sans text-[13px] font-semibold tracking-wide whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'hidden w-auto opacity-100 md:inline'}`}>
+                <span className={`w-auto whitespace-nowrap font-sans text-[13px] font-semibold tracking-wide opacity-100 transition-all duration-300 ${isCollapsed ? 'md:hidden md:w-0 md:opacity-0' : 'md:inline'}`}>
                   {item.name}
                 </span>
 
                 {/* Tooltip for collapsed state */}
                 {isCollapsed && (
-                  <div className="absolute left-14 bg-[#1a1f18] dark:bg-white text-white dark:text-[#1a1f18] font-bold text-xs px-2 py-1 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg border dark:border-white/10">
+                  <div className="invisible absolute left-14 z-50 hidden whitespace-nowrap rounded border bg-[#1a1f18] px-2 py-1 text-xs font-bold text-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 dark:border-white/10 dark:bg-white dark:text-[#1a1f18] md:block">
                     {item.name}
                   </div>
                 )}
@@ -160,18 +185,19 @@ export default function AdminSidebar({
       <div className="p-4 border-t border-[#D6B53B]/10 dark:border-white/5 transition-colors duration-500">
         <button
           onClick={() => signOut({ callbackUrl: '/admin' })}
-          className={`flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 text-gray-600 dark:text-[#A3B19B] rounded-xl transition-all duration-200 shadow-sm active:scale-95 border border-gray-200 dark:border-white/10 hover:border-red-200 dark:hover:border-red-500/30 ${
-            isCollapsed ? 'w-full py-3 px-0' : 'w-full px-0 py-3 md:px-4'
+          className={`flex w-full items-center justify-start rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-gray-600 shadow-sm transition-all duration-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-[#A3B19B] dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${
+            isCollapsed ? 'md:justify-center md:px-0' : 'md:px-4'
           }`}
           title={isCollapsed ? 'Logout' : undefined}
         >
-          <i className={`fi fi-rr-power text-xl flex items-center justify-center flex-shrink-0 ${isCollapsed ? 'mr-0' : 'mr-0 md:mr-2'}`}></i>
-          <span className={`font-sans font-semibold text-sm tracking-wide whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'hidden w-auto opacity-100 md:inline'}`}>
+          <i className={`fi fi-rr-power mr-2 flex flex-shrink-0 items-center justify-center text-xl ${isCollapsed ? 'md:mr-0' : 'md:mr-2'}`}></i>
+          <span className={`w-auto whitespace-nowrap font-sans text-sm font-semibold tracking-wide opacity-100 transition-all duration-300 ${isCollapsed ? 'md:hidden md:w-0 md:opacity-0' : 'md:inline'}`}>
             Logout
           </span>
         </button>
       </div>
 
-    </div>
+      </aside>
+    </>
   );
 }

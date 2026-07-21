@@ -76,9 +76,13 @@ function UserAvatar({
 
 export default function AdminTopbar({
   isCollapsed,
+  isMobileSidebarOpen,
+  onOpenSidebar,
   currentUser,
 }: {
   isCollapsed: boolean;
+  isMobileSidebarOpen: boolean;
+  onOpenSidebar: () => void;
   currentUser: {
     email: string;
     profileImage: string | null;
@@ -239,18 +243,30 @@ export default function AdminTopbar({
 
   return (
     <div
-      className={`h-20 bg-white dark:bg-[#0C100B] border-b border-[#1a1f18]/10 dark:border-white/5 flex items-center justify-between gap-3 px-4 md:px-8 sticky top-0 z-40 transition-colors duration-500 ease-in-out ${
-        isCollapsed ? 'ml-[80px]' : 'ml-[80px] md:ml-[280px]'
+      className={`sticky top-0 z-40 flex h-20 min-w-0 items-center justify-between gap-2 border-b border-[#1a1f18]/10 bg-white px-3 transition-[margin,background-color] duration-300 ease-in-out dark:border-white/5 dark:bg-[#0C100B] sm:gap-3 sm:px-4 md:px-8 ${
+        isCollapsed ? 'md:ml-[80px]' : 'md:ml-[280px]'
       }`}
     >
 
       {/* Title */}
-      <h1 className="min-w-0 truncate text-base font-sahitya text-[#1a1f18] dark:text-[#F4F4F0] font-bold uppercase tracking-[0.08em] transition-colors duration-500 sm:text-[22px] sm:tracking-[0.1em]">
-        {getTitle()}
-      </h1>
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <button
+          aria-controls="admin-navigation"
+          aria-expanded={isMobileSidebarOpen}
+          aria-label="Open admin navigation"
+          className="touch-target flex shrink-0 items-center justify-center rounded-xl text-[#1a1f18] transition-colors hover:bg-[#D6B53B]/10 hover:text-[#BEA542] dark:text-[#A3B19B] dark:hover:bg-white/5 dark:hover:text-[#D6B53B] md:hidden"
+          onClick={onOpenSidebar}
+          type="button"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <h1 className="min-w-0 truncate font-sahitya text-sm font-bold uppercase tracking-[0.04em] text-[#1a1f18] transition-colors duration-500 dark:text-[#F4F4F0] min-[360px]:text-base sm:text-[22px] sm:tracking-[0.1em]">
+          {getTitle()}
+        </h1>
+      </div>
 
       {/* Right Side */}
-      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4 lg:gap-6">
+      <div className="flex flex-shrink-0 items-center gap-1 sm:gap-3 lg:gap-6">
 
         {/* Search */}
         {!pathname.includes('/admin/profile') && (
@@ -418,7 +434,7 @@ export default function AdminTopbar({
 
           {/* Notification Dropdown Panel */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-gray-100/50 dark:border-white/5 overflow-hidden origin-top-right flex flex-col z-50 transition-colors duration-500">
+            <div className="absolute right-0 z-50 mt-3 flex max-h-[min(75dvh,34rem)] w-[min(20rem,calc(100vw-1.5rem))] origin-top-right flex-col overflow-hidden rounded-2xl border border-gray-100/50 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] transition-colors duration-500 dark:border-white/5 dark:bg-[#141A13] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-white/5 bg-white dark:bg-[#141A13]">
                 <h3 className="text-[15px] font-semibold text-gray-800 dark:text-[#F4F4F0] tracking-tight font-sans">Notifications</h3>
                 {unreadCount > 0 && (
@@ -517,7 +533,7 @@ export default function AdminTopbar({
 
           {/* Profile Dropdown Panel */}
           {isProfileOpen && (
-            <div className="absolute top-full -right-2 mt-3 w-64 bg-white dark:bg-[#141A13] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-gray-100/50 dark:border-white/5 overflow-hidden origin-top-right z-50 transition-colors duration-500">
+            <div className="absolute -right-1 top-full z-50 mt-3 w-[min(16rem,calc(100vw-1.5rem))] origin-top-right overflow-hidden rounded-2xl border border-gray-100/50 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] transition-colors duration-500 dark:border-white/5 dark:bg-[#141A13] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] sm:-right-2">
 
               {/* User Header */}
               <button

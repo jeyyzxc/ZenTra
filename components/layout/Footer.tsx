@@ -36,19 +36,19 @@ export default function Footer() {
 
           {/* Middle 2: Contact Details */}
           <div className="flex flex-col items-start text-left md:col-span-5 md:pl-4 lg:pl-8 xl:pl-16">
-            <div className="flex items-stretch gap-3 md:gap-4">
+            <div className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:items-stretch sm:gap-3 md:gap-4">
               {/* Address (Left) */}
               <div className="flex flex-col gap-2">
                 <h4 className="font-serif text-neutral-600 text-sm md:text-base font-bold uppercase drop-shadow-sm">VISIT US</h4>
                 <div className="flex flex-col text-neutral-900 text-sm md:text-base font-serif leading-relaxed">
-                  <span className="whitespace-nowrap">Father Masi Street,</span>
-                  <span className="whitespace-nowrap">Holiday Hills, Barangay San&nbsp;Antonio,</span>
-                  <span className="whitespace-nowrap">San Pedro, Philippines, 4023</span>
+                  <span>Father Masi Street,</span>
+                  <span>Holiday Hills, Barangay San&nbsp;Antonio,</span>
+                  <span>San Pedro, Philippines, 4023</span>
                 </div>
               </div>
 
               {/* Vertical Divider */}
-              <div className="w-px bg-neutral-900 opacity-20 mt-1 mx-1 md:mx-2"></div>
+              <div className="hidden w-px bg-neutral-900 opacity-20 sm:block sm:self-stretch md:mx-2"></div>
 
               {/* Contact (Right) */}
               <div className="flex flex-col gap-2">
@@ -57,7 +57,7 @@ export default function Footer() {
                   <a href="tel:09194442327" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
                     Tel: 0919 444 2327
                   </a>
-                  <a href="mailto:teamzioneventsplace@gmail.com" className="relative transition-all duration-300 hover:translate-x-1.5 opacity-80 hover:opacity-100 hover:text-[#D4AF37] w-fit after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:-bottom-0.5 after:left-0 after:bg-[#D4AF37] after:origin-bottom-right hover:after:origin-bottom-left hover:after:scale-x-100 after:transition-transform after:duration-300">
+                  <a href="mailto:teamzioneventsplace@gmail.com" className="relative w-fit break-all opacity-80 transition-all duration-300 hover:translate-x-1.5 hover:text-[#D4AF37] hover:opacity-100 after:absolute after:-bottom-0.5 after:left-0 after:h-[1px] after:w-full after:origin-bottom-right after:scale-x-0 after:bg-[#D4AF37] after:transition-transform after:duration-300 after:content-[''] hover:after:origin-bottom-left hover:after:scale-x-100">
                     teamzioneventsplace@gmail.com
                   </a>
                 </div>

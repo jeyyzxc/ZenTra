@@ -22,33 +22,33 @@ export default function HeroSection() {
   const textTransform = `translateY(${Math.max(0, 30 - (scrollY * 0.1))}px)`;
 
   return (
-    <section className="relative w-full h-[150vh] min-h-[1000px] flex flex-col bg-transparent z-0">
+    <section className="relative z-0 flex h-[150dvh] min-h-[60rem] w-full flex-col bg-transparent" data-motion="decorative">
       {/* Background Image Setup - sticky within the hero section instead of globally fixed */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
-        <div className="sticky top-0 w-full h-screen -z-10">
+        <div className="sticky top-0 -z-10 h-dvh w-full">
           <BackgroundSlideshow />
         </div>
       </div>
 
       {/* Sticky container for the hero content to stay in view while scrolling the 150vh */}
-      <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden pointer-events-none">
+      <div className="pointer-events-none sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
 
 
         {/* Hero Text Content */}
         <div
-          className="relative z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-auto mt-72"
+          className="pointer-events-auto relative z-10 mt-[clamp(11rem,34dvh,18rem)] flex max-w-6xl flex-col items-center justify-center px-[var(--layout-gutter)] text-center"
           style={{
             opacity: textOpacity,
             transform: textTransform
           }}
         >
-          <h1 className="text-white text-4xl md:text-5xl lg:text-[4.5rem] mb-3 drop-shadow-md font-segoe leading-tight">
+          <h1 className="font-segoe mb-3 text-[clamp(2.15rem,8vw,4.5rem)] leading-[1.08] text-white drop-shadow-md">
             Overlooking San Pedro City lights
           </h1>
-          <p className="text-white text-xl md:text-2xl lg:text-[1.85rem] font-serif font-light italic tracking-wide max-w-none w-full px-4 sm:px-8 mb-6 drop-shadow-md opacity-90">
+          <p className="mb-6 w-full max-w-5xl px-0 font-serif text-[clamp(1.05rem,3.5vw,1.85rem)] font-light italic leading-relaxed tracking-wide text-white opacity-90 drop-shadow-md sm:px-8">
             Elevate your celebrations with a breathtaking panoramic view of the sparkling city below.
           </p>
-          <Link href="/about" className="px-8 py-2.5 rounded-md bg-transparent border-[1.5px] border-white text-white font-serif transition-all hover:bg-[#DFD48A] hover:border-[#DFD48A] hover:text-neutral-900 hover:shadow-[0_0_20px_rgba(223,212,138,0.4)] pointer-events-auto mt-12 inline-block text-base tracking-widest">
+          <Link href="/about" className="pointer-events-auto mt-8 inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-white bg-transparent px-8 py-2.5 font-serif text-base tracking-widest text-white transition-all hover:border-[#DFD48A] hover:bg-[#DFD48A] hover:text-neutral-900 hover:shadow-[0_0_20px_rgba(223,212,138,0.4)] sm:mt-12">
             OUR STORY
           </Link>
         </div>

@@ -72,9 +72,9 @@ export default function GlobalHeader() {
   };
 
   return (
-    <div className="fixed inset-0 h-screen pointer-events-none z-[100]">
+    <div className="pointer-events-none fixed inset-0 z-[100] h-dvh" data-motion="decorative">
       {/* Navigation */}
-      <div className="absolute top-0 left-0 right-0 pointer-events-auto">
+      <div className="pointer-events-auto absolute inset-x-0 top-0 z-[80]">
         <Navbar />
       </div>
 
@@ -82,7 +82,7 @@ export default function GlobalHeader() {
       <div
         className="absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-150 pointer-events-none z-[60]"
         style={{
-          transform: `translateY(${logoTranslateY}vh) scale(${logoScale})`,
+          transform: `translateY(${logoTranslateY}dvh) scale(${logoScale})`,
           opacity: logoOpacity,
         }}
       >
@@ -90,7 +90,7 @@ export default function GlobalHeader() {
           href={pathname || '/'}
           aria-label="Refresh current Zion Events Place page"
           onClick={refreshCurrentPage}
-          className="relative block w-80 md:w-96 lg:w-[450px] transition-transform duration-300 pointer-events-auto hover:scale-[1.02] cursor-pointer"
+          className="pointer-events-auto relative block w-[min(76vw,450px)] cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
           style={{ pointerEvents: 'auto' }}
         >
           {/* Hidden image to force natural aspect ratio */}

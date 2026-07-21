@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { CalendarEvent, getStatusColor } from './types';
-import { X, MapPin, Users, Phone, Clock, FileText, Calendar as CalendarIcon, Tag } from 'lucide-react';
+import { X, MapPin, Users, Phone, Clock, FileText, Tag } from 'lucide-react';
 
 interface EventModalProps {
   event: CalendarEvent | null;
@@ -14,7 +14,7 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
   if (!isOpen || !event) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={event.title}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
@@ -22,7 +22,7 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+      <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg transform flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-all sm:max-h-[90dvh]">
         {/* Header (Dynamic color based on status) */}
         <div className={`px-6 py-4 flex items-start justify-between border-b ${getStatusColor(event.status).split(' ')[0]} bg-opacity-30`}>
           <div>
@@ -45,7 +45,7 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 overflow-y-auto p-4 sm:p-6">
           {/* Time & Date */}
           <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
             <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-center min-w-[70px]">
@@ -62,7 +62,7 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Client Details</h3>
               <div className="space-y-3">
@@ -119,7 +119,7 @@ export function EventModal({ event, isOpen, onClose }: EventModalProps) {
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+        <div className="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 bg-gray-50 px-4 py-4 sm:flex-row sm:px-6">
           <button 
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

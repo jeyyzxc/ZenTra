@@ -95,7 +95,8 @@ export default function SubpageHero({
 
   return (
     <section
-      className="relative z-0 flex h-[65vh] min-h-[500px] w-full flex-col items-center justify-center overflow-hidden bg-transparent px-4 text-center"
+      className="relative z-0 flex h-[clamp(32rem,65dvh,48rem)] min-h-[32rem] w-full flex-col items-center justify-center overflow-hidden bg-transparent px-[var(--layout-gutter)] text-center"
+      data-motion="decorative"
       aria-label={`${currentSlide.title}. Slide ${currentIndex + 1} of ${heroSlides.length}.`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -120,22 +121,22 @@ export default function SubpageHero({
 
       {/* Animated Text Content */}
       <div
-        className={`relative z-10 flex w-full flex-col items-center pt-16 transition-opacity duration-1000 ease-in-out ${
+        className={`relative z-10 flex w-full flex-col items-center pt-[max(4rem,env(safe-area-inset-top))] transition-opacity duration-1000 ease-in-out ${
           fade ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ transitionDuration: prefersReducedMotion ? '0ms' : `${transitionMs}ms` }}
       >
-        <h1 className="font-segoe mb-5 max-w-5xl text-center text-[40px] leading-tight text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] md:text-[56px] lg:text-[72px] text-shadow-lg">
+        <h1 className="font-segoe text-shadow-lg mb-5 max-w-5xl text-center text-[clamp(2.25rem,9vw,4.5rem)] leading-[1.08] text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">
           {currentSlide.title}
         </h1>
-        <p className="font-serif mx-auto max-w-3xl text-center text-[18px] leading-relaxed tracking-wide text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] md:text-[22px] lg:text-[24px] text-shadow-lg">
+        <p className="font-serif text-shadow-lg mx-auto max-w-3xl text-center text-[clamp(1rem,3.5vw,1.5rem)] leading-relaxed tracking-wide text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">
           {currentSlide.subtitle}
         </p>
       </div>
 
       {/* Elegant Progress Indicators */}
       {heroSlides.length > 1 && (
-        <div className="absolute bottom-8 z-10 flex gap-3">
+        <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 flex gap-0.5">
           {heroSlides.map((_, idx) => (
             <button
               key={idx}
@@ -143,12 +144,17 @@ export default function SubpageHero({
               aria-label={`Show slide ${idx + 1}`}
               aria-current={idx === currentIndex ? 'true' : undefined}
               onClick={() => selectSlide(idx)}
-              className={`h-1.5 rounded-full transition-all duration-700 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FDEB9E] ${
-                idx === currentIndex
-                  ? 'w-8 bg-[#FDEB9E] shadow-[0_0_8px_rgba(253,235,158,0.5)]'
-                  : 'w-2 bg-white/40 hover:bg-white/60'
-              }`}
-            />
+              className="touch-target group flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FDEB9E]"
+            >
+              <span
+                aria-hidden="true"
+                className={`h-1.5 rounded-full transition-all duration-700 ease-out ${
+                  idx === currentIndex
+                    ? 'w-8 bg-[#FDEB9E] shadow-[0_0_8px_rgba(253,235,158,0.5)]'
+                    : 'w-2 bg-white/40 group-hover:bg-white/60'
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}

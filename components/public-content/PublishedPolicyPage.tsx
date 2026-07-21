@@ -15,7 +15,7 @@ export default async function PublishedPolicyPage({
   const items = await listPublishedContent(type);
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-transparent">
+    <main className="responsive-page relative flex flex-col bg-transparent">
       <SubpageHero
         title={title}
         subtitle={subtitle}

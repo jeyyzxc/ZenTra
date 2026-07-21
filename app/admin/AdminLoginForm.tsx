@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import BackgroundSlideshow from '@/components/shared/BackgroundSlideshow';
 
 const LOGIN_MESSAGE_AUTO_HIDE_MS = 5000;
@@ -110,12 +109,12 @@ export default function AdminLoginForm() {
   };
 
   return (
-    <div className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-gray-900">
+    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-900 p-4 sm:p-6">
       <div className="absolute inset-0">
         <BackgroundSlideshow />
       </div>
 
-      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-[#FDF5CC]/90 p-8 shadow-[0_30px_60px_-15px_rgba(214,181,59,0.25)] backdrop-blur-2xl animate-[fadeInUp_0.8s_ease-out] sm:p-10">
+      <div className="relative z-10 my-auto w-full max-w-md rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white/95 to-[#FDF5CC]/90 p-6 shadow-[0_30px_60px_-15px_rgba(214,181,59,0.25)] backdrop-blur-2xl animate-[fadeInUp_0.8s_ease-out] sm:p-10" data-motion="decorative">
         <div className="mb-12 flex flex-col items-center">
           <div className="relative z-10 -mb-4 h-[140px] w-[140px] pointer-events-none">
             <Image
@@ -128,7 +127,7 @@ export default function AdminLoginForm() {
             />
           </div>
           <div className="group flex cursor-default flex-col items-center">
-            <h1 className="whitespace-nowrap font-sahitya text-[1.35rem] font-bold uppercase tracking-[0.2em] text-[#1a1f18] transition-all duration-300 group-hover:text-[#D6B53B] sm:text-2xl">
+            <h1 className="text-center font-sahitya text-[1.2rem] font-bold uppercase tracking-[0.14em] text-[#1a1f18] transition-all duration-300 group-hover:text-[#D6B53B] min-[360px]:text-[1.35rem] sm:text-2xl sm:tracking-[0.2em]">
               Zion Events Place
             </h1>
             <h2 className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-[0.4em] text-gray-500 sm:text-xs">

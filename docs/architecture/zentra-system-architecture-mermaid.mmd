@@ -1,0 +1,149 @@
+%%{init: {
+  "theme": "base",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "stepAfter",
+    "nodeSpacing": 42,
+    "rankSpacing": 54,
+    "diagramPadding": 16,
+    "useMaxWidth": false
+  },
+  "themeVariables": {
+    "fontFamily": "Segoe UI, Arial, sans-serif",
+    "fontSize": "18px",
+    "lineColor": "#2F6F91",
+    "textColor": "#172B3F",
+    "primaryTextColor": "#172B3F",
+    "clusterBkg": "#FFFFFF",
+    "clusterBorder": "#C7D5E2"
+  }
+}}%%
+flowchart LR
+  subgraph FRONT["ZENTRA CLIENT AND APPLICATION PLATFORM"]
+    direction TB
+
+    subgraph ACCESS["PRESENTATION AND ACCESS"]
+      direction LR
+      PUBLIC["<b>Public Web Portal</b><br/>Service discovery | inquiries | booking<br/>FAQ | gallery | client smart assistant"]
+      WEBADMIN["<b>Web Admin Dashboard</b><br/>Operations | governance | content<br/>reporting | team and system management"]
+      MOBILE["<b>Mobile Admin Application</b><br/>Secure mobile administration<br/>through the shared application API"]
+      PUBLIC ~~~ WEBADMIN
+      WEBADMIN ~~~ MOBILE
+    end
+
+    subgraph APPLICATION["APPLICATION AND INTERFACE"]
+      direction TB
+      EDGE["<b>Vercel HTTPS Edge, CDN, Routing and Serverless Runtime</b>"]
+      subgraph APP_COMPONENTS[" "]
+        direction LR
+        ROUTER["<b>Next.js 16 App Router</b><br/>Public and admin pages<br/>Server and Client Components"]
+        API["<b>Route Handlers / BFF API</b><br/>Client | admin | dashboard<br/>orchestration and integration endpoints"]
+        SECURITY["<b>Identity, Authorization and API Security</b><br/>NextAuth JWT sessions | RBAC | validation<br/>rate limits | audit logs | health checks"]
+        ROUTER --> API
+        API --> SECURITY
+      end
+      EDGE --> APP_COMPONENTS
+    end
+
+    ACCESS ==>|HTTPS requests| APPLICATION
+  end
+
+  subgraph CORE["ZENTRA DOMAIN AND DATA PLATFORM"]
+    direction TB
+    subgraph DOMAIN["DOMAIN SERVICES"]
+      direction TB
+      BOUNDARY["<b>Shared Application and Domain Service Boundary</b>"]
+      subgraph DOMAIN_ROW_ONE[" "]
+        direction LR
+        BOOKING["<b>Booking and Calendar</b><br/>Bookings | availability | events<br/>tasks | notifications | workflow status"]
+        CONTRACTS["<b>Contracts and Payments</b><br/>Contract lifecycle | payment records<br/>proofs | milestones | histories | exports"]
+        COMMAND["<b>Command Center and Smart Assistant</b><br/>Publishing | media | jobs | knowledge<br/>pgvector retrieval | grounded responses"]
+        BOOKING ~~~ CONTRACTS
+        CONTRACTS ~~~ COMMAND
+      end
+      subgraph DOMAIN_ROW_TWO[" "]
+        direction LR
+        CONTENT["<b>Services and Public Content</b><br/>Event categories | packages | inclusions<br/>gallery | facilities | rules and policies"]
+        ENGAGEMENT["<b>Customer Engagement</b><br/>Inquiries | testimonies | support<br/>FAQ management | booking-scoped access"]
+        ADMINOPS["<b>Admin Operations and Governance</b><br/>Dashboard | reports | team | settings<br/>audit | email logs | workflow logs"]
+        CONTENT ~~~ ENGAGEMENT
+        ENGAGEMENT ~~~ ADMINOPS
+      end
+      BOUNDARY --> DOMAIN_ROW_ONE
+      DOMAIN_ROW_ONE --> DOMAIN_ROW_TWO
+    end
+
+    subgraph DATA["DATA AND RESOURCES"]
+      direction TB
+      subgraph DATA_COMPONENTS[" "]
+        direction LR
+        PRISMA["<b>Prisma 7 Data Access</b><br/>Repositories | transactions<br/>validated queries | connection pooling"]
+        POSTGRES[("<b>Supabase PostgreSQL 17 and pgvector</b><br/>56 Prisma models | operational system of record<br/>bookings | users | jobs | logs | vectors")]
+        STORAGE[("<b>Supabase Storage</b><br/>Six controlled buckets<br/>public media | private documents")]
+        PRISMA --> POSTGRES
+        POSTGRES ~~~ STORAGE
+      end
+      DATAGUARD["<b>Data controls:</b> RLS enabled | anonymous and authenticated Data API privileges revoked | server-only database and storage credentials"]
+      DATA_COMPONENTS -. governed by .-> DATAGUARD
+    end
+
+    CROSS["<b>CROSS-CUTTING CONTROLS</b> | RBAC | AUDIT AND ERROR LOGGING | RLS | SECRET ISOLATION | RATE LIMITS | HEALTH AND WORKFLOW MONITORING"]
+  end
+
+  subgraph EXTERNAL["AUTOMATION AND EXTERNAL SERVICES"]
+    direction TB
+    N8N["<b>n8n on Render</b><br/>Booking | email | contract<br/>Command Center worker orchestration"]
+    subgraph N8N_RESOURCES[" "]
+      direction LR
+      N8NDB[("<b>n8n Database</b><br/>Render PostgreSQL<br/>internal state only")]
+      EMAIL["<b>Email Provider</b><br/>Credential managed<br/>inside n8n"]
+    end
+    GEMINI["<b>Google Gemini API</b><br/>Command Center intent classification<br/>grounded generation | 768-dimensional embeddings"]
+    SCANNER["<b>Document Malware Scanner</b><br/>Command Center safety scan for production<br/>PDF and DOCX knowledge-source ingestion"]
+    PSGC["<b>PSGC Reference API</b><br/>Admin operations address lookup<br/>region | province | city | barangay"]
+  end
+
+  APPLICATION ==>|Authorized application calls| DOMAIN
+  DOMAIN ==>|Prisma transactions and governed files| DATA
+  DATA --> CROSS
+
+  APPLICATION <-->|Signed webhooks and protected callbacks| EXTERNAL
+  DOMAIN <-->|AI, file scanning and reference data| EXTERNAL
+
+  N8N --> N8NDB
+  N8N --> EMAIL
+  N8NDB ~~~ GEMINI
+  EMAIL ~~~ GEMINI
+  GEMINI ~~~ SCANNER
+  SCANNER ~~~ PSGC
+
+  classDef presentation fill:#FFFFFF,stroke:#3F7FB1,stroke-width:3px,color:#172B3F;
+  classDef application fill:#FFFFFF,stroke:#347763,stroke-width:3px,color:#172B3F;
+  classDef domain fill:#FFFFFF,stroke:#BE8420,stroke-width:3px,color:#172B3F;
+  classDef data fill:#FFFFFF,stroke:#6B5F91,stroke-width:3px,color:#172B3F;
+  classDef external fill:#FFFFFF,stroke:#2F7E8A,stroke-width:3px,color:#172B3F;
+  classDef control fill:#173650,stroke:#173650,stroke-width:2px,color:#FFFFFF;
+  classDef note fill:#F5F8FB,stroke:#A9BAC8,stroke-width:2px,color:#344B5E;
+
+  class PUBLIC,WEBADMIN,MOBILE presentation;
+  class EDGE,ROUTER,API,SECURITY application;
+  class BOUNDARY,BOOKING,CONTRACTS,COMMAND,CONTENT,ENGAGEMENT,ADMINOPS domain;
+  class PRISMA,POSTGRES,STORAGE data;
+  class N8N,N8NDB,EMAIL,GEMINI,SCANNER,PSGC external;
+  class CROSS control;
+  class DATAGUARD note;
+
+  style FRONT fill:#FFFFFF,stroke:#C7D5E2,stroke-width:2px,color:#173650
+  style CORE fill:#FFFFFF,stroke:#C7D5E2,stroke-width:2px,color:#173650
+  style ACCESS fill:#EAF3FA,stroke:#B5CBDC,stroke-width:2px,color:#23435F
+  style APPLICATION fill:#EAF5F1,stroke:#B6D3C8,stroke-width:2px,color:#234C40
+  style APP_COMPONENTS fill:transparent,stroke:transparent
+  style DOMAIN fill:#FFF6E6,stroke:#E2C99A,stroke-width:2px,color:#694A13
+  style DOMAIN_ROW_ONE fill:transparent,stroke:transparent
+  style DOMAIN_ROW_TWO fill:transparent,stroke:transparent
+  style DATA fill:#F2F0FA,stroke:#C8C1DF,stroke-width:2px,color:#453D65
+  style DATA_COMPONENTS fill:transparent,stroke:transparent
+  style EXTERNAL fill:#EAF6F8,stroke:#B5D5DA,stroke-width:2px,color:#234E56
+  style N8N_RESOURCES fill:transparent,stroke:transparent
+
+  linkStyle default stroke:#2F6F91,stroke-width:2.5px,color:#344B5E

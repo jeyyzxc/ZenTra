@@ -176,9 +176,10 @@ export default function SmartGuide() {
     <>
       <div
         ref={chatWindowRef}
-        className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[200] flex h-[550px] max-h-[85vh] w-[340px] flex-col overflow-hidden rounded-[32px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-all duration-500 sm:w-[380px] ${
+        className={`public-smart-guide fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[200] flex h-[min(550px,calc(100dvh-1.5rem))] w-auto flex-col overflow-hidden rounded-[24px] border border-[#D4AF37]/30 bg-white/95 shadow-[0_20px_60px_rgba(212,175,55,0.15)] backdrop-blur-3xl transition-all duration-500 sm:inset-x-auto sm:bottom-[max(2rem,env(safe-area-inset-bottom))] sm:right-[max(2rem,env(safe-area-inset-right))] sm:h-[550px] sm:w-[380px] sm:rounded-[32px] ${
           isOpen ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-16 scale-90 opacity-0'
         }`}
+        data-motion="decorative"
       >
         <div className="relative flex items-center justify-between overflow-hidden border-b border-white/20 bg-gradient-to-r from-[#D4AF37] to-[#C5B358] p-4 shadow-md">
           <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white opacity-20 blur-[50px]" />
@@ -303,9 +304,10 @@ export default function SmartGuide() {
       </div>
 
       <div
-        className={`fixed z-[190] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        className={`public-smart-guide fixed z-[190] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           isOpen ? 'pointer-events-none translate-y-10 scale-50 opacity-0' : 'pointer-events-auto opacity-100'
-        } ${isMinimized ? 'bottom-8 -right-2 md:bottom-10' : 'bottom-6 right-6 md:bottom-8 md:right-8'}`}
+        } ${isMinimized ? 'bottom-[max(2rem,env(safe-area-inset-bottom))] right-0 md:bottom-10' : 'bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))] md:bottom-8 md:right-8'}`}
+        data-motion="decorative"
       >
         {isMinimized ? (
           <button
@@ -328,7 +330,7 @@ export default function SmartGuide() {
                 e.stopPropagation();
                 setIsMinimized(true);
               }}
-              className="absolute -top-1 -left-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-[#D4AF37]/30 text-neutral-400 opacity-0 shadow-[0_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:bg-[#FAFAFA] hover:text-[#D4AF37] hover:border-[#D4AF37]/60 hover:scale-110 group-hover:opacity-100 scale-75 group-hover:scale-100"
+              className="absolute -left-3 -top-3 z-10 flex h-11 w-11 scale-90 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-white text-neutral-400 opacity-100 shadow-[0_2px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-100 hover:border-[#D4AF37]/60 hover:bg-[#FAFAFA] hover:text-[#D4AF37] sm:-left-1 sm:-top-1 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
               title="Hide Assistant"
             >
               <X className="h-3.5 w-3.5" />

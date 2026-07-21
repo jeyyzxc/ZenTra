@@ -175,16 +175,16 @@ export default function FeaturesSection() {
     <section aria-labelledby="event-features-title" className="w-full bg-transparent px-4 pt-2 pb-6 md:pt-4 md:pb-8 md:px-12">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col items-center w-full overflow-hidden">
-          <div className="group relative flex items-center justify-center gap-4 md:gap-6 cursor-default">
+          <div className="group relative flex w-full min-w-0 items-center justify-center gap-3 md:gap-6 cursor-default" data-motion="decorative">
             {/* Left elegant fading line */}
-            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-40" />
 
-            <h2 id="event-features-title" className="font-serif text-neutral-900 text-2xl md:text-4xl uppercase tracking-[0.2em] transition-all duration-700 ease-out group-hover:text-[#D4AF37] group-hover:tracking-[0.3em] whitespace-nowrap">
+            <h2 id="event-features-title" className="shrink-0 text-center font-serif text-[1.05rem] uppercase tracking-[0.1em] text-neutral-900 transition-colors duration-700 ease-out group-hover:text-[#D4AF37] min-[360px]:text-xl min-[360px]:tracking-[0.14em] md:text-4xl md:tracking-[0.2em]">
               OUR EVENT FEATURES
             </h2>
 
             {/* Right elegant fading line */}
-            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-40" />
           </div>
           <p className="mt-2 font-serif text-base text-neutral-900/80 md:text-lg transition-all duration-500 hover:text-neutral-900">
             Celebrate your dream event with us.
@@ -206,16 +206,16 @@ export default function FeaturesSection() {
         </div>
 
         <div className="mb-6 flex flex-col items-center w-full overflow-hidden">
-          <div className="group relative flex items-center justify-center gap-4 md:gap-6 cursor-default">
+          <div className="group relative flex w-full min-w-0 items-center justify-center gap-3 md:gap-6 cursor-default" data-motion="decorative">
             {/* Left elegant fading line */}
-            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-r from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-40" />
 
-            <h2 className="font-serif text-neutral-900 text-2xl md:text-4xl uppercase tracking-[0.2em] transition-all duration-700 ease-out group-hover:text-[#D4AF37] group-hover:tracking-[0.3em] whitespace-nowrap">
+            <h2 className="shrink-0 text-center font-serif text-xl uppercase tracking-[0.14em] text-neutral-900 transition-colors duration-700 ease-out group-hover:text-[#D4AF37] md:text-4xl md:tracking-[0.2em]">
               GALLERY
             </h2>
 
             {/* Right elegant fading line */}
-            <div className="h-[1.5px] w-8 md:w-20 bg-gradient-to-l from-transparent to-[#D4AF37]/80 transition-all duration-700 ease-out group-hover:w-16 md:group-hover:w-40 group-hover:to-[#D4AF37] opacity-70 group-hover:opacity-100" />
+            <div className="h-[1.5px] min-w-0 flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/80 opacity-70 transition-all duration-700 ease-out group-hover:to-[#D4AF37] group-hover:opacity-100 md:max-w-40" />
           </div>
         </div>
 

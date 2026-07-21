@@ -16,7 +16,7 @@ export default function PublicSubpageShell({
   className,
 }: PublicSubpageShellProps) {
   return (
-    <main className={cn('relative flex min-h-screen flex-col bg-transparent', className)}>
+    <main className={cn('responsive-page relative flex flex-col bg-transparent', className)}>
       <SubpageHero slides={publicPageHeroes[heroKey]} />
       {children}
     </main>

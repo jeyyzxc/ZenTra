@@ -7,6 +7,17 @@
   --font-zentra-serif: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-zentra-script: "Alex Brush", "Segoe Script", "Brush Script MT", cursive;
   --font-zentra-sahitya: Sahitya, Georgia, "Times New Roman", serif;
+
+  /* Responsive system tokens: mobile-first, fluid, and shared by every surface. */
+  --layout-min-width: 20rem;
+  --layout-max-width: 90rem;
+  --layout-reading-width: 72rem;
+  --layout-gutter: clamp(1rem, 0.72rem + 1.4vw, 2.5rem);
+  --layout-section-space: clamp(3rem, 2.15rem + 4.25vw, 7rem);
+  --layout-card-padding: clamp(1rem, 0.82rem + 0.9vw, 1.75rem);
+  --layout-touch-target: 2.75rem;
+  --layout-header-height: 5rem;
+  --layout-radius: clamp(1rem, 0.85rem + 0.75vw, 1.75rem);
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -39,6 +50,141 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-zentra-sans);
+}
+
+html {
+  min-width: var(--layout-min-width);
+  max-width: 100%;
+  scroll-padding-top: var(--layout-header-height);
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:where(main, section, article, aside, header, footer, nav, form, fieldset, div) {
+  min-width: 0;
+}
+
+:where(img, picture, video, canvas, svg) {
+  max-width: 100%;
+}
+
+:where(input, select, textarea, button) {
+  max-width: 100%;
+  font: inherit;
+}
+
+:where(p, li, dd, td, th) {
+  overflow-wrap: anywhere;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #D6B53B;
+  outline-offset: 3px;
+}
+
+/* Shared layout primitives. Prefer the React wrappers in components/ui/ResponsiveLayout. */
+.responsive-page {
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+.responsive-container {
+  width: min(100%, var(--layout-max-width));
+  margin-inline: auto;
+  padding-inline: var(--layout-gutter);
+}
+
+.responsive-container--reading {
+  max-width: var(--layout-reading-width);
+}
+
+.responsive-section {
+  padding-block: var(--layout-section-space);
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: clamp(1rem, 0.8rem + 1vw, 2rem);
+}
+
+.responsive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.responsive-actions > * {
+  max-width: 100%;
+}
+
+.responsive-scroll-region {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-dialog {
+  width: min(calc(100% - (2 * var(--layout-gutter))), 44rem);
+  max-height: min(90dvh, 56rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.touch-target {
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-touch-target);
+}
+
+.safe-area-inset {
+  padding-top: max(var(--layout-gutter), env(safe-area-inset-top));
+  padding-right: max(var(--layout-gutter), env(safe-area-inset-right));
+  padding-bottom: max(var(--layout-gutter), env(safe-area-inset-bottom));
+  padding-left: max(var(--layout-gutter), env(safe-area-inset-left));
+}
+
+html[data-public-menu-open="true"] .public-smart-guide {
+  pointer-events: none !important;
+  visibility: hidden;
+  opacity: 0 !important;
+}
+
+@media (max-width: 39.999rem) {
+  .responsive-actions > :where(button, a) {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  :where([data-motion="decorative"], [data-motion="decorative"] *) {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Global Uniform Scrollbar (System Logs Design) */

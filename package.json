@@ -12,7 +12,8 @@
     "test:task-templates:integration": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx --test services/task-template/task-template.integration.test.ts",
     "test:command-center": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import tsx --test services/command-center/command-center-foundation.test.ts",
     "test:exports": "node --import tsx --test lib/export/export-utils.test.ts",
-    "lint": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js",
+    "lint": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js && npm run check:responsive",
+    "check:responsive": "node scripts/check-responsive-ui.mjs",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -27,7 +28,7 @@
     "env:check:preview": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/validate-deployment-env.mjs preview",
     "env:check:production": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/validate-deployment-env.mjs production",
     "env:check:production:file": "node --env-file=.env.production.local scripts/validate-deployment-env.mjs production",
-    "deploy:verify": "npm run typecheck && npm run test:booking-orchestration && npm run test:task-templates && npm run test:command-center && npm run test:exports && npm run build"
+    "deploy:verify": "npm run typecheck && npm run check:responsive && npm run test:booking-orchestration && npm run test:task-templates && npm run test:command-center && npm run test:exports && npm run build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

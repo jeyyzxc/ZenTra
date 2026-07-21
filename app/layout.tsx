@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 import GlobalBackground from "@/components/layout/GlobalBackground";
@@ -13,6 +13,16 @@ export const metadata: Metadata = {
   description: "Celebrate life's best moments with the view you'll always remember.",
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#EAE6D1' },
+    { media: '(prefers-color-scheme: dark)', color: '#0C100B' },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,7 +34,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
       </head>
-      <body className="min-h-screen flex flex-col bg-transparent text-neutral-900 transition-colors duration-500 ease-in-out dark:text-[#F4F4F0] overflow-x-hidden">
+      <body className="flex min-h-dvh w-full min-w-0 flex-col overflow-x-clip bg-transparent text-neutral-900 transition-colors duration-500 ease-in-out dark:text-[#F4F4F0]">
         <ThemeProvider>
           <GlobalBackground />
           <PublicOnly>
